@@ -8,30 +8,28 @@ Every generator follows the same three steps:
 
 import random
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from rideops.generators.common import (
     EntityBatch,
+    bump_updated_at,
     end_of_day_utc,
     make_faker,
     make_rng,
+    pick_city,
     random_datetime,
     to_iso,
     to_legacy_format,
 )
 from rideops.generators.defects import DefectRates, Record, apply_defects
 from rideops.generators.reference import (
-    CITIES,
     DRIVER_STATUS_WEIGHTS,
     DRIVER_STATUSES,
     EMAIL_DOMAINS,
     LOYALTY_TIERS,
     LOYALTY_WEIGHTS,
     VEHICLE_TYPES,
-    City,
 )
-
-CITY_WEIGHTS = [c.weight for c in CITIES]
 
 VEHICLE_FIELDS = (
     "vehicle_id",
@@ -69,20 +67,8 @@ CUSTOMER_FIELDS = (
 )
 
 
-def _pick_city(rng: random.Random) -> City:
-    return rng.choices(CITIES, weights=CITY_WEIGHTS)[0]
-
-
 def _indian_mobile(rng: random.Random) -> str:
     return f"+91{rng.randint(6_000_000_000, 9_999_999_999)}"
-
-
-def _bump_updated_at(record: Record, rng: random.Random) -> None:
-    """Duplicate mutation: the same entity re-sent later with a newer updated_at."""
-    if record.get("updated_at"):
-        ts = record["updated_at"].replace("Z", "+00:00")
-        later = datetime.fromisoformat(ts) + timedelta(hours=rng.randint(1, 72))
-        record["updated_at"] = to_iso(later)
 
 
 # --------------------------------------------------------------------------- vehicles
@@ -109,7 +95,7 @@ def generate_vehicles(
     records: list[Record] = []
     used_registrations: set[str] = set()
     for i in range(1, n + 1):
-        city = _pick_city(rng)
+        city = pick_city(rng)
         vtype = rng.choices(VEHICLE_TYPES, weights=type_weights)[0]
         make, model = rng.choice(vtype.models)
         while True:  # registration numbers must be unique, retry on the rare collision
@@ -139,7 +125,7 @@ def generate_vehicles(
         defects,
         corrupt=_corrupt_vehicle,
         nullable_fields=("make", "model", "manufacture_year"),
-        mutate_duplicate=_bump_updated_at,
+        mutate_duplicate=bump_updated_at,
     )
     return EntityBatch("vehicles", records, VEHICLE_FIELDS, "jsonl", counts)
 
@@ -185,7 +171,7 @@ def generate_drivers(
 
     records: list[Record] = []
     for i in range(1, n + 1):
-        city = _pick_city(rng)
+        city = pick_city(rng)
         joined = random_datetime(rng, start, end)
         pool = vehicles_by_city.get(city.code) or all_vehicle_ids
         records.append(
@@ -210,7 +196,7 @@ def generate_drivers(
         defects,
         corrupt=_corrupt_driver,
         nullable_fields=("phone", "vehicle_id", "rating"),
-        mutate_duplicate=_bump_updated_at,
+        mutate_duplicate=bump_updated_at,
     )
     return EntityBatch("drivers", records, DRIVER_FIELDS, "csv", counts)
 
@@ -247,7 +233,7 @@ def generate_customers(
                 "full_name": f"{first} {last}",
                 "email": f"{local_part}@{rng.choice(EMAIL_DOMAINS)}",
                 "phone": _indian_mobile(rng),
-                "city": _pick_city(rng).code,
+                "city": pick_city(rng).code,
                 "loyalty_tier": rng.choices(LOYALTY_TIERS, weights=LOYALTY_WEIGHTS)[0],
                 "signup_ts": to_iso(signup),
                 "updated_at": to_iso(random_datetime(rng, signup, end)),
@@ -260,6 +246,6 @@ def generate_customers(
         defects,
         corrupt=_corrupt_customer,
         nullable_fields=("email", "phone", "loyalty_tier"),
-        mutate_duplicate=_bump_updated_at,
+        mutate_duplicate=bump_updated_at,
     )
     return EntityBatch("customers", records, CUSTOMER_FIELDS, "csv", counts)

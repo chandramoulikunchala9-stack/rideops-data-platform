@@ -3,7 +3,7 @@
 **Single source of truth for progress.** Updated at the end of every milestone.
 Nothing is marked done unless it was built **and** verified as described in the "Verification" column.
 
-Last updated: 2026-11-18 · Current phase: **Phase 1 in progress (milestone 1a done, 1b next)**
+Last updated: 2026-11-18 · Current phase: **Phase 1 in progress (1a, 1b done; 1c next)**
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-11-18 · Current phase: **Phase 1 in progress (milestone 1a d
 | Phase | Milestone | Status |
 |---|---|---|
 | 0 | Repository, architecture, project structure | ✅ Done |
-| 1 | Python package, config, logging, synthetic data generators, tests | 🔄 In progress (1a ✅, 1b ⏳, 1c ⬜) |
+| 1 | Python package, config, logging, synthetic data generators, tests | 🔄 In progress (1a ✅, 1b ✅, 1c ⏳) |
 | 2 | PostgreSQL (Docker), schemas, data load, analytical SQL, optimization | ⬜ Not started |
 | 3 | Local Spark, Bronze/Silver/Gold with Delta Lake, data-quality checks, transformation tests | ⬜ Not started |
 | 4 | Databricks notebooks, SQL, Jobs, Unity Catalog, Auto Loader, Streaming, DLT, Asset Bundles | ⬜ Not started |
@@ -54,7 +54,12 @@ Full scale: 10,000 customers (+100 duplicates), 2,000 drivers (+20), 1,000 vehic
 
 ## 2c. Phase 1 — remaining
 
-- [ ] 1b: bookings (≥100,000 at `full`) with statuses, fares from city/vehicle rates, cancellations; payments incl. failed payments.
+- [x] 1b: bookings (100,000 at `full`) — life cycle requested→accepted→pickup→dropoff, statuses completed / cancelled /
+      no_driver_found / in_progress, IST rush-hour demand, weekend uplift and growth trend, surge pricing, fare formula,
+      referential + temporal integrity (no booking before signup / driver join). Payments derived from clean bookings:
+      failed attempts with retries (max 3), late settlements (1–3 days), refunds. Separate defect RNG.
+      Tests: 34 passed. Full scale: 101,000 booking rows, 86,905 payment rows, ~10 s
+      (profiled; timestamp formatting optimised 15 s → 10 s with byte-identical output).
 - [ ] 1c: ride events and app events (incl. late-arriving events), pipeline execution records, simulated cloud usage/cost records.
 
 ## 3. Environment inventory (2026-11-18)

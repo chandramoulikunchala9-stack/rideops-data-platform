@@ -3,13 +3,16 @@
 import json
 import logging
 import time
+from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+from rideops.generators.bookings import apply_booking_defects, build_bookings
 from rideops.generators.common import EntityBatch
 from rideops.generators.defects import DefectRates
 from rideops.generators.entities import generate_customers, generate_drivers, generate_vehicles
+from rideops.generators.payments import generate_payments
 from rideops.generators.scale import ScaleProfile
 from rideops.generators.writers import write_batch
 
@@ -27,18 +30,36 @@ class RunConfig:
 
 
 def generate_all(config: RunConfig) -> list[EntityBatch]:
-    """Generate entities in dependency order: drivers need vehicles to exist first."""
+    """Generate entities in dependency order.
+
+    vehicles -> drivers (need vehicles) -> customers -> bookings (need all three)
+             -> payments (need clean bookings) -> booking defects (last!)
+    """
     p = config.profile
     common = {
         "seed": config.seed,
         "end_date": config.end_date,
         "history_days": p.history_days,
-        "defects": config.defects,
     }
-    vehicles = generate_vehicles(p.vehicles, **common)
-    drivers = generate_drivers(p.drivers, vehicles=vehicles.records, **common)
-    customers = generate_customers(p.customers, **common)
-    return [vehicles, drivers, customers]
+    vehicles = generate_vehicles(p.vehicles, defects=config.defects, **common)
+    drivers = generate_drivers(
+        p.drivers, vehicles=vehicles.records, defects=config.defects, **common
+    )
+    customers = generate_customers(p.customers, defects=config.defects, **common)
+
+    booking_records = build_bookings(
+        p.bookings,
+        customers=customers.records,
+        drivers=drivers.records,
+        vehicles=vehicles.records,
+        **common,
+    )
+    logger.info("Booking status mix: %s", dict(Counter(b["status"] for b in booking_records)))
+    # Payments must be derived before booking defects are injected, otherwise a corrupted
+    # booking (e.g. negative fare) would leak into the payments as a second, hidden defect.
+    payments = generate_payments(booking_records, seed=config.seed, defects=config.defects)
+    bookings = apply_booking_defects(booking_records, seed=config.seed, defects=config.defects)
+    return [vehicles, drivers, customers, bookings, payments]
 
 
 def run(config: RunConfig) -> Path:

@@ -26,7 +26,7 @@ def _run(tmp_path: Path, scale: str) -> dict:
 def test_cli_writes_files_that_match_the_manifest(tmp_path: Path) -> None:
     manifest = _run(tmp_path, "small")
 
-    assert set(manifest["entities"]) == {"vehicles", "drivers", "customers"}
+    assert set(manifest["entities"]) == {"vehicles", "drivers", "customers", "bookings", "payments"}
     for name, info in manifest["entities"].items():
         path = tmp_path / info["file"]
         assert path.exists(), f"{name} file missing"
@@ -46,3 +46,5 @@ def test_full_scale_meets_project_volume_targets(tmp_path: Path) -> None:
     assert entities["customers"]["rows"] == 10_000 + 100
     assert entities["drivers"]["rows"] == 2_000 + 20
     assert entities["vehicles"]["rows"] == 1_000 + 10
+    assert entities["bookings"]["rows"] == 100_000 + 1_000
+    assert entities["payments"]["rows"] > 80_000
