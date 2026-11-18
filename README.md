@@ -1,6 +1,7 @@
 # RideOps — Data Engineering & Platform Operations Platform
 
-> **Status: Phase 0 (repository and architecture) complete. No application features are implemented yet.**
+> **Status: Phase 1 in progress.** Synthetic generators for vehicles, drivers and customers are implemented and tested.
+> Bookings, payments, events, pipeline-run and cost data are next.
 > See [PROJECT_STATUS.md](PROJECT_STATUS.md) for what is done, what is in progress, and what has been verified.
 > This README only describes features as implemented once they actually are.
 
@@ -97,7 +98,29 @@ rideops-data-platform/
 
 ## Getting started
 
-Setup instructions will be added as each phase lands. Prerequisites identified in Phase 0:
+```bash
+# 1. Create and activate a virtual environment (Python 3.10+)
+py -3 -m venv .venv
+.venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
+
+# 2. Install the package in editable mode, with dev tools
+pip install -e ".[dev]"
+
+# 3. Generate synthetic data into data/landing/ (small: ~1 s, full: ~1 s for current entities)
+python -m rideops.generators --scale small
+python -m rideops.generators --help
+
+# 4. Run tests and linters
+pytest                             # all tests
+pytest -m "not slow"               # skip full-scale tests
+ruff check src tests
+ruff format --check src tests
+```
+
+Each generation run writes a manifest to `data/landing/_manifests/` that records the seed, row counts
+and the exact number of defects injected per entity.
+
+Prerequisites identified in Phase 0:
 
 - Python 3.12 recommended (3.10 is installed but reached end of life in October 2026)
 - Java 17 or 21 for Spark
@@ -112,7 +135,7 @@ Optional, for cloud phases: AWS CLI, Terraform, Databricks CLI.
 - Features — after Phases 1–7
 - Screenshots — Phase 7
 - API documentation — Phase 5 (FastAPI serves interactive docs at `/docs`)
-- Testing — Phase 1 onward, CI in Phase 8
+- Testing — pytest suite started in Phase 1 (see Getting started); CI in Phase 8
 - Deployment — Phase 9
 - Skills demonstrated (coverage matrix) — maintained in [PROJECT_STATUS.md](PROJECT_STATUS.md)
 

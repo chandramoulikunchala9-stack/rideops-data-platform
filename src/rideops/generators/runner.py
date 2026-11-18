@@ -1,0 +1,84 @@
+"""Orchestrates a generation run: generate every entity, write the files, write a manifest."""
+
+import json
+import logging
+import time
+from dataclasses import asdict, dataclass
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+from rideops.generators.common import EntityBatch
+from rideops.generators.defects import DefectRates
+from rideops.generators.entities import generate_customers, generate_drivers, generate_vehicles
+from rideops.generators.scale import ScaleProfile
+from rideops.generators.writers import write_batch
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class RunConfig:
+    profile: ScaleProfile
+    seed: int
+    end_date: date
+    data_dir: Path
+    batch_id: str = "0001"
+    defects: DefectRates = DefectRates()
+
+
+def generate_all(config: RunConfig) -> list[EntityBatch]:
+    """Generate entities in dependency order: drivers need vehicles to exist first."""
+    p = config.profile
+    common = {
+        "seed": config.seed,
+        "end_date": config.end_date,
+        "history_days": p.history_days,
+        "defects": config.defects,
+    }
+    vehicles = generate_vehicles(p.vehicles, **common)
+    drivers = generate_drivers(p.drivers, vehicles=vehicles.records, **common)
+    customers = generate_customers(p.customers, **common)
+    return [vehicles, drivers, customers]
+
+
+def run(config: RunConfig) -> Path:
+    """Generate, write and describe one batch. Returns the manifest path."""
+    started = time.perf_counter()
+    logger.info(
+        "Generating scale=%s seed=%s end_date=%s", config.profile.name, config.seed, config.end_date
+    )
+
+    entities: dict[str, dict] = {}
+    for batch in generate_all(config):
+        path = write_batch(batch, config.data_dir, config.end_date, config.batch_id)
+        logger.info(
+            "Wrote %-10s rows=%-7d defects=%s -> %s",
+            batch.name,
+            len(batch.records),
+            batch.defects,
+            path,
+        )
+        entities[batch.name] = {
+            "rows": len(batch.records),
+            "file": path.relative_to(config.data_dir).as_posix(),
+            "format": batch.file_format,
+            "defects_injected": batch.defects,
+        }
+
+    manifest = {
+        "batch_id": config.batch_id,
+        "seed": config.seed,
+        "scale": config.profile.name,
+        "end_date": config.end_date.isoformat(),
+        "defect_rates": asdict(config.defects),
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "entities": entities,
+    }
+    manifest_path = (
+        config.data_dir / "landing" / "_manifests" / f"generation_{config.batch_id}.json"
+    )
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    logger.info("Done in %.2fs. Manifest: %s", time.perf_counter() - started, manifest_path)
+    return manifest_path

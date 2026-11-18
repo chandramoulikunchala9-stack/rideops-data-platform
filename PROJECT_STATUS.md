@@ -3,7 +3,7 @@
 **Single source of truth for progress.** Updated at the end of every milestone.
 Nothing is marked done unless it was built **and** verified as described in the "Verification" column.
 
-Last updated: 2026-11-18 · Current phase: **Phase 0 complete → Phase 1 next**
+Last updated: 2026-11-18 · Current phase: **Phase 1 in progress (milestone 1a done, 1b next)**
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-11-18 · Current phase: **Phase 0 complete → Phase 1 next**
 | Phase | Milestone | Status |
 |---|---|---|
 | 0 | Repository, architecture, project structure | ✅ Done |
-| 1 | Python package, config, logging, synthetic data generators, tests | ⏳ Next |
+| 1 | Python package, config, logging, synthetic data generators, tests | 🔄 In progress (1a ✅, 1b ⏳, 1c ⬜) |
 | 2 | PostgreSQL (Docker), schemas, data load, analytical SQL, optimization | ⬜ Not started |
 | 3 | Local Spark, Bronze/Silver/Gold with Delta Lake, data-quality checks, transformation tests | ⬜ Not started |
 | 4 | Databricks notebooks, SQL, Jobs, Unity Catalog, Auto Loader, Streaming, DLT, Asset Bundles | ⬜ Not started |
@@ -31,9 +31,31 @@ Last updated: 2026-11-18 · Current phase: **Phase 0 complete → Phase 1 next**
 - [x] Inventoried tools (table below).
 - [x] Created folder structure, `README.md`, `docs/architecture.md`, `CONTRIBUTING.md`, PR template,
       `.gitignore`, `.gitattributes`, `.editorconfig`, `.env.example`.
-- [ ] First commit — left for the user as the Phase 0 exercise.
+- [x] First commit made by the user (`9d98ce9`).
 
-**Tests:** none yet (no code). **Verification:** `git rev-parse --show-toplevel` returns the project folder.
+**Tests:** none (no code). **Verification:** `git rev-parse --show-toplevel` returns the project folder;
+`git check-ignore` confirmed `.env` and `data/*` are ignored.
+
+## 2b. Phase 1 — milestone 1a (foundation + dimension generators) — done
+
+- [x] `pyproject.toml` with pinned dependencies (faker 40.54.0, pydantic-settings 2.15.0; dev: pytest 9.2.0, ruff 0.17.5).
+- [x] Virtual environment `.venv` on Python 3.10.6 (3.12 upgrade still recommended, see D1).
+- [x] `rideops.config` — typed settings from `RIDEOPS_*` env vars / `.env`, with safe defaults.
+- [x] `rideops.logging_config` — one log format for the whole project.
+- [x] `rideops.generators` — vehicles (JSONL), drivers (CSV), customers (CSV); scale presets `small` / `full` / `large`;
+      per-entity seeded randomness; exact-count defect injection (missing, invalid, duplicate with later `updated_at`,
+      legacy timestamp format, orphan foreign key); atomic file writes; Hive-style `batch_date=` partitions; run manifest.
+- [x] CLI: `python -m rideops.generators --scale full --seed 42`.
+
+**Tests (run 2026-11-18):** `pytest` → 23 passed (unit: config, defects, entities, writers; integration: CLI incl. full-scale volume test).
+`ruff check` and `ruff format --check` → clean.
+**Verification:** two full-scale runs with seed 42 produced byte-identical data files (`diff -rq`).
+Full scale: 10,000 customers (+100 duplicates), 2,000 drivers (+20), 1,000 vehicles (+10) in ~1 s.
+
+## 2c. Phase 1 — remaining
+
+- [ ] 1b: bookings (≥100,000 at `full`) with statuses, fares from city/vehicle rates, cancellations; payments incl. failed payments.
+- [ ] 1c: ride events and app events (incl. late-arriving events), pipeline execution records, simulated cloud usage/cost records.
 
 ## 3. Environment inventory (2026-11-18)
 
@@ -72,7 +94,7 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 
 | # | Skill | Location | Status |
 |---|---|---|---|
-| 1 | Python | `src/rideops/` | Not implemented |
+| 1 | Python | `src/rideops/config.py`, `src/rideops/generators/` | Implemented and tested (generators: vehicles, drivers, customers) |
 | 2 | SQL development and optimization | `sql/` | Not implemented |
 | 3 | Apache Spark / PySpark | `src/rideops/pipelines/` | Not implemented |
 | 4 | Databricks notebooks and workflows | `databricks/notebooks/`, `databricks/resources/` | Not implemented |
@@ -87,7 +109,7 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 | 13 | Databricks compute and permissions | `databricks/`, `docs/databricks-setup.md` | Not implemented |
 | 14 | BI job and query monitoring | `src/rideops/monitoring/`, `backend/` | Not implemented |
 | 15 | Cloud usage and cost reporting | `src/rideops/costs/`, `sql/` | Not implemented |
-| 16 | Production-quality code and automated tests | `tests/` | Not implemented |
+| 16 | Production-quality code and automated tests | `tests/`, `pyproject.toml` (ruff, pytest) | Implemented and tested (Phase 1a scope) |
 | 17 | Git and GitHub | repository, `CONTRIBUTING.md`, PR template | Configuration example provided |
 | 18 | GitHub Actions and YAML | `.github/workflows/` | Not implemented |
 | 19 | Databricks Asset Bundles | `databricks/databricks.yml` | Not implemented |
@@ -101,11 +123,8 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 | 27 | Technical documentation and runbooks | `docs/`, `monitoring/runbooks/` | Not implemented (architecture doc started) |
 | 28 | Production support and incident management | `monitoring/` | Not implemented |
 
-## 7. Next steps (Phase 1)
+## 7. Next steps
 
-1. Install Python 3.12 (D1) and create `.venv`.
-2. Add `pyproject.toml` with pinned dependencies, `ruff`, and `pytest`.
-3. Build `rideops.config` (settings from environment variables) and `rideops.logging`.
-4. Build generators for customers, drivers, vehicles, bookings, payments, ride/app events, cost and pipeline-run records,
-   with configurable volume, a fixed seed, and deliberate data defects.
-5. Unit-test reproducibility, row counts, referential integrity and defect rates.
+1. Milestone 1b: bookings + payments generators, referencing the generated customers, drivers and vehicles.
+2. Milestone 1c: ride/app events (late arrivals), pipeline-run records, simulated cost records (`source = "simulated"`).
+3. Optional at any time: install Python 3.12 and recreate `.venv` (D1).

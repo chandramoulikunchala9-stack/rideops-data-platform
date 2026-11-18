@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rideops"
+version = "0.1.0"
+description = "RideOps data engineering platform: synthetic data, ingestion, medallion pipelines, monitoring and cost analytics."
+readme = "README.md"
+requires-python = ">=3.10"
+# Runtime dependencies are pinned to exact versions so every machine (and CI) builds the same environment.
+dependencies = [
+    "faker==40.54.0",
+    "pydantic-settings==2.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.2.0",
+    "ruff==0.17.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: tests that generate full-scale datasets (deselect with -m 'not slow')",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/W: style, F: pyflakes (unused imports, undefined names), I: import sorting,
+# B: common bugs, UP: modern syntax, SIM: simplifications
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
