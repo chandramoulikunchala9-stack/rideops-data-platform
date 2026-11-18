@@ -3,7 +3,7 @@
 **Single source of truth for progress.** Updated at the end of every milestone.
 Nothing is marked done unless it was built **and** verified as described in the "Verification" column.
 
-Last updated: 2026-11-18 · Current phase: **Phase 1 in progress (1a, 1b done; 1c next)**
+Last updated: 2026-11-18 · Current phase: **Phase 1 complete → Phase 2 (PostgreSQL + SQL) next**
 
 ---
 
@@ -12,8 +12,8 @@ Last updated: 2026-11-18 · Current phase: **Phase 1 in progress (1a, 1b done; 1
 | Phase | Milestone | Status |
 |---|---|---|
 | 0 | Repository, architecture, project structure | ✅ Done |
-| 1 | Python package, config, logging, synthetic data generators, tests | 🔄 In progress (1a ✅, 1b ✅, 1c ⏳) |
-| 2 | PostgreSQL (Docker), schemas, data load, analytical SQL, optimization | ⬜ Not started |
+| 1 | Python package, config, logging, synthetic data generators, tests | ✅ Done |
+| 2 | PostgreSQL (Docker), schemas, data load, analytical SQL, optimization | ⏳ Next |
 | 3 | Local Spark, Bronze/Silver/Gold with Delta Lake, data-quality checks, transformation tests | ⬜ Not started |
 | 4 | Databricks notebooks, SQL, Jobs, Unity Catalog, Auto Loader, Streaming, DLT, Asset Bundles | ⬜ Not started |
 | 5 | FastAPI backend, monitoring, data-quality APIs, retry handling | ⬜ Not started |
@@ -60,7 +60,14 @@ Full scale: 10,000 customers (+100 duplicates), 2,000 drivers (+20), 1,000 vehic
       failed attempts with retries (max 3), late settlements (1–3 days), refunds. Separate defect RNG.
       Tests: 34 passed. Full scale: 101,000 booking rows, 86,905 payment rows, ~10 s
       (profiled; timestamp formatting optimised 15 s → 10 s with byte-identical output).
-- [ ] 1c: ride events and app events (incl. late-arriving events), pipeline execution records, simulated cloud usage/cost records.
+- [x] 1c: ride events (372,918 at `full`) and app events (355,970) with event_ts vs ingest_ts and ~2–3% late arrivals,
+      partitioned by ingest date (92–93 daily files); pipeline-run history (938 runs, labelled `run_source=simulated_history`)
+      following a dependency graph, with retries, CANCELLED downstream runs, one RUNNING run, and a deliberate incident
+      (2026-10-19 `ingest_payments` schema-merge failure); simulated cloud costs (2,240 rows, `source=simulated`) derived
+      from run durations, with a runaway-dev-cluster anomaly and untagged-cost defects.
+      Runner now streams batches (write-then-free). orjson for JSONL; full run ~26 s (was 98 s before profiling).
+
+**Phase 1 tests (2026-11-18):** `pytest` → 46 passed; `ruff check` / `ruff format --check` clean.
 
 ## 3. Environment inventory (2026-11-18)
 
@@ -99,7 +106,7 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 
 | # | Skill | Location | Status |
 |---|---|---|---|
-| 1 | Python | `src/rideops/config.py`, `src/rideops/generators/` | Implemented and tested (generators: vehicles, drivers, customers) |
+| 1 | Python | `src/rideops/config.py`, `src/rideops/generators/` | Implemented and tested (generators for all 10 source datasets) |
 | 2 | SQL development and optimization | `sql/` | Not implemented |
 | 3 | Apache Spark / PySpark | `src/rideops/pipelines/` | Not implemented |
 | 4 | Databricks notebooks and workflows | `databricks/notebooks/`, `databricks/resources/` | Not implemented |
@@ -113,7 +120,7 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 | 12 | AWS services | `src/rideops/storage/`, `infra/terraform/` | Not implemented |
 | 13 | Databricks compute and permissions | `databricks/`, `docs/databricks-setup.md` | Not implemented |
 | 14 | BI job and query monitoring | `src/rideops/monitoring/`, `backend/` | Not implemented |
-| 15 | Cloud usage and cost reporting | `src/rideops/costs/`, `sql/` | Not implemented |
+| 15 | Cloud usage and cost reporting | `src/rideops/generators/ops.py` (simulated cost data), `src/rideops/costs/`, `sql/` | Simulated locally (data only; reporting not implemented) |
 | 16 | Production-quality code and automated tests | `tests/`, `pyproject.toml` (ruff, pytest) | Implemented and tested (Phase 1a scope) |
 | 17 | Git and GitHub | repository, `CONTRIBUTING.md`, PR template | Configuration example provided |
 | 18 | GitHub Actions and YAML | `.github/workflows/` | Not implemented |
@@ -130,6 +137,6 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 
 ## 7. Next steps
 
-1. Milestone 1b: bookings + payments generators, referencing the generated customers, drivers and vehicles.
-2. Milestone 1c: ride/app events (late arrivals), pipeline-run records, simulated cost records (`source = "simulated"`).
-3. Optional at any time: install Python 3.12 and recreate `.venv` (D1).
+1. Phase 2: PostgreSQL in Docker (compose), `analytics`/`ops`/`staging` schemas, loader for landing files,
+   analytical SQL (joins, CTEs, window functions), data-quality and monitoring SQL, indexes + EXPLAIN ANALYZE notes.
+2. Optional at any time: install Python 3.12 and recreate `.venv` (D1).

@@ -29,6 +29,9 @@ class EntityBatch:
     fieldnames: tuple[str, ...]
     file_format: FileFormat
     defects: dict[str, int] = field(default_factory=dict)
+    # If set, records are split into one file per date of this timestamp field
+    # (e.g. events by ingest_ts) instead of a single file for the whole batch.
+    partition_by: str | None = None
 
 
 def make_rng(seed: int, entity: str) -> random.Random:

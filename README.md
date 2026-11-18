@@ -1,7 +1,7 @@
 # RideOps — Data Engineering & Platform Operations Platform
 
-> **Status: Phase 1 in progress.** Synthetic generators for vehicles, drivers and customers are implemented and tested.
-> Bookings, payments, events, pipeline-run and cost data are next.
+> **Status: Phase 1 complete.** Synthetic generators for all 10 source datasets are implemented and tested.
+> PostgreSQL and SQL analytics (Phase 2) are next.
 > See [PROJECT_STATUS.md](PROJECT_STATUS.md) for what is done, what is in progress, and what has been verified.
 > This README only describes features as implemented once they actually are.
 
@@ -106,7 +106,7 @@ py -3 -m venv .venv
 # 2. Install the package in editable mode, with dev tools
 pip install -e ".[dev]"
 
-# 3. Generate synthetic data into data/landing/ (small: ~1 s, full: ~1 s for current entities)
+# 3. Generate synthetic data into data/landing/ (small: ~3 s, full: ~30 s, ~935k records)
 python -m rideops.generators --scale small
 python -m rideops.generators --help
 

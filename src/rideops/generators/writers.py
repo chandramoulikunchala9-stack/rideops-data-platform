@@ -9,14 +9,15 @@ and expose `batch_date` as a column, and they can skip whole folders when a quer
 """
 
 import csv
-import json
 import os
 from collections.abc import Iterable
 from datetime import date
 from pathlib import Path
 from typing import Any
 
-from rideops.generators.common import EntityBatch
+import orjson
+
+from rideops.generators.common import EntityBatch, parse_ts
 
 
 def landing_path(data_dir: Path, entity: str, batch_date: date, batch_id: str, ext: str) -> Path:
@@ -64,15 +65,38 @@ def write_jsonl(records: Iterable[dict[str, Any]], path: Path) -> Path:
     """
 
     def _write(fh) -> None:
+        # orjson (Rust) is ~5-10x faster than the json module; it returns UTF-8 bytes.
         for record in records:
-            fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+            fh.write(orjson.dumps(record).decode() + "\n")
 
     _atomic_write(path, _write)
     return path
 
 
-def write_batch(batch: EntityBatch, data_dir: Path, batch_date: date, batch_id: str) -> Path:
-    path = landing_path(data_dir, batch.name, batch_date, batch_id, batch.file_format)
+def _write_one(batch: EntityBatch, records: list, path: Path) -> Path:
     if batch.file_format == "csv":
-        return write_csv(batch.records, batch.fieldnames, path)
-    return write_jsonl(batch.records, path)
+        return write_csv(records, batch.fieldnames, path)
+    return write_jsonl(records, path)
+
+
+def write_batch(batch: EntityBatch, data_dir: Path, batch_date: date, batch_id: str) -> list[Path]:
+    """Write a batch to the landing zone and return the file paths written.
+
+    Without `partition_by`: one file under batch_date=<batch_date>.
+    With `partition_by`: one file per date of that timestamp field. Records whose timestamp
+    is missing or unparseable go to <batch_date>, so nothing is silently dropped.
+    """
+    if batch.partition_by is None:
+        path = landing_path(data_dir, batch.name, batch_date, batch_id, batch.file_format)
+        return [_write_one(batch, batch.records, path)]
+
+    groups: dict[date, list] = {}
+    for record in batch.records:
+        ts = parse_ts(record.get(batch.partition_by))
+        groups.setdefault(ts.date() if ts else batch_date, []).append(record)
+    return [
+        _write_one(
+            batch, rows, landing_path(data_dir, batch.name, day, batch_id, batch.file_format)
+        )
+        for day, rows in sorted(groups.items())
+    ]

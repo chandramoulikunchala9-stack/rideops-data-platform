@@ -106,3 +106,45 @@ CANCEL_REASONS_DRIVER: tuple[str, ...] = (
     "vehicle_issue",
     "heavy_traffic",
 )
+
+# Approximate city-centre coordinates (lat, lon), used for event locations.
+CITY_CENTERS: dict[str, tuple[float, float]] = {
+    "BLR": (12.9716, 77.5946),
+    "MUM": (19.0760, 72.8777),
+    "HYD": (17.3850, 78.4867),
+    "DEL": (28.6139, 77.2090),
+    "CHE": (13.0827, 80.2707),
+    "PUN": (18.5204, 73.8567),
+}
+
+APP_PLATFORMS: tuple[str, ...] = ("android", "ios", "web")
+APP_PLATFORM_WEIGHTS: tuple[float, ...] = (0.70, 0.25, 0.05)
+APP_VERSIONS: tuple[str, ...] = ("5.12.0", "5.13.1", "5.14.0", "5.14.2")
+
+
+@dataclass(frozen=True)
+class PipelineSpec:
+    """A scheduled data pipeline. Names match the real pipelines built in later phases."""
+
+    name: str
+    layer: str  # bronze | silver | gold | serving | ops
+    schedule_hour_utc: int
+    baseline_minutes: float
+    workers: int  # cluster size, drives simulated compute cost
+    depends_on: tuple[str, ...] = ()
+
+
+PIPELINES: tuple[PipelineSpec, ...] = (
+    PipelineSpec("ingest_reference_data", "bronze", 0, 4, 2),
+    PipelineSpec("ingest_bookings", "bronze", 0, 9, 4),
+    PipelineSpec("ingest_payments", "bronze", 0, 7, 2),
+    PipelineSpec("stream_ride_events", "bronze", 0, 14, 4),
+    PipelineSpec("ingest_app_events", "bronze", 0, 8, 2),
+    PipelineSpec("silver_transform", "silver", 1, 18, 6,
+                 ("ingest_reference_data", "ingest_bookings", "ingest_payments",
+                  "stream_ride_events", "ingest_app_events")),
+    PipelineSpec("data_quality_checks", "silver", 1, 6, 2, ("silver_transform",)),
+    PipelineSpec("gold_aggregations", "gold", 2, 12, 4, ("data_quality_checks",)),
+    PipelineSpec("export_to_postgres", "serving", 2, 5, 1, ("gold_aggregations",)),
+    PipelineSpec("ingest_cloud_costs", "ops", 3, 3, 1),
+)  # fmt: skip

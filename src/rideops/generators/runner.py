@@ -4,6 +4,7 @@ import json
 import logging
 import time
 from collections import Counter
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -12,6 +13,8 @@ from rideops.generators.bookings import apply_booking_defects, build_bookings
 from rideops.generators.common import EntityBatch
 from rideops.generators.defects import DefectRates
 from rideops.generators.entities import generate_customers, generate_drivers, generate_vehicles
+from rideops.generators.events import generate_app_events, generate_ride_events
+from rideops.generators.ops import generate_ops
 from rideops.generators.payments import generate_payments
 from rideops.generators.scale import ScaleProfile
 from rideops.generators.writers import write_batch
@@ -29,37 +32,42 @@ class RunConfig:
     defects: DefectRates = DefectRates()
 
 
-def generate_all(config: RunConfig) -> list[EntityBatch]:
-    """Generate entities in dependency order.
+def generate_all(config: RunConfig) -> Iterator[EntityBatch]:
+    """Yield entity batches in dependency order.
 
-    vehicles -> drivers (need vehicles) -> customers -> bookings (need all three)
-             -> payments (need clean bookings) -> booking defects (last!)
+    This is a generator: each batch can be written and freed before the next one is built,
+    which keeps memory flat even with hundreds of thousands of events.
+
+        vehicles -> drivers -> customers -> clean bookings
+            -> payments, ride events, app events, pipeline runs, cloud costs (all need clean
+               bookings) -> booking defects (applied last)
     """
     p = config.profile
-    common = {
-        "seed": config.seed,
-        "end_date": config.end_date,
-        "history_days": p.history_days,
-    }
-    vehicles = generate_vehicles(p.vehicles, defects=config.defects, **common)
-    drivers = generate_drivers(
-        p.drivers, vehicles=vehicles.records, defects=config.defects, **common
-    )
-    customers = generate_customers(p.customers, defects=config.defects, **common)
+    common = {"seed": config.seed, "end_date": config.end_date, "history_days": p.history_days}
+    defects = config.defects
 
-    booking_records = build_bookings(
+    vehicles = generate_vehicles(p.vehicles, defects=defects, **common)
+    yield vehicles
+    drivers = generate_drivers(p.drivers, vehicles=vehicles.records, defects=defects, **common)
+    yield drivers
+    customers = generate_customers(p.customers, defects=defects, **common)
+    yield customers
+
+    bookings = build_bookings(
         p.bookings,
         customers=customers.records,
         drivers=drivers.records,
         vehicles=vehicles.records,
         **common,
     )
-    logger.info("Booking status mix: %s", dict(Counter(b["status"] for b in booking_records)))
-    # Payments must be derived before booking defects are injected, otherwise a corrupted
-    # booking (e.g. negative fare) would leak into the payments as a second, hidden defect.
-    payments = generate_payments(booking_records, seed=config.seed, defects=config.defects)
-    bookings = apply_booking_defects(booking_records, seed=config.seed, defects=config.defects)
-    return [vehicles, drivers, customers, bookings, payments]
+    logger.info("Booking status mix: %s", dict(Counter(b["status"] for b in bookings)))
+    # Everything derived from bookings must use the *clean* records, so it comes first;
+    # otherwise booking defects (e.g. a negative fare) would leak into other datasets.
+    yield generate_payments(bookings, seed=config.seed, defects=defects)
+    yield generate_ride_events(bookings, seed=config.seed, defects=defects)
+    yield generate_app_events(bookings, seed=config.seed, defects=defects)
+    yield from generate_ops(bookings, defects=defects, **common)
+    yield apply_booking_defects(bookings, seed=config.seed, defects=defects)
 
 
 def run(config: RunConfig) -> Path:
@@ -71,18 +79,18 @@ def run(config: RunConfig) -> Path:
 
     entities: dict[str, dict] = {}
     for batch in generate_all(config):
-        path = write_batch(batch, config.data_dir, config.end_date, config.batch_id)
+        paths = write_batch(batch, config.data_dir, config.end_date, config.batch_id)
         logger.info(
-            "Wrote %-10s rows=%-7d defects=%s -> %s",
+            "Wrote %-13s rows=%-7d files=%-3d defects=%s",
             batch.name,
             len(batch.records),
+            len(paths),
             batch.defects,
-            path,
         )
         entities[batch.name] = {
             "rows": len(batch.records),
-            "file": path.relative_to(config.data_dir).as_posix(),
             "format": batch.file_format,
+            "files": [path.relative_to(config.data_dir).as_posix() for path in paths],
             "defects_injected": batch.defects,
         }
 

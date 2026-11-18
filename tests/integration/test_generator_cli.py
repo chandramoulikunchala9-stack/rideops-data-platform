@@ -26,11 +26,14 @@ def _run(tmp_path: Path, scale: str) -> dict:
 def test_cli_writes_files_that_match_the_manifest(tmp_path: Path) -> None:
     manifest = _run(tmp_path, "small")
 
-    assert set(manifest["entities"]) == {"vehicles", "drivers", "customers", "bookings", "payments"}
+    assert set(manifest["entities"]) == {
+        "vehicles", "drivers", "customers", "bookings", "payments",
+        "ride_events", "app_events", "pipeline_runs", "cloud_costs",
+    }  # fmt: skip
     for name, info in manifest["entities"].items():
-        path = tmp_path / info["file"]
-        assert path.exists(), f"{name} file missing"
-        assert _count_rows(path) == info["rows"]
+        paths = [tmp_path / f for f in info["files"]]
+        assert paths and all(p.exists() for p in paths), f"{name} file missing"
+        assert sum(_count_rows(p) for p in paths) == info["rows"]
 
 
 def test_cli_rejects_unknown_scale(tmp_path: Path) -> None:
