@@ -13,6 +13,7 @@ dependencies = [
     "faker==40.54.0",
     "orjson==3.13.0",
     "pydantic-settings==2.15.0",
+    "psycopg[binary]==3.3.9",
 ]
 
 [project.optional-dependencies]
@@ -29,6 +30,7 @@ testpaths = ["tests"]
 addopts = "-ra --strict-markers"
 markers = [
     "slow: tests that generate full-scale datasets (deselect with -m 'not slow')",
+    "postgres: tests that need a running PostgreSQL (skipped if unavailable)",
 ]
 
 [tool.ruff]

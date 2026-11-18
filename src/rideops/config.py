@@ -9,7 +9,33 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Repository root (src/rideops/config.py -> parents[2]); used to locate sql/ and data/.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SQL_DIR = PROJECT_ROOT / "sql"
+
+
+class PostgresSettings(BaseSettings):
+    """Database connection, read from POSTGRES_* variables. The password has no default."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="POSTGRES_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
+    host: str = "localhost"
+    port: int = 5432
+    db: str = "rideops"
+    user: str = "rideops"
+    password: SecretStr  # SecretStr hides the value in logs and repr()
+
+    def conninfo(self, dbname: str | None = None) -> str:
+        return (
+            f"host={self.host} port={self.port} dbname={dbname or self.db} "
+            f"user={self.user} password={self.password.get_secret_value()} "
+            "application_name=rideops connect_timeout=5"
+        )
 
 
 class Settings(BaseSettings):

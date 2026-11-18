@@ -3,7 +3,7 @@
 **Single source of truth for progress.** Updated at the end of every milestone.
 Nothing is marked done unless it was built **and** verified as described in the "Verification" column.
 
-Last updated: 2026-11-18 · Current phase: **Phase 1 complete → Phase 2 (PostgreSQL + SQL) next**
+Last updated: 2026-11-18 · Current phase: **Phase 2 complete → Phase 3 (PySpark + Delta Lake) next**
 
 ---
 
@@ -13,8 +13,8 @@ Last updated: 2026-11-18 · Current phase: **Phase 1 complete → Phase 2 (Postg
 |---|---|---|
 | 0 | Repository, architecture, project structure | ✅ Done |
 | 1 | Python package, config, logging, synthetic data generators, tests | ✅ Done |
-| 2 | PostgreSQL (Docker), schemas, data load, analytical SQL, optimization | ⏳ Next |
-| 3 | Local Spark, Bronze/Silver/Gold with Delta Lake, data-quality checks, transformation tests | ⬜ Not started |
+| 2 | PostgreSQL (Docker), schemas, data load, analytical SQL, optimization | ✅ Done |
+| 3 | Local Spark, Bronze/Silver/Gold with Delta Lake, data-quality checks, transformation tests | ⏳ Next |
 | 4 | Databricks notebooks, SQL, Jobs, Unity Catalog, Auto Loader, Streaming, DLT, Asset Bundles | ⬜ Not started |
 | 5 | FastAPI backend, monitoring, data-quality APIs, retry handling | ⬜ Not started |
 | 6 | AWS S3 integration, IAM, cost analytics, Terraform | ⬜ Not started |
@@ -69,6 +69,30 @@ Full scale: 10,000 customers (+100 duplicates), 2,000 drivers (+20), 1,000 vehic
 
 **Phase 1 tests (2026-11-18):** `pytest` → 46 passed; `ruff check` / `ruff format --check` clean.
 
+## 2d. Phase 2 — PostgreSQL and SQL — done
+
+- [x] `docker-compose.yml`: PostgreSQL 17.5 (pinned), healthcheck, named volume; password required from `.env` (no default).
+- [x] Migrations `sql/ddl/001–040` applied by `rideops.db.migrate` (tracked with checksums in `ops.schema_migrations`);
+      reference tables seeded from the Python reference module.
+- [x] Schemas: `raw` (text/jsonb + load metadata), `core` (typed, FK/CHECK constraints, `dq_flags`, quarantine table),
+      `analytics` (6 gold tables), `ops` (ingestion log, watermarks, pipeline runs + logs, DQ results, costs, incidents, alerts).
+- [x] Incremental file ingestion (`rideops.ingestion.postgres_loader`): COPY, schema-contract validation, sha256 + size,
+      data and ingestion log committed atomically, retries with backoff for transient errors, failed files recorded.
+- [x] SQL ELT `sql/transform/`: watermark-based incremental raw→core with ROW_NUMBER versioning, quarantine, MERGE upserts;
+      full-refresh gold build in one transaction.
+- [x] 17 data-quality checks in one SQL file (`sql/quality/checks.sql`) → `ops.data_quality_results` (PASS/WARN/FAIL).
+- [x] Real pipeline runs recorded by `rideops.monitoring.tracker.RunTracker` (`run_source = local_run`) with logs.
+- [x] 45 named analytical queries in 9 scripts (`sql/analytics/01–09`): joins (inner/left/right), CTEs, subqueries,
+      HAVING, ROW_NUMBER/RANK/DENSE_RANK/LAG/LEAD/FIRST_VALUE, percentiles, cohorts, gaps-and-islands, z-score anomalies.
+- [x] `docs/sql-optimization.md` with real EXPLAIN ANALYZE results (≈48×, 16×, 128× speed-ups).
+- [x] CLI: `python -m rideops.db migrate|load|transform|quality|all`.
+
+**Results on `full` data (2026-11-18):** load 204,213 raw rows in 2 s; transform 22 s; 99,187 bookings in core,
+813 quarantined (every distinct booking accounted for); re-runs load 0 files / transform 0 rows.
+**Tests:** `pytest -m "not slow"` → 66 passed (incl. 9 PostgreSQL end-to-end tests on a throwaway `rideops_test` DB).
+**Bug found and fixed during verification:** the `bookings_reject_reasons` check counted reasons instead of rows
+(reported 4 instead of 813); caught by reconciling against an independent query.
+
 ## 3. Environment inventory (2026-11-18)
 
 | Tool | Found | Notes / action |
@@ -76,7 +100,7 @@ Full scale: 10,000 customers (+100 duplicates), 2,000 drivers (+20), 1,000 vehic
 | Python | 3.10.6 | Works, but end of life since Oct 2026. **Recommend installing 3.12** before Phase 1. |
 | Git | 2.55.0 | OK |
 | Node.js / npm | 24.20.0 / 11.19.0 | OK for Phase 7 |
-| Docker | 29.7.2 | Installed; **Docker Desktop was not running**. Needed from Phase 2. |
+| Docker | 29.7.2 | Docker Desktop started 2026-11-18; runs the `rideops-postgres` container. |
 | Java | Temurin 21 at `C:\Users\chandu\tools\jdk21` | `JAVA_HOME` set, but `java` is not on `PATH`. Needed for Phase 3. |
 | AWS CLI | 2.38.2 | Credentials present in the shared credentials file, region `ap-south-2`. **Not used until Phase 6, with permission.** |
 | Terraform | Not installed | Needed in Phase 6 (`winget install Hashicorp.Terraform`) |
@@ -107,7 +131,7 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 | # | Skill | Location | Status |
 |---|---|---|---|
 | 1 | Python | `src/rideops/config.py`, `src/rideops/generators/` | Implemented and tested (generators for all 10 source datasets) |
-| 2 | SQL development and optimization | `sql/` | Not implemented |
+| 2 | SQL development and optimization | `sql/`, `docs/sql-optimization.md` | Implemented and tested |
 | 3 | Apache Spark / PySpark | `src/rideops/pipelines/` | Not implemented |
 | 4 | Databricks notebooks and workflows | `databricks/notebooks/`, `databricks/resources/` | Not implemented |
 | 5 | Databricks SQL | `databricks/sql/` | Not implemented |
@@ -119,7 +143,7 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 | 11 | Structured Streaming | `src/rideops/streaming/`, `databricks/notebooks/` | Not implemented |
 | 12 | AWS services | `src/rideops/storage/`, `infra/terraform/` | Not implemented |
 | 13 | Databricks compute and permissions | `databricks/`, `docs/databricks-setup.md` | Not implemented |
-| 14 | BI job and query monitoring | `src/rideops/monitoring/`, `backend/` | Not implemented |
+| 14 | BI job and query monitoring | `src/rideops/monitoring/tracker.py`, `sql/analytics/08_pipeline_monitoring.sql`, `backend/` | Implemented and tested (tracking + SQL); API/UI pending |
 | 15 | Cloud usage and cost reporting | `src/rideops/generators/ops.py` (simulated cost data), `src/rideops/costs/`, `sql/` | Simulated locally (data only; reporting not implemented) |
 | 16 | Production-quality code and automated tests | `tests/`, `pyproject.toml` (ruff, pytest) | Implemented and tested (Phase 1a scope) |
 | 17 | Git and GitHub | repository, `CONTRIBUTING.md`, PR template | Configuration example provided |
@@ -137,6 +161,6 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 
 ## 7. Next steps
 
-1. Phase 2: PostgreSQL in Docker (compose), `analytics`/`ops`/`staging` schemas, loader for landing files,
-   analytical SQL (joins, CTEs, window functions), data-quality and monitoring SQL, indexes + EXPLAIN ANALYZE notes.
+1. Phase 3: local Spark + Delta Lake medallion pipelines (bronze/silver/gold), structured streaming of ride events,
+   transformation tests.
 2. Optional at any time: install Python 3.12 and recreate `.venv` (D1).

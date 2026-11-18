@@ -1,7 +1,7 @@
 # RideOps — Data Engineering & Platform Operations Platform
 
-> **Status: Phase 1 complete.** Synthetic generators for all 10 source datasets are implemented and tested.
-> PostgreSQL and SQL analytics (Phase 2) are next.
+> **Status: Phase 2 complete.** Synthetic data generators and the PostgreSQL pipeline (incremental load, SQL ELT,
+> data-quality checks, 45 analytical queries) are implemented and tested. PySpark + Delta Lake (Phase 3) is next.
 > See [PROJECT_STATUS.md](PROJECT_STATUS.md) for what is done, what is in progress, and what has been verified.
 > This README only describes features as implemented once they actually are.
 
@@ -110,9 +110,15 @@ pip install -e ".[dev]"
 python -m rideops.generators --scale small
 python -m rideops.generators --help
 
-# 4. Run tests and linters
+# 4. Start PostgreSQL and run the SQL pipeline (needs Docker Desktop running)
+copy .env.example .env            # then set POSTGRES_PASSWORD in .env
+docker compose up -d
+python -m rideops.db all          # migrate -> load -> transform -> analytics -> quality checks
+
+# 5. Run tests and linters
 pytest                             # all tests
 pytest -m "not slow"               # skip full-scale tests
+pytest -m postgres                 # PostgreSQL end-to-end tests (skipped if no database)
 ruff check src tests
 ruff format --check src tests
 ```
