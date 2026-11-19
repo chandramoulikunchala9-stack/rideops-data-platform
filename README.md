@@ -1,156 +1,182 @@
 # RideOps — Data Engineering & Platform Operations Platform
 
-> **Status: Phase 2 complete.** Synthetic data generators and the PostgreSQL pipeline (incremental load, SQL ELT,
-> data-quality checks, 45 analytical queries) are implemented and tested. PySpark + Delta Lake (Phase 3) is next.
-> See [PROJECT_STATUS.md](PROJECT_STATUS.md) for what is done, what is in progress, and what has been verified.
-> This README only describes features as implemented once they actually are.
+An end-to-end data platform for a **fictional** ride-booking company operating in six Indian cities.
+Synthetic operational data flows through **two independently implemented pipelines**: a PostgreSQL SQL
+warehouse and a PySpark + Delta Lake medallion lakehouse. The two reconcile exactly. The results are
+served by a FastAPI backend and a React + TypeScript dashboard, with pipeline monitoring, data-quality
+checks, alerting, incident management and cloud cost reporting.
 
-RideOps is a portfolio-grade data platform for a **fictional** ride-booking company that operates in several cities.
-It takes synthetic operational data through ingestion, a Bronze/Silver/Gold lakehouse, analytics, pipeline monitoring,
-data-quality checks and cloud cost reporting, and serves the results through a REST API and a React dashboard.
+> All business data is **synthetic**. All cost figures are **simulated** and labelled as such, unless loaded
+> from a real AWS Cost and Usage Report. Cloud components (AWS, Databricks, hosting) are written and
+> validated but **not deployed to real accounts**; see [Known limitations](#known-limitations).
+> Progress and verification evidence: [PROJECT_STATUS.md](PROJECT_STATUS.md).
 
-All data is **synthetic**. All cost figures are **simulated** unless a section is explicitly labeled as real AWS billing data.
+![Overview dashboard](docs/screenshots/overview.png)
 
----
+## The business problem
 
-## Business problem
+RideOps generates bookings, payments, ride and app events, driver and customer data, pipeline logs and
+cloud bills. The data team must:
 
-The company produces bookings, payments, ride events, driver activity, app events, pipeline logs and cloud billing records.
-It needs a platform that:
-
-- ingests that data reliably, whether it arrives as batch files, from an API, or as a stream;
-- turns raw records into clean, trusted analytical tables;
-- answers business questions (revenue by city, driver performance, cancellations, payments);
-- tells the platform team when pipelines fail, run long, receive bad data or go stale;
-- shows what the platform costs to run and warns before budgets are exceeded.
+- ingest it reliably, whether it arrives as batch files, from an API, or as a stream, incrementally and exactly once;
+- turn messy raw data (duplicates, nulls, bad formats, orphan keys, late events) into trusted tables;
+- answer business questions: revenue by city, demand peaks, driver performance, cancellations, payment failures;
+- know when pipelines fail, run long, receive bad data or go stale, and fix it fast;
+- know what the platform costs, and get warned before the budget is blown.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Sources
-        GEN["Synthetic data generator (Python)"]
-        RESTSRC["REST source (mock API)"]
-        EVT["Ride event stream (JSON files)"]
-    end
-
-    subgraph Lakehouse["Lakehouse: local Delta Lake, optional S3 / Databricks"]
-        LAND[("Landing / raw files")]
-        BRZ[("Bronze")]
-        SLV[("Silver")]
-        GLD[("Gold")]
-    end
-
-    subgraph Postgres["PostgreSQL"]
-        SERVE[("analytics schema")]
-        OPS[("ops schema: runs, DQ, costs")]
-    end
-
-    GEN --> LAND
-    RESTSRC --> ING["Python ingestion"]
-    LAND --> ING
-    ING --> BRZ
-    EVT --> STRM["Structured Streaming / Auto Loader"]
-    STRM --> BRZ
-    BRZ --> SLV --> GLD
-    GLD --> SERVE
-    ING -. run logs .-> OPS
-    SLV -. quality results .-> OPS
-    COST["Cost data: simulated, optional AWS CUR"] --> OPS
-    SERVE --> API["FastAPI REST API"]
-    OPS --> API
-    API --> UI["React + TypeScript dashboard"]
+    GEN["Synthetic sources<br/>10 datasets, deliberate defects"] --> LAND[("Landing<br/>local / S3")]
+    LAND -->|"COPY · schema contract"| RAW[("raw")]
+    RAW -->|"watermark · MERGE"| CORE[("core")]
+    CORE --> GOLD1[("analytics")]
+    LAND -->|"file stream / Auto Loader"| BRZ[("bronze")]
+    BRZ -->|"foreachBatch MERGE"| SLV[("silver")]
+    SLV -->|"Change Data Feed"| GOLD2[("gold")]
+    BRZ -->|"watermark · windows"| WIN[("ride_event_windows")]
+    GOLD2 -->|"export"| LH[("lakehouse")]
+    GOLD1 <-->|"reconcile: 0/540 diffs"| LH
+    GOLD1 --> API["FastAPI"]
+    OPS[("ops: runs · DQ · alerts<br/>incidents · costs")] --> API
+    API --> UI["React + TS dashboard"]
 ```
 
-A fuller explanation, including the design decisions behind it, is in [docs/architecture.md](docs/architecture.md).
+Details: [architecture](docs/architecture.md) · [data flow](docs/data-flow.md).
 
-## Tech stack (planned)
+## Tech stack
 
-| Area | Technologies |
+| Area | Technologies (pinned versions) |
 |---|---|
-| Data engineering | Python, PySpark, Delta Lake, Spark Structured Streaming |
-| Databricks | Notebooks, Databricks SQL, Lakeflow Jobs, Lakeflow Declarative Pipelines (DLT), Auto Loader, Unity Catalog, Asset Bundles |
-| Storage & database | Local filesystem, AWS S3 (optional), PostgreSQL |
-| Backend | FastAPI, Pydantic, REST/JSON |
-| Frontend | React, TypeScript, Vite, HTML5/CSS3, charting library |
-| Infra & automation | Git, GitHub Actions (YAML), Terraform, Databricks Asset Bundles, Docker |
-| Quality | pytest, ruff, frontend test runner, SQL validation |
+| Data engineering | Python 3.10–3.12, PySpark 4.2.0, Delta Lake 4.4.1, Structured Streaming |
+| SQL | PostgreSQL 17.5: CTEs, window functions, MERGE, generated columns, partial indexes, plpgsql |
+| Databricks | Asset Bundles, Lakeflow Jobs, Lakeflow Declarative Pipelines (DLT), Auto Loader, Unity Catalog, Databricks SQL, system tables |
+| Backend | FastAPI 0.162, Pydantic 2, psycopg 3 + pool, uvicorn |
+| Frontend | React 19, TypeScript 6, Vite 8, React Router 7, Recharts 3, Vitest |
+| Cloud & IaC | AWS S3, IAM, Budgets, CUR 2.0 (boto3); Terraform 1.17 (AWS provider 6.73) |
+| DevOps | Docker / Compose, GitHub Actions, Dependabot, ruff, ESLint, actionlint |
 
-Exact versions are pinned in each phase as dependencies are added.
+## Features
 
-## Repository layout
+**Data engineering**
+- Reproducible generators: 100k bookings, 86k payments, 373k ride events, 356k app events; exact-count
+  defects recorded in a manifest.
+- Incremental, exactly-once ingestion: CSV and JSON, schema contracts, checksums, retries, ingestion log.
+- SQL ELT: watermark-based, `ROW_NUMBER` versioning, `MERGE` upserts, quarantine table, `dq_flags`.
+- Medallion lakehouse: bronze file streams → silver `foreachBatch` MERGE → **CDF-driven incremental gold**.
+- Streaming: event-time windows, watermark, `dropDuplicatesWithinWatermark`, checkpoints, a replay tool for live demos.
+- Delta Lake tour: ACID, schema enforcement and evolution, MERGE, time travel, history, OPTIMIZE/ZORDER, VACUUM.
+- Databricks implementation: bundle, jobs with a data-quality gate, DLT with SCD1 + SCD2, Auto Loader, Unity Catalog with masks and row filters.
 
-```
-rideops-data-platform/
-├── src/rideops/          Python package: generators, ingestion, Spark pipelines, quality, monitoring, costs
-├── sql/                  PostgreSQL DDL, analytics queries, data-quality and monitoring SQL
-├── databricks/           Notebooks, DLT pipelines, Databricks SQL, Unity Catalog, Asset Bundle (databricks.yml)
-├── backend/              FastAPI application
-├── frontend/             React + TypeScript dashboard
-├── infra/terraform/      AWS S3 + IAM infrastructure as code
-├── monitoring/           Runbooks and incident history
-├── tests/                Unit and integration tests
-├── scripts/              Developer helper scripts
-├── docs/                 Architecture, setup, deployment, security, cost and interview guides
-├── data/                 Local generated data and lakehouse files (git-ignored)
-└── .github/              CI workflows and pull request template
-```
+**Operations**
+- Every run tracked (`ops.pipeline_runs` + logs), simulated history plus real runs, and a **real retry** from the UI.
+- 18 SQL + 13 Spark data-quality checks (validity, uniqueness, completeness, referential, volume,
+  freshness, schema, reconciliation).
+- 6 alert rules (failed, long-running, stale, DQ failed, budget, cost anomaly) with de-duplication,
+  auto-resolve and an optional webhook.
+- Incident history, 8 runbooks, and a **simulated incident** to practise on.
+- Cost reporting: by service, workload and environment; trends; z-score anomalies; budget forecast;
+  untagged spend; most expensive jobs.
 
-## Getting started
+**Product**
+- 22 REST endpoints with OpenAPI docs, pagination, validation and uniform errors.
+- 8-page responsive dashboard with a CVD-validated chart palette, a table view for every chart,
+  light/dark themes, and URL-based filters.
+
+## Quick start
+
+Prerequisites: Python 3.10+, Docker Desktop, Node 22+. Details: [local development](docs/local-development.md).
 
 ```bash
-# 1. Create and activate a virtual environment (Python 3.10+)
-py -3 -m venv .venv
-.venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
-
-# 2. Install the package in editable mode, with dev tools
+py -3 -m venv .venv && .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
 pip install -e ".[dev]"
+copy .env.example .env                                 # set POSTGRES_PASSWORD
+docker compose up -d postgres
 
-# 3. Generate synthetic data into data/landing/ (small: ~3 s, full: ~30 s, ~935k records)
-python -m rideops.generators --scale small
-python -m rideops.generators --help
+python -m rideops.generators --scale full              # ~30 s
+python -m rideops.db all                               # load → transform → analytics → DQ
+python -m rideops.monitoring seed-incidents
+python -m rideops.monitoring alerts
 
-# 4. Start PostgreSQL and run the SQL pipeline (needs Docker Desktop running)
-copy .env.example .env            # then set POSTGRES_PASSWORD in .env
-docker compose up -d
-python -m rideops.db all          # migrate -> load -> transform -> analytics -> quality checks
-
-# 5. Run tests and linters
-pytest                             # all tests
-pytest -m "not slow"               # skip full-scale tests
-pytest -m postgres                 # PostgreSQL end-to-end tests (skipped if no database)
-ruff check src tests
-ruff format --check src tests
+uvicorn rideops.api.main:app --reload                  # http://localhost:8000/docs
+cd frontend && npm ci && npm run dev                   # http://localhost:5173
 ```
 
-Each generation run writes a manifest to `data/landing/_manifests/` that records the seed, row counts
-and the exact number of defects injected per entity.
+Lakehouse (Spark in Docker):
 
-Prerequisites identified in Phase 0:
+```bash
+docker compose --profile spark build spark
+docker compose --profile spark run --rm spark python -m rideops.spark all
+docker compose --profile spark run --rm spark python -m rideops.spark delta-demo
+```
 
-- Python 3.12 recommended (3.10 is installed but reached end of life in October 2026)
-- Java 17 or 21 for Spark
-- Node.js 20+ and npm
-- Docker Desktop (for PostgreSQL, and for running Spark reliably on Windows)
-- Git
+Full stack as containers: `docker compose --profile app up -d --build` → http://localhost:8080.
 
-Optional, for cloud phases: AWS CLI, Terraform, Databricks CLI.
+## Screenshots
 
-## Sections to be completed in later phases
+| | |
+|---|---|
+| ![Business analytics](docs/screenshots/analytics.png) | ![Pipelines](docs/screenshots/pipelines.png) |
+| ![Pipeline detail with incident](docs/screenshots/pipeline-detail.png) | ![Data quality](docs/screenshots/data-quality.png) |
+| ![Cloud costs](docs/screenshots/costs.png) | ![Alerts and incidents](docs/screenshots/alerts-incidents.png) |
 
-- Features — after Phases 1–7
-- Screenshots — Phase 7
-- API documentation — Phase 5 (FastAPI serves interactive docs at `/docs`)
-- Testing — pytest suite started in Phase 1 (see Getting started); CI in Phase 8
-- Deployment — Phase 9
-- Skills demonstrated (coverage matrix) — maintained in [PROJECT_STATUS.md](PROJECT_STATUS.md)
+Mobile (390 px): [docs/screenshots/mobile-390px.png](docs/screenshots/mobile-390px.png).
+
+## API documentation
+
+Interactive OpenAPI docs are served at **`/docs`** (Swagger UI) and `/redoc` while the API runs. Main endpoints:
+
+`GET /api/v1/health` · `/analytics/{overview,revenue,bookings,drivers,cancellations,payments}` ·
+`/pipelines`, `/pipelines/{name}`, `/pipelines/{name}/logs`, `POST /pipelines/{name}/retry`, `/runs/{id}` ·
+`/monitoring/summary`, `/monitoring/alerts` (+ evaluate, acknowledge), `/incidents` ·
+`/costs/{summary,trends}` · `/data-quality` · `/settings/access`
+
+## Testing
+
+| Suite | Command | Result (2026-11-19) |
+|---|---|---|
+| Python unit + integration (PostgreSQL), API | `pytest -m "not spark"` | 107 passed (+ storage, CUR and bundle tests since; see status file) |
+| Spark + Delta | `docker compose --profile spark run --rm spark pytest tests/spark` | 15 passed |
+| Frontend | `cd frontend && npm test` | 21 passed |
+| Lint / types | `ruff check`, `ruff format --check`, `npm run lint`, `npm run typecheck` | clean |
+| Infra / CI | `terraform validate` (Docker), `actionlint` | valid / no findings |
+| Deployment | `python scripts/verify_deployment.py --api ... --web ...` | 12/12 on the local Docker stack |
+
+CI runs all of these on every pull request ([ci-cd](docs/ci-cd.md)).
+
+## Deployment
+
+- Local, production-style: Docker Compose `app` profile (verified).
+- Hosted (free tiers): Cloudflare Pages + Render + Neon. Configuration is ready (`render.yaml`,
+  `frontend/public/_redirects`); step-by-step guide in [deployment](docs/deployment.md).
+- AWS: [aws-setup](docs/aws-setup.md) · Databricks: [databricks-setup](docs/databricks-setup.md).
 
 ## Known limitations
 
-- Databricks-specific features (Auto Loader, Unity Catalog, DLT, Jobs) need a Databricks workspace to run.
-  Local PySpark equivalents will be provided, and each such feature will be marked with whether it was run in a real workspace.
-- Cost data is simulated by default. Real AWS billing integration is optional and off unless configured.
+- **Not deployed to real cloud accounts.** Terraform is validated but not applied; the Databricks bundle is
+  statically validated but not deployed; hosting is configured but needs your accounts. Each is labelled
+  "verification pending" in the status matrix.
+- Cost figures are **simulated** unless you load a CUR export.
+- The API has no authentication (read-mostly demo; retry disabled by default). See [security](docs/security.md).
+- Spark on an 8 GB laptop is slow (the full lakehouse run took about 1h50m, mostly streaming 92 micro-batches).
+- In the full replay, the streaming watermark dropped 0 late events (2 files per micro-batch plus
+  previous-batch watermark semantics). Late-event dropping is demonstrated in a dedicated test.
+- The REST-API source ingestion pattern is shown with the CUR/S3 loaders and the API itself, not an external third-party API.
+
+## Documentation
+
+[Architecture](docs/architecture.md) · [Data flow](docs/data-flow.md) · [Local development](docs/local-development.md) ·
+[SQL optimisation](docs/sql-optimization.md) · [AWS setup](docs/aws-setup.md) · [Databricks setup](docs/databricks-setup.md) ·
+[Deployment](docs/deployment.md) · [CI/CD](docs/ci-cd.md) · [Security](docs/security.md) ·
+[Cost management](docs/cost-management.md) · [Troubleshooting](docs/troubleshooting.md) ·
+[Runbooks](monitoring/runbooks/README.md) · [Incidents](monitoring/incidents/) · [**Interview guide**](docs/interview-guide.md)
+
+## Skills demonstrated
+
+The full matrix, with an exact location and verification status for each of the 28 skills, is in
+[PROJECT_STATUS.md § Skills coverage](PROJECT_STATUS.md#6-skills-coverage-matrix).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for branching and commit conventions.
+Branching and commit conventions: [CONTRIBUTING.md](CONTRIBUTING.md).

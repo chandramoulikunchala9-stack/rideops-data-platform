@@ -1,75 +1,113 @@
 # RideOps Architecture
 
-This document describes the target architecture and the decisions behind it.
-Implementation status for each component lives in [../PROJECT_STATUS.md](../PROJECT_STATUS.md).
+Implementation status for each component is in [../PROJECT_STATUS.md](../PROJECT_STATUS.md).
+For the path of a single record, see [data-flow.md](data-flow.md).
 
 ## 1. Design goals
 
-1. **Runs locally for free.** Every core feature works on a laptop with Python, Java, Node and Docker.
-2. **Cloud is optional and honest.** AWS S3, AWS billing data and Databricks are opt-in. Code that has only been
-   written for the cloud, and never run there, is labeled that way.
-3. **One source of truth per concern.** Business data lives in the lakehouse; the API reads curated copies from PostgreSQL;
-   operational metadata (runs, data-quality results, costs) lives in a dedicated `ops` schema.
-4. **Testable by design.** Transformations are plain functions that take and return DataFrames, so they can be unit-tested
-   without a cluster.
+1. **Runs locally for free.** Every core feature runs on a laptop with Python, Node and Docker.
+2. **Cloud is optional and honest.** AWS, Databricks and real billing data are opt-in. Code that has not
+   run in the cloud is labelled "cloud verification pending".
+3. **One source of truth per concern.** Business rules live in tested functions and SQL files. Pipeline
+   metadata lives in `ops`. Cost rows carry their `source`.
+4. **Testable by design.** Transformations are pure functions (DataFrame in, DataFrame out). SQL is executed in CI.
 
-## 2. Layers and data flow
+## 2. System context
 
-| Step | Component | What it does | Runs locally? |
-|---|---|---|---|
-| 1 | Generator (`src/rideops/generators`) | Creates reproducible synthetic customers, drivers, vehicles, bookings, payments, events, cost and run records, with deliberate defects (nulls, duplicates, late events) | Yes |
-| 2 | Landing zone (`data/landing` or `s3://…-raw`) | Raw CSV / JSON files, partitioned by source and ingestion date | Yes / optional S3 |
-| 3 | Ingestion (`src/rideops/ingestion`) | CSV, JSON, REST and incremental file ingestion, with retries, logging and ingestion metadata | Yes |
-| 4 | Bronze | Raw records stored as Delta, plus `_ingested_at`, `_source_file` and `_batch_id` | Yes |
-| 5 | Silver | Deduplicated, typed, validated records; rejected rows go to a quarantine table with a reason | Yes |
-| 6 | Gold | Business aggregates: daily bookings, revenue by city, driver performance, cancellations, payments, vehicle utilization | Yes |
-| 7 | Streaming | Ride events using Structured Streaming with event-time windows, watermarks and checkpoints; Auto Loader in Databricks | Local streaming: yes. Auto Loader: workspace only |
-| 8 | Serving (PostgreSQL `analytics`) | Gold tables loaded into Postgres for fast API queries | Yes |
-| 9 | Ops metadata (PostgreSQL `ops`) | Pipeline runs, logs, data-quality results, incidents, cost and usage | Yes |
-| 10 | API (`backend/`) | FastAPI REST endpoints under `/api/v1` | Yes |
-| 11 | Dashboard (`frontend/`) | React + TypeScript; all metrics come from the API | Yes |
+```mermaid
+flowchart LR
+    subgraph Sources
+        GEN["Synthetic sources<br/>(generators)"]
+        CUR["AWS CUR 2.0<br/>(optional)"]
+    end
+    subgraph Storage
+        LAND[("Landing<br/>local / S3")]
+    end
+    subgraph Processing
+        SQLP["SQL ELT<br/>PostgreSQL"]
+        SPARK["Spark + Delta<br/>Docker / Databricks"]
+    end
+    subgraph Serving
+        PG[("PostgreSQL<br/>analytics · lakehouse · ops")]
+        API["FastAPI"]
+        WEB["React dashboard"]
+    end
+    subgraph Platform
+        MON["Monitoring<br/>runs · DQ · alerts · incidents"]
+        IAC["Terraform · Asset Bundle<br/>GitHub Actions"]
+    end
+    GEN --> LAND --> SQLP --> PG
+    LAND --> SPARK --> PG
+    CUR --> PG
+    PG --> API --> WEB
+    SQLP -.-> MON
+    SPARK -.-> MON
+    MON --> PG
+```
 
-## 3. Key decisions
+## 3. Components
 
-### ADR-001: Separate Git repository for the project
-The parent `Desktop` folder is itself a Git repository. RideOps has its own repository inside
-`rideops-data-platform/` so that project history never mixes with unrelated personal files.
+| Component | Code | Responsibility |
+|---|---|---|
+| Generators | `src/rideops/generators/` | 10 reproducible synthetic datasets with exact-count defects and a manifest |
+| Storage | `src/rideops/storage/` | Local / S3 backends, idempotent checksum-based sync |
+| SQL pipeline | `src/rideops/ingestion/`, `src/rideops/db/`, `sql/` | Incremental COPY load, watermark + MERGE ELT, gold, 18 DQ checks, 45 analytics queries |
+| Lakehouse | `src/rideops/spark/` | Bronze (file streams), silver (foreachBatch MERGE), gold (CDF), streaming windows, DQ, export |
+| Databricks | `databricks/` | Asset Bundle, Lakeflow Jobs, DLT, Auto Loader notebooks, Unity Catalog, system-table SQL |
+| Monitoring | `src/rideops/monitoring/`, `monitoring/` | Run tracking, alert rules, incidents, runbooks, simulated incident |
+| Costs | `src/rideops/costs/`, `ops.cloud_costs` | Simulated costs, CUR 2.0 loader, anomalies, budget |
+| API | `src/rideops/api/` | REST endpoints, pooling, uniform errors, real retry runner |
+| Dashboard | `frontend/` | 8 pages, typed client, validated chart palette, responsive |
+| Infrastructure | `infra/terraform/`, `docker-compose.yml`, `backend/`, `render.yaml` | AWS resources, local stack, container images, hosting config |
+| CI | `.github/workflows/` | Lint, unit, PostgreSQL integration, Spark, frontend, Terraform |
 
-### ADR-002: Delta Lake locally through `delta-spark`
-Using the open-source Delta Lake library lets us demonstrate ACID writes, `MERGE`, schema enforcement and evolution,
-time travel, and `OPTIMIZE` locally, with the same table format Databricks uses.
+## 4. Key decisions (ADRs)
 
-### ADR-003: PostgreSQL as the serving and metadata store
-The API should not start a Spark session for each request. Gold tables are small aggregates, so copying them into
-PostgreSQL gives fast, indexable queries and lets us demonstrate SQL optimization (indexes, `EXPLAIN ANALYZE`).
-The same database holds operational metadata, because that is transactional, row-level data.
+**ADR-001: Separate Git repository.** The Desktop folder was itself a repository, so RideOps has its own,
+keeping personal files out of the project's history.
 
-### ADR-004: Run Spark in Docker on Windows (recommended, to confirm in Phase 3)
-Native Spark on Windows needs Hadoop helper binaries (`winutils.exe`, `hadoop.dll`) to write files, and is a common
-source of setup failures. A small Docker image containing Python and Java avoids this and matches Linux CI.
-Native Windows Spark stays as a fallback, since JDK 21 is already installed.
+**ADR-002: Two processing paths, reconciled.** The SQL warehouse path shows SQL engineering (MERGE, window
+functions, constraints). The Spark path shows the lakehouse. Both implement the same rules, and
+`ops.reconcile_lakehouse_daily()` proves they agree: 0 of 540 date×city cells differ, with identical
+totals (99,187 bookings, ₹13,095,490.51).
 
-### ADR-005: Retry endpoint runs a real local job or is disabled
-`POST /api/v1/pipelines/{id}/retry` will start a whitelisted local pipeline command and record a new run.
-If no runner is configured (`RETRY_RUNNER_ENABLED=false`), it returns `409 Conflict` with an explanation
-instead of pretending to succeed.
+**ADR-003: PostgreSQL as the serving and metadata store.** The API never starts Spark. Gold is small and
+indexed in Postgres, and operational metadata is transactional, row-level data.
 
-### ADR-006: Simulated cost data is labeled at the row level
-Every cost record carries a `source` column (`simulated`, `aws_cur`, `databricks_system_tables`).
-The API and UI show this label, so sample numbers are never mistaken for real spending.
+**ADR-004: Spark in Docker on Windows.** Confirmed in Phase 3. Native Spark on Windows needs Hadoop
+binaries. The `docker/spark` image (Python 3.11, Java 17, PySpark 4.2.0, delta-spark 4.4.1) matches CI.
 
-## 4. Environments
+**ADR-005: The retry endpoint runs real work or refuses.** Only whitelisted local pipelines can run, and
+only when `RETRY_RUNNER_ENABLED=true`. Otherwise the API returns 409 or 400 with the reason. It never
+fakes a success.
 
-| Environment | Storage | Compute | Database | Purpose |
+**ADR-006: Cost data is labelled per row.** `source` ∈ {simulated, aws_cur, databricks_system_tables}.
+The UI shows "SIMULATED".
+
+**ADR-007: Repair field-level problems, quarantine untrusted rows.** A malformed email is set to NULL and
+flagged; the customer is kept. A negative fare or an orphan key moves the row to quarantine. Throwing away
+a whole entity for one bad attribute loses good data.
+
+**ADR-008: Incremental everywhere.** Ingestion log and watermarks (SQL), checkpoints (Spark), Change Data
+Feed (gold). Re-runs with no new data do no work, which is tested.
+
+**ADR-009: Filters in the URL, colour by entity.** Dashboard filters live in query parameters, so views are
+shareable. Chart colours follow the entity (city), never its rank, and the palette is validated for
+colour-vision deficiency in both themes.
+
+**ADR-010: Free hosting stack.** Cloudflare Pages (static), Render (Docker API), Neon (Postgres, no
+30-day expiry). The limits were checked on 2026-11-19 and are listed in `deployment.md`.
+
+## 5. Environments
+
+| Environment | Storage | Compute | Database | Status |
 |---|---|---|---|---|
-| `local` | `./data` | Local Spark (Docker) | Postgres in Docker | Development and demos |
-| `dev` (optional) | S3 buckets from Terraform | Databricks workspace | Hosted Postgres | Cloud verification |
-| `prod` (documented only) | S3 | Databricks Jobs | Managed Postgres | Shows how targets would be promoted |
+| `local` | `./data` | Spark in Docker | Postgres in Docker | Running and verified |
+| `local` app stack | – | API + nginx containers | Postgres in Docker | Verified (12/12 checks) |
+| `dev` (cloud) | S3 via Terraform | Databricks bundle `-t dev` | Neon / RDS | Prepared, not applied |
+| `prod` | S3 | Databricks Jobs as a service principal | Managed Postgres | Documented |
 
-## 5. Security boundaries (summary)
+## 6. Security
 
-- No credentials in source code. Configuration comes from environment variables; AWS access uses profiles or IAM roles.
-- Least-privilege IAM: separate read/write permissions per bucket prefix.
-- Unity Catalog grants model four roles: Data Engineer, Data Analyst, Platform Administrator, Read-only User.
-
-Details go in `docs/security.md` (Phase 6).
+See [security.md](security.md): no secrets in code, least-privilege IAM scoped by prefix, Unity Catalog
+roles with masks and row filters, bound SQL parameters, non-root containers, TLS-only buckets.
