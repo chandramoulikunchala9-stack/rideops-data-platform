@@ -6,7 +6,7 @@
 #   databricks bundle deploy   -t dev      # uploads notebooks + wheel, creates jobs/pipeline
 #   databricks bundle run rideops_daily -t dev
 #
-# STATUS: configuration written and syntax-checked locally (tests/unit/test_bundle_config.py);
+# STATUS: configuration written and syntax-checked locally (pipelines/tests/unit/test_bundle_config.py);
 # not yet deployed to a real workspace. See docs/databricks-setup.md.
 
 bundle:
@@ -35,7 +35,7 @@ variables:
 artifacts:
   rideops_wheel:
     type: whl
-    path: ..
+    path: ../pipelines          # the `rideops` package, relative to this file
     build: python -m pip wheel --no-deps --wheel-dir dist .
 
 targets:

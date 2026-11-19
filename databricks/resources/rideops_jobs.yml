@@ -53,7 +53,7 @@ resources:
           notebook_task:
             notebook_path: ../notebooks/01_bronze_autoloader.py
           libraries:
-            - whl: ../dist/*.whl
+            - whl: ../../pipelines/dist/*.whl
           max_retries: 2
           min_retry_interval_millis: 300000
           retry_on_timeout: true
@@ -66,7 +66,7 @@ resources:
           notebook_task:
             notebook_path: ../notebooks/02_silver_merge.py
           libraries:
-            - whl: ../dist/*.whl
+            - whl: ../../pipelines/dist/*.whl
           max_retries: 1
           min_retry_interval_millis: 300000
 
@@ -77,7 +77,7 @@ resources:
           notebook_task:
             notebook_path: ../notebooks/05_data_quality.py
           libraries:
-            - whl: ../dist/*.whl
+            - whl: ../../pipelines/dist/*.whl
 
         - task_key: gold_aggregations
           depends_on:
@@ -86,7 +86,7 @@ resources:
           notebook_task:
             notebook_path: ../notebooks/03_gold_aggregations.py
           libraries:
-            - whl: ../dist/*.whl
+            - whl: ../../pipelines/dist/*.whl
           max_retries: 1
 
     # Ride events: Auto Loader + Structured Streaming, run every 15 minutes as an incremental
@@ -118,7 +118,7 @@ resources:
           spec:
             client: "2"
             dependencies:
-              - ../dist/*.whl
+              - ../../pipelines/dist/*.whl
 
     # One-off backfill / reprocessing for a date range (batch processing example).
     rideops_backfill:
@@ -140,4 +140,4 @@ resources:
           spec:
             client: "2"
             dependencies:
-              - ../dist/*.whl
+              - ../../pipelines/dist/*.whl

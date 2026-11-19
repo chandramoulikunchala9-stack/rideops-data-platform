@@ -2,8 +2,8 @@
 
 > **Verification status:** everything under `databricks/` is written for Databricks on AWS and
 > checked locally (YAML structure, file references, task graph, Python syntax:
-> `tests/unit/test_bundle_config.py`). It has **not yet been deployed to a real workspace**.
-> The transformation logic the notebooks import *is* tested, in Spark 4.2 with Delta 4.4 (`tests/spark/`).
+> `pipelines/tests/unit/test_bundle_config.py`). It has **not yet been deployed to a real workspace**.
+> The transformation logic the notebooks import *is* tested, in Spark 4.2 with Delta 4.4 (`pipelines/tests/spark/`).
 
 ## What is in `databricks/`
 
@@ -20,7 +20,7 @@
 | `notebooks/06_batch_backfill.py` | Batch reprocessing of a date range | – |
 | `unity_catalog/01_catalog_and_schemas.sql` | Storage credential, external locations, catalog, schemas, **volumes** | – |
 | `unity_catalog/02_roles_and_grants.sql` | 4 roles, least-privilege grants, **column masks**, **row filters** | – |
-| `sql/01_gold_dashboards.sql` | Databricks SQL dashboard queries, time travel | `sql/analytics/` (PostgreSQL) |
+| `sql/01_gold_dashboards.sql` | Databricks SQL dashboard queries, time travel | `pipelines/sql/analytics/` (PostgreSQL) |
 | `sql/02_platform_monitoring_system_tables.sql` | Job runs, slow BI queries, **real DBU cost** from `system.billing.*` | `ops.cloud_costs` (simulated) |
 | `policies/job_cluster_policy.json` | Compute policy: node allow-list, max workers, spot, mandatory tags | – |
 

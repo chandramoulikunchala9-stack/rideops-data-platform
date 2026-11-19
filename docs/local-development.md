@@ -15,7 +15,7 @@
 
 ```bash
 py -3 -m venv .venv && .venv\Scripts\activate        # macOS/Linux: source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e "./pipelines[dev,aws]" -e "./backend[dev]"
 copy .env.example .env                               # set POSTGRES_PASSWORD (any random string)
 docker compose up -d postgres
 cd frontend && npm ci && cd ..
@@ -28,7 +28,7 @@ python -m rideops.generators --scale small       # or full (100k bookings, ~30 s
 python -m rideops.db all                         # incremental: re-runs only process new files
 python -m rideops.monitoring seed-incidents
 python -m rideops.monitoring alerts
-uvicorn rideops.api.main:app --reload            # http://localhost:8000/docs
+uvicorn rideops_api.main:app --reload            # http://localhost:8000/docs
 cd frontend && npm run dev                       # http://localhost:5173 (proxies /api to :8000)
 ```
 
@@ -45,10 +45,11 @@ docker compose --profile spark run --rm spark python -m rideops.spark stream --l
 
 | What | Command |
 |---|---|
-| Python lint + format | `ruff check src tests && ruff format --check src tests` |
-| Fast unit tests | `pytest -m "not slow and not postgres"` |
-| Everything except Spark | `pytest -m "not spark"` (needs PostgreSQL) |
-| Spark | `docker compose --profile spark run --rm spark pytest tests/spark` |
+| Python lint + format | `ruff check pipelines backend scripts && ruff format --check pipelines backend scripts` |
+| Fast pipeline unit tests | `pytest pipelines -m "not slow and not postgres and not spark"` |
+| Pipelines incl. PostgreSQL | `pytest pipelines -m "not spark"` |
+| Backend API | `pytest backend` (needs PostgreSQL) |
+| Spark | `docker compose --profile spark run --rm spark pytest pipelines/tests/spark` |
 | Frontend | `cd frontend && npm run lint && npm run typecheck && npm test && npm run build` |
 | Terraform | see `docs/aws-setup.md` (runs in Docker) |
 | Workflows | `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12` |
@@ -66,4 +67,5 @@ python -m rideops.db quality && python -m rideops.monitoring alerts   # alert au
 
 ## Project layout
 
-See the README. Each Python sub-package has a `__main__.py` CLI with `--help`.
+See the README's *Repository layout*. Each sub-package of `rideops` has a `__main__.py` CLI with `--help`.
+Run all commands from the **repository root** (that is where `.env` and `data/` live).

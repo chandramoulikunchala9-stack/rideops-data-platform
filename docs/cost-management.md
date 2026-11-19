@@ -18,7 +18,7 @@ real spending.** The dashboard labels them "SIMULATED".
 
 | Need | Where |
 |---|---|
-| Daily / monthly cost | `GET /api/v1/costs/trends`, `GET /api/v1/costs/summary?month=YYYY-MM`, `sql/analytics/09_cloud_costs.sql` |
+| Daily / monthly cost | `GET /api/v1/costs/trends`, `GET /api/v1/costs/summary?month=YYYY-MM`, `pipelines/sql/analytics/09_cloud_costs.sql` |
 | Cost by service / workload / environment | `costs/summary` breakdowns; `cost_by_workload_and_environment` query |
 | Usage trends | `costs/trends?group_by=service\|workload\|environment\|provider` |
 | Anomaly detection | Days more than 3 standard deviations above the trailing 14-day mean (`daily_cost_anomalies`, `cost_anomaly` alert) |

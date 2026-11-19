@@ -2,10 +2,10 @@ name: Spark
 
 on:
   pull_request:
-    paths: ["src/rideops/spark/**", "src/rideops/generators/**", "tests/spark/**", "pyproject.toml", ".github/workflows/spark.yml"]
+    paths: ["pipelines/src/rideops/spark/**", "pipelines/src/rideops/generators/**", "pipelines/tests/spark/**", "pipelines/pyproject.toml", ".github/workflows/spark.yml"]
   push:
     branches: [main]
-    paths: ["src/rideops/spark/**", "src/rideops/generators/**", "tests/spark/**", "pyproject.toml", ".github/workflows/spark.yml"]
+    paths: ["pipelines/src/rideops/spark/**", "pipelines/src/rideops/generators/**", "pipelines/tests/spark/**", "pipelines/pyproject.toml", ".github/workflows/spark.yml"]
   workflow_dispatch:
 
 permissions:
@@ -33,10 +33,10 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - run: pip install -e ".[dev,spark]"
+      - run: pip install -e "./pipelines[dev,spark]"
       - name: Cache Delta Lake JARs (Ivy)
         uses: actions/cache@v4
         with:
           path: ~/.ivy2.5.2
-          key: ivy-${{ hashFiles('pyproject.toml') }}
-      - run: pytest tests/spark -q
+          key: ivy-${{ hashFiles('pipelines/pyproject.toml') }}
+      - run: pytest pipelines/tests/spark -q

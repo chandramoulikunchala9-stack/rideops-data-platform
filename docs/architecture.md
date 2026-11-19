@@ -49,14 +49,14 @@ flowchart LR
 
 | Component | Code | Responsibility |
 |---|---|---|
-| Generators | `src/rideops/generators/` | 10 reproducible synthetic datasets with exact-count defects and a manifest |
-| Storage | `src/rideops/storage/` | Local / S3 backends, idempotent checksum-based sync |
-| SQL pipeline | `src/rideops/ingestion/`, `src/rideops/db/`, `sql/` | Incremental COPY load, watermark + MERGE ELT, gold, 18 DQ checks, 45 analytics queries |
-| Lakehouse | `src/rideops/spark/` | Bronze (file streams), silver (foreachBatch MERGE), gold (CDF), streaming windows, DQ, export |
+| Generators | `pipelines/src/rideops/generators/` | 10 reproducible synthetic datasets with exact-count defects and a manifest |
+| Storage | `pipelines/src/rideops/storage/` | Local / S3 backends, idempotent checksum-based sync |
+| SQL pipeline | `pipelines/src/rideops/ingestion/`, `pipelines/src/rideops/db/`, `pipelines/sql/` | Incremental COPY load, watermark + MERGE ELT, gold, 18 DQ checks, 45 analytics queries |
+| Lakehouse | `pipelines/src/rideops/spark/` | Bronze (file streams), silver (foreachBatch MERGE), gold (CDF), streaming windows, DQ, export |
 | Databricks | `databricks/` | Asset Bundle, Lakeflow Jobs, DLT, Auto Loader notebooks, Unity Catalog, system-table SQL |
-| Monitoring | `src/rideops/monitoring/`, `monitoring/` | Run tracking, alert rules, incidents, runbooks, simulated incident |
-| Costs | `src/rideops/costs/`, `ops.cloud_costs` | Simulated costs, CUR 2.0 loader, anomalies, budget |
-| API | `src/rideops/api/` | REST endpoints, pooling, uniform errors, real retry runner |
+| Monitoring | `pipelines/src/rideops/monitoring/`, `monitoring/` | Run tracking, alert rules, incidents, runbooks, simulated incident |
+| Costs | `pipelines/src/rideops/costs/`, `ops.cloud_costs` | Simulated costs, CUR 2.0 loader, anomalies, budget |
+| API | `backend/src/rideops_api/` | REST endpoints, pooling, uniform errors, real retry runner |
 | Dashboard | `frontend/` | 8 pages, typed client, validated chart palette, responsive |
 | Infrastructure | `infra/terraform/`, `docker-compose.yml`, `backend/`, `render.yaml` | AWS resources, local stack, container images, hosting config |
 | CI | `.github/workflows/` | Lint, unit, PostgreSQL integration, Spark, frontend, Terraform |
@@ -75,7 +75,7 @@ totals (99,187 bookings, ₹13,095,490.51).
 indexed in Postgres, and operational metadata is transactional, row-level data.
 
 **ADR-004: Spark in Docker on Windows.** Confirmed in Phase 3. Native Spark on Windows needs Hadoop
-binaries. The `docker/spark` image (Python 3.11, Java 17, PySpark 4.2.0, delta-spark 4.4.1) matches CI.
+binaries. The `pipelines/Dockerfile` image (Python 3.11, Java 17, PySpark 4.2.0, delta-spark 4.4.1) matches CI.
 
 **ADR-005: The retry endpoint runs real work or refuses.** Only whitelisted local pipelines can run, and
 only when `RETRY_RUNNER_ENABLED=true`. Otherwise the API returns 409 or 400 with the reason. It never

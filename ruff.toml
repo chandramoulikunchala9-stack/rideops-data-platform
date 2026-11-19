@@ -1,0 +1,21 @@
+# Shared lint/format rules for every Python project in the repo (pipelines/, backend/, scripts/).
+line-length = 100
+target-version = "py310"
+src = ["pipelines/src", "pipelines/tests", "backend/src", "backend/tests"]
+
+[lint]
+# E/W: style, F: pyflakes (unused imports, undefined names), I: import sorting,
+# B: common bugs, UP: modern syntax, SIM: simplifications
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+
+[lint.isort]
+known-first-party = ["rideops", "rideops_api"]
+
+[lint.pycodestyle]
+# The formatter wraps code at 100; the hard limit leaves room for embedded SQL and log messages.
+max-line-length = 120
+
+[lint.per-file-ignores]
+# PySpark column expressions read best as one chained line; the formatter still runs everywhere.
+"pipelines/src/rideops/spark/*" = ["E501"]
+"pipelines/tests/spark/*" = ["E501"]

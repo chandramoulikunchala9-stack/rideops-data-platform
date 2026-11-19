@@ -1,1 +1,0 @@
-"""RideOps REST API (FastAPI)."""

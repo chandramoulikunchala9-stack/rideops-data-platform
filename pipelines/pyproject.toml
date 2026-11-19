@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rideops"
+version = "0.1.0"
+description = "RideOps data platform: synthetic sources, ingestion, SQL and Spark/Delta pipelines, data quality, monitoring and cost analytics."
+readme = "README.md"
+requires-python = ">=3.10"
+# Runtime dependencies are pinned to exact versions so every machine (and CI) builds the same environment.
+dependencies = [
+    "faker==40.54.0",
+    "orjson==3.13.0",
+    "pydantic-settings==2.15.0",
+    "psycopg[binary]==3.3.9",
+    "pyyaml==6.0.3",
+]
+
+[project.optional-dependencies]
+# Spark runs in the pipelines/Dockerfile image and in CI; optional on a Windows laptop.
+spark = [
+    "pyspark==4.2.0",
+    "delta-spark==4.4.1",
+]
+# AWS S3 storage backend and Cost and Usage Report loader.
+aws = [
+    "boto3==1.44.6",
+]
+dev = [
+    "pytest==9.2.0",
+    "ruff==0.17.5",
+    "boto3==1.44.6",
+    "moto[s3]==5.2.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: tests that generate full-scale datasets (deselect with -m 'not slow')",
+    "postgres: tests that need a running PostgreSQL (skipped if unavailable)",
+    "spark: tests that need PySpark + Delta Lake (run in the spark container or CI)",
+]

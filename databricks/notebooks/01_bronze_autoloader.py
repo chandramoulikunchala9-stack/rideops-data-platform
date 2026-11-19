@@ -13,7 +13,7 @@
 # MAGIC | `schemaEvolutionMode = rescue` | unexpected new columns land in `_rescued_data` instead of failing the stream |
 # MAGIC | `trigger(availableNow=True)` | process what is there, then stop: a scheduled job, not an always-on cluster |
 # MAGIC
-# MAGIC Local equivalent (tested): `src/rideops/spark/bronze.py` (file stream + checkpoint).
+# MAGIC Local equivalent (tested): `pipelines/src/rideops/spark/bronze.py` (file stream + checkpoint).
 # MAGIC **Status:** written for Databricks; cloud verification pending.
 
 # COMMAND ----------
@@ -24,7 +24,7 @@ catalog = dbutils.widgets.get("catalog")
 LANDING = f"/Volumes/{catalog}/landing/raw"
 CHECKPOINTS = f"/Volumes/{catalog}/landing/checkpoints"
 
-# entity -> file format. Matches the landing contract in src/rideops/ingestion/postgres_loader.py.
+# entity -> file format. Matches the landing contract in pipelines/src/rideops/ingestion/postgres_loader.py.
 SOURCES = {
     "vehicles": "json",
     "drivers": "csv",

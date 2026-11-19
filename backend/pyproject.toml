@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rideops-api"
+version = "0.1.0"
+description = "RideOps REST API: analytics, pipeline monitoring, data quality and cost reporting."
+readme = "README.md"
+requires-python = ">=3.10"
+# Also requires the `rideops` data platform package from ../pipelines (install it first:
+# pip install -e ./pipelines -e "./backend[dev]"). It is not listed here because pip does not
+# support relative path dependencies in pyproject.toml.
+dependencies = [
+    "fastapi==0.162.5",
+    "uvicorn[standard]==0.54.0",
+    "psycopg[binary]==3.3.9",
+    "psycopg-pool==3.3.3",
+    "pydantic-settings==2.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.2.0",
+    "ruff==0.17.5",
+    "httpx==0.28.1",
+]
+
+[project.scripts]
+rideops-api = "rideops_api.main:run"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "postgres: tests that need a running PostgreSQL (skipped if unavailable)",
+]

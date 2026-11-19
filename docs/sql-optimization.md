@@ -76,7 +76,7 @@ Both plans "use the index", so look for the `Index Cond` line, not only the inde
 | Stored generated column `booking_date` (IST business day) | `core.bookings` | Day-level reports filter and group on a plain column instead of computing `(requested_at AT TIME ZONE ...)::date` on every row. The composite index can then use it. |
 | Partial index `WHERE driver_id IS NOT NULL` | `ix_bookings_driver` | About 7% of bookings have no driver. Leaving them out keeps the index smaller. |
 | Partial index `WHERE status <> 'SUCCESS'` | `ops.pipeline_runs` | Monitoring screens ask for failures, which are a small fraction of runs. |
-| `FILTER (WHERE ...)` aggregates | `sql/transform/30_analytics.sql` | One pass over the table computes every status count. Separate subqueries per status would scan it repeatedly. |
+| `FILTER (WHERE ...)` aggregates | `pipelines/sql/transform/30_analytics.sql` | One pass over the table computes every status count. Separate subqueries per status would scan it repeatedly. |
 | `NOT EXISTS` for anti-joins | `unpaid_completed_rides` | It states intent clearly and is planned as an anti-join. `NOT IN` returns no rows at all if the subquery yields a NULL. |
 | Watermark + index on `_loaded_at` | `raw.*` | Incremental transforms read only new rows instead of rescanning the full raw history. |
 | `ANALYZE` after bulk loads | loader / ops | Row estimates drive join choices. Stale statistics are the most common cause of a sudden "slow query". |

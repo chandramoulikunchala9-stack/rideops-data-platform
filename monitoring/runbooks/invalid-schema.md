@@ -25,7 +25,7 @@ Past example: **INC-2026-001**. To practise: `python -m rideops.monitoring simul
 * **Breaking change:** quarantine the file, and ask the source to fix it and re-send. For the practice
   incident, `python -m rideops.monitoring resolve-incident` moves the file to `data/quarantine_files/`
   and clears its failed ingestion record.
-* **Agreed, intentional change:** update the contract (field list, a new `sql/ddl` migration, the
+* **Agreed, intentional change:** update the contract (field list, a new `pipelines/sql/ddl` migration, the
   transforms and the tests) in one pull request, deploy it, then re-send or re-load the file.
 * Never relax schema enforcement just to make the error go away.
 

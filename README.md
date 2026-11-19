@@ -45,6 +45,37 @@ flowchart LR
 
 Details: [architecture](docs/architecture.md) · [data flow](docs/data-flow.md).
 
+## Repository layout
+
+Each top-level folder is one deployable part of the platform, with its own README:
+
+```
+rideops-data-platform/
+├── pipelines/              Data engineering: Python package `rideops`              → pipelines/README.md
+│   ├── src/rideops/        generators · ingestion · db (SQL pipeline) · spark (lakehouse)
+│   │                       quality · monitoring · costs · storage · utils · config
+│   ├── sql/                ddl · transform · analytics (45 queries) · quality
+│   ├── tests/              unit · integration (PostgreSQL) · spark · fixtures
+│   └── Dockerfile          Spark runtime (Python + Java 17 + PySpark + Delta)
+├── backend/                REST API: Python package `rideops_api` (FastAPI)          → backend/README.md
+│   ├── src/rideops_api/    main · routers/ · schemas · db pool · errors · retry runner
+│   ├── tests/              API tests against a throwaway PostgreSQL database
+│   └── Dockerfile          production image (non-root, health check)
+├── frontend/               Dashboard: React + TypeScript + Vite (src/pages, components, api, lib)
+├── databricks/             Asset Bundle, Lakeflow Jobs, DLT pipeline, notebooks, Unity Catalog, SQL
+├── infra/terraform/        AWS: S3, IAM, Budgets, CUR export
+├── monitoring/             runbooks/ (8) and incidents/ (history with resolution notes)
+├── scripts/                verify_deployment.py
+├── docs/                   architecture, setup, deployment, security, costs, interview guide
+├── .github/                CI workflows, PR template, Dependabot
+├── docker-compose.yml      postgres · spark (profile) · api + web (profile "app")
+├── render.yaml             hosted API blueprint
+└── ruff.toml               shared Python lint/format rules
+```
+
+`backend` depends on `pipelines` as a library (settings, pipeline runner, alert rules). Run all
+commands from the repository root, where `.env` and the generated `data/` live.
+
 ## Tech stack
 
 | Area | Technologies (pinned versions) |
@@ -90,7 +121,7 @@ Prerequisites: Python 3.10+, Docker Desktop, Node 22+. Details: [local developme
 
 ```bash
 py -3 -m venv .venv && .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e "./pipelines[dev,aws]" -e "./backend[dev]"
 copy .env.example .env                                 # set POSTGRES_PASSWORD
 docker compose up -d postgres
 
@@ -99,7 +130,7 @@ python -m rideops.db all                               # load → transform → 
 python -m rideops.monitoring seed-incidents
 python -m rideops.monitoring alerts
 
-uvicorn rideops.api.main:app --reload                  # http://localhost:8000/docs
+uvicorn rideops_api.main:app --reload                  # http://localhost:8000/docs
 cd frontend && npm ci && npm run dev                   # http://localhost:5173
 ```
 
@@ -136,10 +167,11 @@ Interactive OpenAPI docs are served at **`/docs`** (Swagger UI) and `/redoc` whi
 
 | Suite | Command | Result (2026-11-19) |
 |---|---|---|
-| Python unit + integration (PostgreSQL), API | `pytest -m "not spark"` | 107 passed (+ storage, CUR and bundle tests since; see status file) |
-| Spark + Delta | `docker compose --profile spark run --rm spark pytest tests/spark` | 15 passed |
+| Pipelines: unit + integration (PostgreSQL) | `pytest pipelines -m "not spark"` | 90 passed |
+| Backend API | `pytest backend` | 27 passed |
+| Spark + Delta | `docker compose --profile spark run --rm spark pytest pipelines/tests/spark` | 15 passed |
 | Frontend | `cd frontend && npm test` | 21 passed |
-| Lint / types | `ruff check`, `ruff format --check`, `npm run lint`, `npm run typecheck` | clean |
+| Lint / types | `ruff check pipelines backend scripts`, `ruff format --check ...`, `npm run lint`, `npm run typecheck` | clean |
 | Infra / CI | `terraform validate` (Docker), `actionlint` | valid / no findings |
 | Deployment | `python scripts/verify_deployment.py --api ... --web ...` | 12/12 on the local Docker stack |
 

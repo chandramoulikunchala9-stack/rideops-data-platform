@@ -4,10 +4,10 @@ name: Infrastructure
 # never deploys the Databricks bundle (both need credentials and explicit approval).
 on:
   pull_request:
-    paths: ["infra/**", "databricks/**", ".github/workflows/infra.yml"]
+    paths: ["infra/**", "databricks/**", "pipelines/tests/unit/test_bundle_config.py", ".github/workflows/infra.yml"]
   push:
     branches: [main]
-    paths: ["infra/**", "databricks/**", ".github/workflows/infra.yml"]
+    paths: ["infra/**", "databricks/**", "pipelines/tests/unit/test_bundle_config.py", ".github/workflows/infra.yml"]
   workflow_dispatch:
 
 permissions:
@@ -40,4 +40,4 @@ jobs:
       - run: pip install pyyaml==6.0.3 pytest==9.2.0
       # YAML structure, file references, task DAG, paused dev schedules, notebook syntax.
       # `databricks bundle validate` additionally needs workspace credentials (see docs/ci-cd.md).
-      - run: pytest tests/unit/test_bundle_config.py -q
+      - run: pytest pipelines/tests/unit/test_bundle_config.py -q

@@ -8,7 +8,7 @@
 # MAGIC * **Deduplication** with `dropDuplicatesWithinWatermark` absorbs at-least-once re-deliveries.
 # MAGIC * **Checkpoint** = failure recovery: a restarted run resumes exactly where it stopped.
 # MAGIC
-# MAGIC Local equivalent (tested): `src/rideops/spark/streaming.py`.
+# MAGIC Local equivalent (tested): `pipelines/src/rideops/spark/streaming.py`.
 # MAGIC **Status:** written for Databricks; cloud verification pending.
 
 # COMMAND ----------

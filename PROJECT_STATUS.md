@@ -1,198 +1,132 @@
 # RideOps — Project Status
 
-**Single source of truth for progress.** Updated at the end of every milestone.
-Nothing is marked done unless it was built **and** verified as described in the "Verification" column.
+**Single source of truth for progress.** Nothing is marked done unless it was built **and** verified
+as described. Cloud items say exactly what was and was not verified.
 
-Last updated: 2026-11-18 · Current phase: **Phases 3–5 complete → Phase 6 (AWS, Terraform, costs) next**
+Last updated: 2026-11-19 · State: **all phases implemented; cloud deployments prepared but not performed**
+(they need the owner's AWS, Databricks and hosting accounts).
 
 ---
 
-## 1. Milestone checklist
+## 1. Milestones
 
-| Phase | Milestone | Status |
-|---|---|---|
-| 0 | Repository, architecture, project structure | ✅ Done |
-| 1 | Python package, config, logging, synthetic data generators, tests | ✅ Done |
-| 2 | PostgreSQL (Docker), schemas, data load, analytical SQL, optimization | ✅ Done |
-| 3 | Local Spark, Bronze/Silver/Gold with Delta Lake, data-quality checks, transformation tests | ✅ Done |
-| 4 | Databricks notebooks, SQL, Jobs, Unity Catalog, Auto Loader, Streaming, DLT, Asset Bundles | ✅ Written + statically validated (workspace deploy pending) |
-| 5 | FastAPI backend, monitoring, data-quality APIs, retry handling | ✅ Done |
-| 6 | AWS S3 integration, IAM, cost analytics, Terraform | ⏳ Next |
-| 7 | React + TypeScript dashboard | ⬜ Not started |
-| 8 | GitHub Actions CI | ⬜ Not started |
-| 9 | Hosted deployment and verification | ⬜ Not started |
-| 10 | Interview preparation guide | ⬜ Not started |
-
-## 2. Phase 0 — completed work
-
-- [x] Inspected working directory: `rideops-data-platform/` was empty.
-- [x] Found that the parent `C:\Users\chandu\Desktop` is a Git repository (no commits, personal files untracked).
-      Left it untouched; created a **separate** repository in `rideops-data-platform/` (branch `main`).
-- [x] Inventoried tools (table below).
-- [x] Created folder structure, `README.md`, `docs/architecture.md`, `CONTRIBUTING.md`, PR template,
-      `.gitignore`, `.gitattributes`, `.editorconfig`, `.env.example`.
-- [x] First commit made by the user (`9d98ce9`).
-
-**Tests:** none (no code). **Verification:** `git rev-parse --show-toplevel` returns the project folder;
-`git check-ignore` confirmed `.env` and `data/*` are ignored.
-
-## 2b. Phase 1 — milestone 1a (foundation + dimension generators) — done
-
-- [x] `pyproject.toml` with pinned dependencies (faker 40.54.0, pydantic-settings 2.15.0; dev: pytest 9.2.0, ruff 0.17.5).
-- [x] Virtual environment `.venv` on Python 3.10.6 (3.12 upgrade still recommended, see D1).
-- [x] `rideops.config` — typed settings from `RIDEOPS_*` env vars / `.env`, with safe defaults.
-- [x] `rideops.logging_config` — one log format for the whole project.
-- [x] `rideops.generators` — vehicles (JSONL), drivers (CSV), customers (CSV); scale presets `small` / `full` / `large`;
-      per-entity seeded randomness; exact-count defect injection (missing, invalid, duplicate with later `updated_at`,
-      legacy timestamp format, orphan foreign key); atomic file writes; Hive-style `batch_date=` partitions; run manifest.
-- [x] CLI: `python -m rideops.generators --scale full --seed 42`.
-
-**Tests (run 2026-11-18):** `pytest` → 23 passed (unit: config, defects, entities, writers; integration: CLI incl. full-scale volume test).
-`ruff check` and `ruff format --check` → clean.
-**Verification:** two full-scale runs with seed 42 produced byte-identical data files (`diff -rq`).
-Full scale: 10,000 customers (+100 duplicates), 2,000 drivers (+20), 1,000 vehicles (+10) in ~1 s.
-
-## 2c. Phase 1 — remaining
-
-- [x] 1b: bookings (100,000 at `full`) — life cycle requested→accepted→pickup→dropoff, statuses completed / cancelled /
-      no_driver_found / in_progress, IST rush-hour demand, weekend uplift and growth trend, surge pricing, fare formula,
-      referential + temporal integrity (no booking before signup / driver join). Payments derived from clean bookings:
-      failed attempts with retries (max 3), late settlements (1–3 days), refunds. Separate defect RNG.
-      Tests: 34 passed. Full scale: 101,000 booking rows, 86,905 payment rows, ~10 s
-      (profiled; timestamp formatting optimised 15 s → 10 s with byte-identical output).
-- [x] 1c: ride events (372,918 at `full`) and app events (355,970) with event_ts vs ingest_ts and ~2–3% late arrivals,
-      partitioned by ingest date (92–93 daily files); pipeline-run history (938 runs, labelled `run_source=simulated_history`)
-      following a dependency graph, with retries, CANCELLED downstream runs, one RUNNING run, and a deliberate incident
-      (2026-10-19 `ingest_payments` schema-merge failure); simulated cloud costs (2,240 rows, `source=simulated`) derived
-      from run durations, with a runaway-dev-cluster anomaly and untagged-cost defects.
-      Runner now streams batches (write-then-free). orjson for JSONL; full run ~26 s (was 98 s before profiling).
-
-**Phase 1 tests (2026-11-18):** `pytest` → 46 passed; `ruff check` / `ruff format --check` clean.
-
-## 2d. Phase 2 — PostgreSQL and SQL — done
-
-- [x] `docker-compose.yml`: PostgreSQL 17.5 (pinned), healthcheck, named volume; password required from `.env` (no default).
-- [x] Migrations `sql/ddl/001–040` applied by `rideops.db.migrate` (tracked with checksums in `ops.schema_migrations`);
-      reference tables seeded from the Python reference module.
-- [x] Schemas: `raw` (text/jsonb + load metadata), `core` (typed, FK/CHECK constraints, `dq_flags`, quarantine table),
-      `analytics` (6 gold tables), `ops` (ingestion log, watermarks, pipeline runs + logs, DQ results, costs, incidents, alerts).
-- [x] Incremental file ingestion (`rideops.ingestion.postgres_loader`): COPY, schema-contract validation, sha256 + size,
-      data and ingestion log committed atomically, retries with backoff for transient errors, failed files recorded.
-- [x] SQL ELT `sql/transform/`: watermark-based incremental raw→core with ROW_NUMBER versioning, quarantine, MERGE upserts;
-      full-refresh gold build in one transaction.
-- [x] 17 data-quality checks in one SQL file (`sql/quality/checks.sql`) → `ops.data_quality_results` (PASS/WARN/FAIL).
-- [x] Real pipeline runs recorded by `rideops.monitoring.tracker.RunTracker` (`run_source = local_run`) with logs.
-- [x] 45 named analytical queries in 9 scripts (`sql/analytics/01–09`): joins (inner/left/right), CTEs, subqueries,
-      HAVING, ROW_NUMBER/RANK/DENSE_RANK/LAG/LEAD/FIRST_VALUE, percentiles, cohorts, gaps-and-islands, z-score anomalies.
-- [x] `docs/sql-optimization.md` with real EXPLAIN ANALYZE results (≈48×, 16×, 128× speed-ups).
-- [x] CLI: `python -m rideops.db migrate|load|transform|quality|all`.
-
-**Results on `full` data (2026-11-18):** load 204,213 raw rows in 2 s; transform 22 s; 99,187 bookings in core,
-813 quarantined (every distinct booking accounted for); re-runs load 0 files / transform 0 rows.
-**Tests:** `pytest -m "not slow"` → 66 passed (incl. 9 PostgreSQL end-to-end tests on a throwaway `rideops_test` DB).
-**Bug found and fixed during verification:** the `bookings_reject_reasons` check counted reasons instead of rows
-(reported 4 instead of 813); caught by reconciling against an independent query.
-
-## 2e. Phases 3–5 — done (2026-11-19)
-
-**Phase 3 — Spark + Delta Lake** (`src/rideops/spark/`, runs in `docker/spark` image: PySpark 4.2.0, delta-spark 4.4.1, Java 17)
-- Bronze: file streams with `availableNow` + checkpoints (exactly-once, incremental), all-string schemas, `_corrupt_record`.
-- Silver: per-entity pure transforms mirroring the SQL rules, quarantine table, `foreachBatch` MERGE upserts.
-- Gold: Change-Data-Feed-driven incremental daily tables (`replaceWhere`), full rebuild of small tables, app funnel.
-- Streaming: ride events with event-time watermark, `dropDuplicatesWithinWatermark`, 15-min windows, late-drop metrics.
-- Delta tour: ACID, schema enforcement/evolution, MERGE, time travel, history, OPTIMIZE ZORDER, VACUUM.
-- Spark DQ expectations (stored in `ops.data_quality_results`), gold export to PostgreSQL schema `lakehouse`,
-  SQL↔Spark reconciliation check (`ops.reconcile_lakehouse_daily()`).
-- **Tests:** `docker compose run --rm spark pytest tests/spark` → 15 passed (10 min on this 8 GB laptop).
-- Findings fixed during verification: import-time Column objects; Delta `count()` answered from log stats hid a
-  VACUUM effect; multi-stateful-operator late-event semantics (previous-batch watermark) — test corrected.
-
-**Phase 4 — Databricks** (`databricks/`): Asset Bundle (dev/prod, wheel artifact, run_as SP), 3 Lakeflow Jobs
-(DQ-gated DAG, 15-min stream, backfill), DLT pipeline (expectations, quarantine, SCD1 + SCD2), 6 notebooks
-(Auto Loader, MERGE, CDF gold, streaming, DQ gate, batch backfill), Unity Catalog SQL (credentials, external
-locations, volumes, 4 roles, column masks, row filter), Databricks SQL incl. system tables (job runs, query
-history, billing), cluster policy. **Status: Implemented, cloud verification pending** — statically validated by
-`tests/unit/test_bundle_config.py` (14 tests). Bug found in review: row-filter parameter shadowed by column.
-
-**Phase 5 — API + monitoring** (`src/rideops/api/`, `src/rideops/monitoring/`)
-- FastAPI with connection pool, typed responses, uniform JSON errors, request logging, pagination, OpenAPI docs.
-- Endpoints: health (503 when DB down), analytics (overview, revenue, bookings, drivers, cancellations, payments),
-  pipelines (list, history, logs, run detail, **real retry** via whitelisted job runner — 409 when disabled),
-  monitoring summary, alerts (evaluate/acknowledge), incidents, costs (summary, trends, anomalies), data quality,
-  settings/access.
-- 6 alert rules with de-duplication, auto-resolve and optional webhook; incident history from Markdown;
-  `simulate-incident` / `resolve-incident` for troubleshooting practice.
-- **Tests:** 27 API tests against a throwaway database; full local suite 107 passed.
-- Bugs found and fixed: positional `JSONResponse` argument broke all error handlers; dict-row vs tuple-row
-  cursor in alert storage; session-scoped env var leaking between test modules.
-
-## 3. Environment inventory (2026-11-18)
-
-| Tool | Found | Notes / action |
-|---|---|---|
-| Python | 3.10.6 | Works, but end of life since Oct 2026. **Recommend installing 3.12** before Phase 1. |
-| Git | 2.55.0 | OK |
-| Node.js / npm | 24.20.0 / 11.19.0 | OK for Phase 7 |
-| Docker | 29.7.2 | Docker Desktop started 2026-11-18; runs the `rideops-postgres` container. |
-| Java | Temurin 21 at `C:\Users\chandu\tools\jdk21` | `JAVA_HOME` set, but `java` is not on `PATH`. Needed for Phase 3. |
-| AWS CLI | 2.38.2 | Credentials present in the shared credentials file, region `ap-south-2`. **Not used until Phase 6, with permission.** |
-| Terraform | Not installed | Needed in Phase 6 (`winget install Hashicorp.Terraform`) |
-| Databricks CLI | Not installed | Needed in Phase 4 for bundle validation |
-| PostgreSQL client | Not installed | Not required — will use `psql` inside the Docker container |
-| GitHub CLI | Not installed | Optional |
-| Free disk | ~40 GB | Enough; keep large generated datasets out of Git |
-
-## 4. Open decisions
-
-| # | Decision | Recommendation | Owner |
+| Phase | Milestone | Status | Evidence |
 |---|---|---|---|
-| D1 | Python version | Install 3.12, use a virtual environment | User |
-| D2 | Spark runtime on Windows | Docker image (ADR-004) | Confirm in Phase 3 |
-| D3 | Databricks workspace | Free Edition if available to the user; otherwise local equivalents only | User, Phase 4 |
-| D4 | Hosting providers | Evaluate current free tiers in Phase 9 | Phase 9 |
+| 0 | Repository, architecture, structure | ✅ Done | Separate repo; monorepo layout (see README) |
+| 1 | Synthetic data generators | ✅ Done | 10 datasets, manifest, reproducible (byte-identical reruns) |
+| 2 | PostgreSQL, SQL ELT, analytics SQL, optimisation | ✅ Done | 45 queries executed in tests; EXPLAIN ANALYZE in `docs/sql-optimization.md` |
+| 3 | Spark + Delta medallion lakehouse, streaming | ✅ Done | 15 Spark tests; full-data run; **SQL↔Spark reconcile 0/540** |
+| 4 | Databricks (bundle, jobs, DLT, Auto Loader, UC) | ✅ Written + statically validated | Workspace deployment pending |
+| 5 | FastAPI backend, monitoring, alerts, incidents | ✅ Done | 27 API tests; real retry verified |
+| 6 | AWS S3/IAM, Terraform, costs, CUR loader | ✅ Written + validated | `terraform validate` passes; not applied |
+| 7 | React + TypeScript dashboard | ✅ Done | 21 tests; screenshots; responsive at 390 px |
+| 8 | GitHub Actions CI | ✅ Written + actionlint clean | Runs on first push |
+| 9 | Deployment | ✅ Local Docker deployment verified (12/12) | Hosted: prepared, not deployed |
+| 10 | Interview preparation guide | ⏳ In progress | `docs/interview-guide.md` |
+| – | Folder restructure into `pipelines/` + `backend/` packages | ✅ Done | 107 files moved with history; all suites re-run |
 
-## 5. Risks
+## 2. Repository structure (after the restructure, 2026-11-19)
 
-- Native Spark on Windows needs Hadoop binaries → mitigated by Docker.
-- Real AWS resources can cost money → Terraform runs `plan` only until the user approves `apply`; budget alarm documented.
-- The Desktop-level Git repository could accidentally include this project if someone runs `git add .` on the Desktop.
+| Folder | Contents |
+|---|---|
+| `pipelines/` | Python package `rideops`: generators, ingestion, SQL pipeline (`db`), lakehouse (`spark`), quality, monitoring, costs, storage; `sql/`; `tests/`; Spark `Dockerfile` |
+| `backend/` | Python package `rideops_api` (FastAPI): routers, schemas, pool, errors, retry runner; `tests/`; `Dockerfile` |
+| `frontend/` | React + TypeScript dashboard |
+| `databricks/` | Asset Bundle, jobs, DLT, notebooks, Unity Catalog, Databricks SQL, cluster policy |
+| `infra/terraform/` | AWS S3, IAM, Budgets, CUR export |
+| `monitoring/` | runbooks (8), incident history (4) |
+| `scripts/`, `docs/`, `.github/` | deployment verification, documentation, CI |
+
+The restructure also fixed two latent issues: the Databricks bundle's wheel library paths did not
+point at the artifact's `dist/` (a regression test now checks this), and the API image located
+`sql/` relative to `site-packages` (now configured with `RIDEOPS_SQL_DIR`).
+
+## 3. Verification log (latest results)
+
+| Check | Command | Result |
+|---|---|---|
+| Python lint/format | `ruff check pipelines backend scripts` / `ruff format --check ...` | clean |
+| Pipelines tests (incl. PostgreSQL, full-scale generator, S3 via moto, CUR, bundle) | `pytest pipelines -m "not spark"` | 90 passed |
+| Backend API tests | `pytest backend` | 27 passed |
+| Spark + Delta tests | `docker compose --profile spark run --rm spark pytest pipelines/tests/spark` | 15 passed (re-run after restructure: see section 3a) |
+| Frontend | `npm run lint && npm run typecheck && npm test && npm run build` | clean · 21 passed · build OK |
+| Terraform | `terraform fmt -check`, `init -backend=false`, `validate` (1.17.2, AWS provider 6.73.0) | valid |
+| Workflows | `actionlint` 1.7.12 | no findings |
+| Local deployment | `scripts/verify_deployment.py --api :8001 --web :8080` | 12/12 (re-verified after restructure) |
+| Full-data SQL pipeline | `python -m rideops.db all` | 99,187 bookings, 813 quarantined; reruns are no-ops |
+| Full-data lakehouse | `python -m rideops.spark all` (Docker, ~1h50m on 8 GB laptop) | silver identical to SQL core; 13/13 lakehouse DQ PASS |
+| Reconciliation | `ops.reconcile_lakehouse_daily()` | 0 / 540 date×city differences; identical totals |
+| Incident drill | simulate → load → FAIL → alert → resolve → PASS → alert auto-resolved | verified end to end |
+
+### 3a. Spark suite after the restructure
+Pending at the time of writing; updated below once the run completes.
+
+## 4. Bugs found and fixed during verification (selection)
+
+| Where | Bug | How it was caught |
+|---|---|---|
+| DQ check | Counted reasons instead of rows (4 vs 813) | Reconciling against an independent query → INC-2026-004 |
+| Spark quality | `Column` objects created at import time | Collection error in the Spark suite |
+| Delta demo | `count()` answered from log stats after VACUUM | Test expectation failed; switched to `collect()` |
+| Streaming test | Late-event semantics with 2 stateful operators | Debug run printing per-batch watermarks |
+| API errors | Positional `JSONResponse(404, ...)` broke every handler | Error-case smoke tests |
+| Alerts | Tuple vs dict rows from the API pool | API test |
+| Tests | Session env var leaking between modules | Full-suite vs isolated run difference |
+| Unity Catalog | Row-filter parameter shadowed by a column (always true) | Code review |
+| Dashboard | Grid min-content overflow on phones; colliding chart labels; misleading "5 failures" KPI | Screenshot review |
+| Bundle | Wheel library path ≠ artifact output | Found while restructuring; regression test added |
+
+## 5. Environment inventory
+
+| Tool | Version | Notes |
+|---|---|---|
+| Python | 3.10.6 local (CI also 3.12); 3.11 in Spark image; 3.12 in API image | 3.10 is end-of-life; upgrading to 3.12 is recommended |
+| Docker | 29.7.2 | Runs PostgreSQL 17.5, Spark image, app stack, Terraform, actionlint |
+| Node / npm | 24.20 / 11.19 (CI: Node 22) | |
+| Java | Temurin 21 on host (unused); Java 17 in the Spark image | |
+| AWS CLI | 2.38.2, credentials present | **Never used**: no AWS resources were created |
+| Host RAM | 7.8 GB, at times < 0.1 GB free | Main reason Spark runs are slow |
 
 ## 6. Skills coverage matrix
 
-Status labels: **Implemented and tested** · **Implemented, cloud verification pending** · **Configuration example provided** · **Simulated locally** · **Not implemented**
+Labels: **Implemented and tested** · **Implemented, cloud verification pending** · **Configuration example provided** · **Simulated locally** · **Not implemented**
 
-| # | Skill | Location | Status |
+| # | Skill | Exact location | Status |
 |---|---|---|---|
-| 1 | Python | `src/rideops/config.py`, `src/rideops/generators/` | Implemented and tested (generators for all 10 source datasets) |
-| 2 | SQL development and optimization | `sql/`, `docs/sql-optimization.md` | Implemented and tested |
-| 3 | Apache Spark / PySpark | `src/rideops/pipelines/` | Not implemented |
-| 4 | Databricks notebooks and workflows | `databricks/notebooks/`, `databricks/resources/` | Not implemented |
-| 5 | Databricks SQL | `databricks/sql/` | Not implemented |
-| 6 | Delta Lake | `src/rideops/pipelines/` | Not implemented |
-| 7 | Medallion architecture | `src/rideops/pipelines/` | Not implemented |
-| 8 | Unity Catalog | `databricks/unity_catalog/` | Not implemented |
-| 9 | DLT / Lakeflow Declarative Pipelines | `databricks/dlt/` | Not implemented |
-| 10 | Auto Loader | `databricks/notebooks/` | Not implemented |
-| 11 | Structured Streaming | `src/rideops/streaming/`, `databricks/notebooks/` | Not implemented |
-| 12 | AWS services | `src/rideops/storage/`, `infra/terraform/` | Not implemented |
-| 13 | Databricks compute and permissions | `databricks/`, `docs/databricks-setup.md` | Not implemented |
-| 14 | BI job and query monitoring | `src/rideops/monitoring/tracker.py`, `sql/analytics/08_pipeline_monitoring.sql`, `backend/` | Implemented and tested (tracking + SQL); API/UI pending |
-| 15 | Cloud usage and cost reporting | `src/rideops/generators/ops.py` (simulated cost data), `src/rideops/costs/`, `sql/` | Simulated locally (data only; reporting not implemented) |
-| 16 | Production-quality code and automated tests | `tests/`, `pyproject.toml` (ruff, pytest) | Implemented and tested (Phase 1a scope) |
-| 17 | Git and GitHub | repository, `CONTRIBUTING.md`, PR template | Configuration example provided |
-| 18 | GitHub Actions and YAML | `.github/workflows/` | Not implemented |
-| 19 | Databricks Asset Bundles | `databricks/databricks.yml` | Not implemented |
-| 20 | Terraform | `infra/terraform/` | Not implemented |
-| 21 | JavaScript | `frontend/` | Not implemented |
-| 22 | React.js | `frontend/` | Not implemented |
-| 23 | TypeScript | `frontend/` | Not implemented |
-| 24 | HTML5 and CSS3 | `frontend/` | Not implemented |
-| 25 | Responsive web design | `frontend/` | Not implemented |
-| 26 | REST APIs and JSON | `backend/` | Not implemented |
-| 27 | Technical documentation and runbooks | `docs/`, `monitoring/runbooks/` | Not implemented (architecture doc started) |
-| 28 | Production support and incident management | `monitoring/` | Not implemented |
+| 1 | Python | `pipelines/src/rideops/**`, `backend/src/rideops_api/**` | Implemented and tested |
+| 2 | SQL development & optimisation | `pipelines/sql/` (ddl, transform, 45 analytics queries, checks), `docs/sql-optimization.md` | Implemented and tested |
+| 3 | Apache Spark / PySpark | `pipelines/src/rideops/spark/`, `pipelines/tests/spark/` | Implemented and tested |
+| 4 | Databricks notebooks & workflows | `databricks/notebooks/01–06`, `databricks/resources/rideops_jobs.yml` | Implemented, cloud verification pending |
+| 5 | Databricks SQL | `databricks/sql/01_gold_dashboards.sql`, `02_platform_monitoring_system_tables.sql` | Implemented, cloud verification pending |
+| 6 | Delta Lake | `pipelines/src/rideops/spark/{bronze,silver,gold,delta_demo}.py` (ACID, MERGE, CDF, time travel, OPTIMIZE, VACUUM) | Implemented and tested |
+| 7 | Medallion architecture | Lakehouse bronze/silver/gold + SQL raw/core/analytics | Implemented and tested |
+| 8 | Unity Catalog | `databricks/unity_catalog/01_catalog_and_schemas.sql`, `02_roles_and_grants.sql` | Implemented, cloud verification pending |
+| 9 | DLT / Lakeflow Declarative Pipelines | `databricks/dlt/rideops_pipeline.py`, `databricks/resources/rideops_pipeline.yml` | Implemented, cloud verification pending |
+| 10 | Auto Loader | `databricks/notebooks/01_bronze_autoloader.py`, `04_streaming_ride_events.py`, DLT sources | Implemented, cloud verification pending (local equivalent: file stream + checkpoint, tested) |
+| 11 | Structured Streaming | `pipelines/src/rideops/spark/streaming.py` (watermark, dedup, windows, checkpoints, replay) | Implemented and tested |
+| 12 | AWS services | `pipelines/src/rideops/storage/` (S3), `costs/cur_loader.py`, `infra/terraform/` | Implemented, cloud verification pending (S3 tested with moto) |
+| 13 | Databricks compute & permissions | Job clusters, autoscale, spot, serverless, `policies/job_cluster_policy.json`, `run_as` SP, bundle permissions, UC grants | Configuration example provided |
+| 14 | BI job & query monitoring | `pipelines/src/rideops/monitoring/`, `pipelines/sql/analytics/08_pipeline_monitoring.sql`, backend pipelines/monitoring routers, `databricks/sql/02_*` | Implemented and tested (Databricks system tables: cloud verification pending) |
+| 15 | Cloud usage & cost reporting | `ops.cloud_costs`, `pipelines/sql/analytics/09_cloud_costs.sql`, `backend/src/rideops_api/routers/costs.py`, Costs page, `cur_loader.py` | Simulated locally (real CUR / system-table paths: cloud verification pending) |
+| 16 | Production-quality code & tests | 132 Python tests (+15 Spark) + 21 frontend tests, ruff, typed code, uniform errors, retries, logging | Implemented and tested |
+| 17 | Git & GitHub | Repo history (Conventional Commits), `CONTRIBUTING.md`, PR template, Dependabot | Implemented (not yet pushed to GitHub) |
+| 18 | GitHub Actions & YAML | `.github/workflows/{python,spark,frontend,infra}.yml` | Implemented; actionlint clean; first CI run pending push |
+| 19 | Databricks Asset Bundles | `databricks/databricks.yml`, `resources/*.yml`, `pipelines/tests/unit/test_bundle_config.py` | Implemented, cloud verification pending (static checks pass) |
+| 20 | Terraform | `infra/terraform/*.tf` | Implemented, cloud verification pending (validate passes) |
+| 21 | JavaScript | `frontend/eslint.config.js`, build tooling, runtime behaviour | Implemented and tested |
+| 22 | React.js | `frontend/src/{pages,components}` | Implemented and tested |
+| 23 | TypeScript | `frontend/src/**/*.ts(x)` (strict mode) | Implemented and tested |
+| 24 | HTML5 & CSS3 | `frontend/index.html`, `src/styles/{tokens,app}.css` (semantic HTML, CSS variables, grid) | Implemented and tested |
+| 25 | Responsive design | `app.css` media queries, `minmax(0, 1fr)` grids; verified at 390 px | Implemented and tested |
+| 26 | REST APIs & JSON | `backend/src/rideops_api/` (22 endpoints, OpenAPI) | Implemented and tested |
+| 27 | Technical documentation & runbooks | `docs/*.md`, `monitoring/runbooks/` (8), READMEs per project | Implemented |
+| 28 | Production support & incident management | `monitoring/incidents/` (4), alert rules, simulate/resolve drill, runbooks | Implemented and tested (drill verified) |
 
-## 7. Next steps
+## 7. Not done / next steps (owner decisions)
 
-1. Phase 6: S3 storage backend, Terraform (S3 + IAM), cost documentation and optional AWS CUR loader.
-2. Optional at any time: install Python 3.12 and recreate `.venv` (D1).
+1. **Push to GitHub** and let CI run for the first time (then protect `main`).
+2. **Hosted deployment** (Neon + Render + Cloudflare Pages) following `docs/deployment.md`, then run
+   `scripts/verify_deployment.py` against the URLs and record the result here.
+3. **AWS**: review `terraform plan`, then apply in a dev account with a small budget.
+4. **Databricks**: Free Edition or a trial workspace → `databricks bundle validate/deploy -t dev`.
+5. Upgrade the local Python to 3.12. Add API authentication before exposing it with real data.

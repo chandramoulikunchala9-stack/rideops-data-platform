@@ -1,4 +1,4 @@
-// TypeScript mirrors of the backend response models (src/rideops/api/schemas.py).
+// TypeScript mirrors of the backend response models (backend/src/rideops_api/schemas.py).
 // Keeping them explicit means a backend change shows up as a type error, not a blank chart.
 
 export interface Period {
