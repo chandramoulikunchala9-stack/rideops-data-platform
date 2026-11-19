@@ -1,0 +1,48 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ManageRideOpsBuckets",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket", "s3:DeleteBucket", "s3:ListBucket", "s3:GetBucket*", "s3:PutBucket*",
+        "s3:DeleteBucketPolicy", "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration",
+        "s3:GetLifecycleConfiguration", "s3:PutLifecycleConfiguration", "s3:GetAccelerateConfiguration",
+        "s3:GetReplicationConfiguration", "s3:GetAnalyticsConfiguration", "s3:GetInventoryConfiguration",
+        "s3:GetMetricsConfiguration", "s3:GetIntelligentTieringConfiguration",
+        "s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucketVersions", "s3:DeleteObjectVersion",
+        "s3:GetObjectTagging", "s3:PutObjectTagging"
+      ],
+      "Resource": ["arn:aws:s3:::rideops-*", "arn:aws:s3:::rideops-*/*"]
+    },
+    {
+      "Sid": "ManageRideOpsIam",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreatePolicy", "iam:DeletePolicy", "iam:GetPolicy", "iam:GetPolicyVersion",
+        "iam:ListPolicyVersions", "iam:CreatePolicyVersion", "iam:DeletePolicyVersion",
+        "iam:TagPolicy", "iam:UntagPolicy",
+        "iam:CreateGroup", "iam:DeleteGroup", "iam:GetGroup", "iam:AttachGroupPolicy",
+        "iam:DetachGroupPolicy", "iam:ListAttachedGroupPolicies",
+        "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:TagRole", "iam:UntagRole",
+        "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies", "iam:ListInstanceProfilesForRole", "iam:UpdateAssumeRolePolicy"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:policy/rideops-*", "arn:aws:iam::*:group/rideops-*", "arn:aws:iam::*:role/rideops-*"
+      ]
+    },
+    {
+      "Sid": "ManageRideOpsBudget",
+      "Effect": "Allow",
+      "Action": ["budgets:ModifyBudget", "budgets:ViewBudget", "budgets:ListTagsForResource", "budgets:TagResource"],
+      "Resource": "arn:aws:budgets::*:budget/rideops-*"
+    },
+    {
+      "Sid": "OptionalGithubOidcProvider",
+      "Effect": "Allow",
+      "Action": ["iam:CreateOpenIDConnectProvider", "iam:GetOpenIDConnectProvider", "iam:DeleteOpenIDConnectProvider", "iam:TagOpenIDConnectProvider"],
+      "Resource": "arn:aws:iam::*:oidc-provider/token.actions.githubusercontent.com"
+    }
+  ]
+}

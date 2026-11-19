@@ -18,6 +18,21 @@
 | *Optional* GitHub OIDC provider + CI role | CI gets 1-hour credentials; no access keys stored in GitHub | Free |
 | *Optional* CUR 2.0 data export + billing bucket | Real daily billing data for `ops.cloud_costs` | Export is free; S3 storage is cents |
 
+## Required permissions for the deploying identity
+
+The identity that runs `terraform apply` needs permission to create the resources above. Granting
+`AdministratorAccess` would work, but least privilege is better: attach
+[`infra/terraform/deployer-policy.json`](../infra/terraform/deployer-policy.json) to the deploying IAM user
+or role. It only allows managing S3 buckets, IAM policies, groups and roles, and budgets whose names start
+with `rideops-` (plus the optional GitHub OIDC provider).
+
+AWS console → IAM → Users → *your user* → Add permissions → Create inline policy → JSON → paste the file.
+
+> First real apply (2026-11-19, account `…5280`, ap-south-2): the plan was correct (25 to add), but the
+> deploying user lacked `s3:CreateBucket`, `iam:CreateGroup` and `budgets:ModifyBudget`, so nothing was
+> created. It also surfaced a real bug that `validate` cannot catch: S3 tag values may not contain `(),`.
+> Both are fixed: the tag text has been corrected, and the deployer policy is above.
+
 ## Steps
 
 ```bash

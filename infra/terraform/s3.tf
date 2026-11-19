@@ -4,9 +4,11 @@ resource "random_id" "suffix" {
 
 locals {
   name = "${var.project}-${var.environment}"
+  # Tag values may only contain letters, numbers, spaces and + - = . _ : / @ (AWS rule; S3
+  # rejected parentheses and commas with InvalidTag on the first real apply).
   buckets = {
-    raw       = "Landing zone: files delivered by source systems"
-    processed = "Lakehouse storage (bronze/silver, Unity Catalog managed location)"
+    raw       = "Landing zone for files delivered by source systems"
+    processed = "Lakehouse storage for bronze and silver - Unity Catalog managed location"
     analytics = "Gold extracts for BI tools"
   }
 }

@@ -67,6 +67,14 @@ point at the artifact's `dist/` (a regression test now checks this), and the API
   requires `pyspark <= 4.2.0`: CI correctly blocked an incompatible upgrade. Dependabot now ignores
   lone PySpark bumps (upgrade PySpark and Delta together).
 
+### 3b. Cloud deployment attempts (2026-11-19)
+* **AWS:** `terraform plan` against account `…5280` (ap-south-2): 25 to add, 0 to change, 0 to destroy. `apply`
+  was rejected by IAM (the user lacks `s3:CreateBucket`, `iam:CreateGroup`, `budgets:ModifyBudget`), so **nothing
+  was created**. The state holds only the local `random_id`. The apply also revealed an invalid S3 tag value (fixed).
+  Next: attach `infra/terraform/deployer-policy.json`, then re-run plan and apply.
+* **Databricks:** CLI v1.26.0 installed; `bundle validate` waits for a workspace login (`databricks auth login`).
+* **Hosting:** waits for Neon / Render / Cloudflare accounts.
+
 ## 4. Bugs found and fixed during verification (selection)
 
 | Where | Bug | How it was caught |
@@ -81,6 +89,7 @@ point at the artifact's `dist/` (a regression test now checks this), and the API
 | Unity Catalog | Row-filter parameter shadowed by a column (always true) | Code review |
 | Dashboard | Grid min-content overflow on phones; colliding chart labels; misleading "5 failures" KPI | Screenshot review |
 | Bundle | Wheel library path ≠ artifact output | Found while restructuring; regression test added |
+| Terraform | S3 tag values with `(),` rejected by AWS (`InvalidTag`) | First real `apply`; `validate` cannot catch it |
 
 ## 5. Environment inventory
 
