@@ -175,7 +175,7 @@ Interactive OpenAPI docs are served at **`/docs`** (Swagger UI) and `/redoc` whi
 | Infra / CI | `terraform validate` (Docker), `actionlint` | valid / no findings |
 | Deployment | `python scripts/verify_deployment.py --api ... --web ...` | 12/12 on the local Docker stack |
 
-CI runs all of these on every pull request ([ci-cd](docs/ci-cd.md)).
+CI runs all of these on every pull request and push, and **all four workflows are green on GitHub** ([ci-cd](docs/ci-cd.md)).
 
 ## Deployment
 
@@ -186,7 +186,7 @@ CI runs all of these on every pull request ([ci-cd](docs/ci-cd.md)).
 
 ## Known limitations
 
-- **Not deployed to real cloud accounts.** Terraform is validated but not applied; the Databricks bundle is
+- **Not deployed to real cloud accounts** (the code is on GitHub with green CI). Terraform is validated but not applied; the Databricks bundle is
   statically validated but not deployed; hosting is configured but needs your accounts. Each is labelled
   "verification pending" in the status matrix.
 - Cost figures are **simulated** unless you load a CUR export.

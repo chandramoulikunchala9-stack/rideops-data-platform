@@ -20,9 +20,9 @@ Last updated: 2026-11-19 · State: **all phases implemented; cloud deployments p
 | 5 | FastAPI backend, monitoring, alerts, incidents | ✅ Done | 27 API tests; real retry verified |
 | 6 | AWS S3/IAM, Terraform, costs, CUR loader | ✅ Written + validated | `terraform validate` passes; not applied |
 | 7 | React + TypeScript dashboard | ✅ Done | 21 tests; screenshots; responsive at 390 px |
-| 8 | GitHub Actions CI | ✅ Written + actionlint clean | Runs on first push |
+| 8 | GitHub Actions CI | ✅ Done | **All 4 workflows green on GitHub** for `main` (2026-11-19) |
 | 9 | Deployment | ✅ Local Docker deployment verified (12/12) | Hosted: prepared, not deployed |
-| 10 | Interview preparation guide | ⏳ In progress | `docs/interview-guide.md` |
+| 10 | Interview preparation guide | ✅ Done | `docs/interview-guide.md` |
 | – | Folder restructure into `pipelines/` + `backend/` packages | ✅ Done | 107 files moved with history; all suites re-run |
 
 ## 2. Repository structure (after the restructure, 2026-11-19)
@@ -58,8 +58,14 @@ point at the artifact's `dist/` (a regression test now checks this), and the API
 | Reconciliation | `ops.reconcile_lakehouse_daily()` | 0 / 540 date×city differences; identical totals |
 | Incident drill | simulate → load → FAIL → alert → resolve → PASS → alert auto-resolved | verified end to end |
 
-### 3a. Spark suite after the restructure
-Pending at the time of writing; updated below once the run completes.
+### 3a. After the restructure and push (2026-11-19)
+* Spark suite from `pipelines/tests/spark` in the rebuilt image: **15 passed** (6 min 41 s).
+* Pushed to `github.com/chandramoulikunchala9-stack/rideops-data-platform` (`main`, fast-forward).
+* GitHub Actions on `main`: **Python ✅ · Spark ✅ · Frontend ✅ · Infrastructure ✅**. This is the first
+  verified CI run on GitHub (PostgreSQL service tests, Spark on Java 17, `terraform validate`, frontend build).
+* Dependabot opened 6 PRs. 5 pass CI. The PySpark 4.2.1 bump fails at `pip install` because delta-spark 4.4.1
+  requires `pyspark <= 4.2.0`: CI correctly blocked an incompatible upgrade. Dependabot now ignores
+  lone PySpark bumps (upgrade PySpark and Delta together).
 
 ## 4. Bugs found and fixed during verification (selection)
 
@@ -109,8 +115,8 @@ Labels: **Implemented and tested** · **Implemented, cloud verification pending*
 | 14 | BI job & query monitoring | `pipelines/src/rideops/monitoring/`, `pipelines/sql/analytics/08_pipeline_monitoring.sql`, backend pipelines/monitoring routers, `databricks/sql/02_*` | Implemented and tested (Databricks system tables: cloud verification pending) |
 | 15 | Cloud usage & cost reporting | `ops.cloud_costs`, `pipelines/sql/analytics/09_cloud_costs.sql`, `backend/src/rideops_api/routers/costs.py`, Costs page, `cur_loader.py` | Simulated locally (real CUR / system-table paths: cloud verification pending) |
 | 16 | Production-quality code & tests | 132 Python tests (+15 Spark) + 21 frontend tests, ruff, typed code, uniform errors, retries, logging | Implemented and tested |
-| 17 | Git & GitHub | Repo history (Conventional Commits), `CONTRIBUTING.md`, PR template, Dependabot | Implemented (not yet pushed to GitHub) |
-| 18 | GitHub Actions & YAML | `.github/workflows/{python,spark,frontend,infra}.yml` | Implemented; actionlint clean; first CI run pending push |
+| 17 | Git & GitHub | Repo on GitHub, Conventional Commits, `CONTRIBUTING.md`, PR template, Dependabot (6 PRs opened) | Implemented and tested |
+| 18 | GitHub Actions & YAML | `.github/workflows/{python,spark,frontend,infra}.yml` | Implemented and tested (green on GitHub) |
 | 19 | Databricks Asset Bundles | `databricks/databricks.yml`, `resources/*.yml`, `pipelines/tests/unit/test_bundle_config.py` | Implemented, cloud verification pending (static checks pass) |
 | 20 | Terraform | `infra/terraform/*.tf` | Implemented, cloud verification pending (validate passes) |
 | 21 | JavaScript | `frontend/eslint.config.js`, build tooling, runtime behaviour | Implemented and tested |
@@ -124,7 +130,7 @@ Labels: **Implemented and tested** · **Implemented, cloud verification pending*
 
 ## 7. Not done / next steps (owner decisions)
 
-1. **Push to GitHub** and let CI run for the first time (then protect `main`).
+1. ~~Push to GitHub and run CI~~ (done). Protect `main` with required checks; review the Dependabot PRs.
 2. **Hosted deployment** (Neon + Render + Cloudflare Pages) following `docs/deployment.md`, then run
    `scripts/verify_deployment.py` against the URLs and record the result here.
 3. **AWS**: review `terraform plan`, then apply in a dev account with a small budget.

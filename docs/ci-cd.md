@@ -1,8 +1,7 @@
 # CI/CD
 
-> **Status:** workflows are written and statically checked with `actionlint` 1.7.12 (no findings).
-> Every command they run has been run locally. They will execute on GitHub the first time the
-> repository is pushed. Until then, "passes in CI" is not yet verified.
+> **Status:** verified on GitHub on 2026-11-19. On the first push, all four workflows passed for `main`:
+> Python, Spark, Frontend and Infrastructure. They are also statically checked with `actionlint` 1.7.12.
 
 ## Workflows (`.github/workflows/`)
 

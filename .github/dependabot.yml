@@ -4,6 +4,10 @@ updates:
     directory: /pipelines
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
+    ignore:
+      # PySpark must match the version delta-spark supports (delta-spark 4.4.1 requires
+      # pyspark <= 4.2.0). Upgrade both together by hand; a lone PySpark bump fails CI at install.
+      - dependency-name: pyspark
   - package-ecosystem: pip
     directory: /backend
     schedule: { interval: weekly }
