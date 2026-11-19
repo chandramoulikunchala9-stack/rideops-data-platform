@@ -20,7 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 # Spark runs in the pipelines/Dockerfile image and in CI; optional on a Windows laptop.
 spark = [
-    "pyspark==4.2.0",
+    "pyspark==4.2.1",
     "delta-spark==4.4.1",
 ]
 # AWS S3 storage backend and Cost and Usage Report loader.
