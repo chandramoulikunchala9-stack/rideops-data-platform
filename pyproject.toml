@@ -26,10 +26,16 @@ spark = [
     "pyspark==4.2.0",
     "delta-spark==4.4.1",
 ]
+# AWS S3 storage backend and Cost and Usage Report loader (optional).
+aws = [
+    "boto3==1.44.6",
+]
 dev = [
     "pytest==9.2.0",
     "ruff==0.17.5",
     "httpx==0.28.1",
+    "boto3==1.44.6",
+    "moto[s3]==5.2.5",
 ]
 
 [tool.setuptools.packages.find]

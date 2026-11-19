@@ -1,0 +1,8 @@
+environment               = "prod"
+aws_region                = "ap-south-2"
+monthly_budget_usd        = 100
+budget_alert_emails       = ["data-platform-alerts@example.com"]
+enable_unity_catalog_role = true
+databricks_account_id     = "<databricks-account-id>"
+github_repository         = "<owner>/rideops-data-platform"
+enable_cur_export         = true

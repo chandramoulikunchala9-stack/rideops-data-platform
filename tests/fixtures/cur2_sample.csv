@@ -1,0 +1,6 @@
+bill_billing_period_start_date,line_item_line_item_type,line_item_usage_start_date,line_item_product_code,line_item_usage_type,line_item_usage_amount,line_item_unblended_rate,line_item_unblended_cost,pricing_unit,resource_tags
+2026-10-01T00:00:00Z,Usage,2026-10-01T00:00:00Z,AmazonS3,APS2-TimedStorage-ByteHrs,0.5,0.025,0.0125,GB-Mo,"{""user_project"": ""rideops"", ""user_workload"": ""data_lake"", ""user_environment"": ""dev""}"
+2026-10-01T00:00:00Z,Usage,2026-10-01T05:00:00Z,AmazonS3,APS2-TimedStorage-ByteHrs,0.25,0.025,0.00625,GB-Mo,"{""user_project"": ""rideops"", ""user_workload"": ""data_lake"", ""user_environment"": ""dev""}"
+2026-10-01T00:00:00Z,Usage,2026-10-01T01:00:00Z,AmazonEC2,APS2-BoxUsage:m5d.large,3,0.12,0.36,Hrs,"{""user_project"": ""rideops"", ""user_workload"": ""gold_aggregations"", ""user_environment"": ""dev""}"
+2026-10-01T00:00:00Z,Usage,2026-10-02T01:00:00Z,AmazonEC2,APS2-BoxUsage:m5d.large,2,0.12,0.24,Hrs,{}
+2026-10-01T00:00:00Z,Tax,2026-10-01T00:00:00Z,AmazonS3,,0,0,0.002,,{}

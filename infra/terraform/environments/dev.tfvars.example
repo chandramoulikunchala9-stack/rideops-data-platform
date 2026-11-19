@@ -1,0 +1,12 @@
+# Copy to dev.tfvars (git-ignored) and adjust. Plan first:
+#   terraform plan -var-file=environments/dev.tfvars
+environment         = "dev"
+aws_region          = "ap-south-2"
+monthly_budget_usd  = 10
+budget_alert_emails = ["you@example.com"]
+
+# Optional integrations (all off by default; each one creates billable or account-level resources)
+enable_unity_catalog_role = false
+databricks_account_id     = ""
+github_repository         = "" # e.g. "your-user/rideops-data-platform"
+enable_cur_export         = false
