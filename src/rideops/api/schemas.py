@@ -59,6 +59,7 @@ class Overview(Model):
     active_drivers: int
     active_customers: int
     pipeline_success_rate: float | None
+    failed_runs_30d: int
     recent_failures: list[RunBrief]
     cloud_spend: CloudSpend
 

@@ -68,6 +68,10 @@ def overview(db: DbDep, period: DateRangeDep) -> schemas.Overview:
         active_drivers=people["drivers"],
         active_customers=people["customers"],
         pipeline_success_rate=float(success_rate) if success_rate is not None else None,
+        failed_runs_30d=db.scalar(
+            "SELECT count(*) FROM ops.pipeline_runs "
+            "WHERE status = 'FAILED' AND start_ts >= now() - interval '30 days'"
+        ),
         recent_failures=[schemas.RunBrief(**f) for f in failures],
         cloud_spend=schemas.CloudSpend(
             month=spend["month"] if spend else None,
