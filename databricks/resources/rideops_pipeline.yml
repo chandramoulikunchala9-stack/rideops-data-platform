@@ -1,0 +1,22 @@
+# Lakeflow Declarative Pipeline (formerly Delta Live Tables).
+
+resources:
+  pipelines:
+    rideops_declarative:
+      name: rideops-declarative-${bundle.target}
+      catalog: ${var.catalog}
+      schema: dlt
+      serverless: true
+      continuous: false          # triggered: processes new data and stops
+      channel: CURRENT
+      photon: true
+      development: true          # faster iteration; set false in prod via target override
+      configuration:
+        rideops.landing_path: /Volumes/${var.catalog}/landing/raw
+      libraries:
+        - file:
+            path: ../dlt/rideops_pipeline.py
+      notifications:
+        - email_recipients: [ "${var.alert_email}" ]
+          alerts: [ on-update-failure, on-update-fatal-failure, on-flow-failure ]
+

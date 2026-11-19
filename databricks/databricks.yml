@@ -1,0 +1,63 @@
+# Databricks Asset Bundle for RideOps.
+#
+#   cd databricks
+#   databricks auth login --host https://<your-workspace>.cloud.databricks.com
+#   databricks bundle validate -t dev
+#   databricks bundle deploy   -t dev      # uploads notebooks + wheel, creates jobs/pipeline
+#   databricks bundle run rideops_daily -t dev
+#
+# STATUS: configuration written and syntax-checked locally (tests/unit/test_bundle_config.py);
+# not yet deployed to a real workspace. See docs/databricks-setup.md.
+
+bundle:
+  name: rideops
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog that holds all RideOps schemas
+    default: rideops_dev
+  spark_version:
+    description: Databricks Runtime (needs Spark 4.x for Column.try_cast). Check available versions with `databricks clusters spark-versions`.
+    default: 17.3.x-scala2.13
+  node_type_id:
+    description: Worker instance type (AWS)
+    default: m5d.large
+  alert_email:
+    description: Where job failure notifications go
+    default: data-platform-alerts@example.com
+  schedule_pause_status:
+    description: PAUSED in dev so nothing runs (or costs money) until you unpause it
+    default: PAUSED
+
+artifacts:
+  rideops_wheel:
+    type: whl
+    path: ..
+    build: python -m pip wheel --no-deps --wheel-dir dist .
+
+targets:
+  dev:
+    mode: development          # prefixes resource names with [dev <user>] and pauses schedules
+    default: true
+    workspace:
+      root_path: ~/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: rideops_dev
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: rideops_prod
+      schedule_pause_status: UNPAUSED
+    run_as:
+      service_principal_name: rideops-prod-sp   # jobs never run as a person in production
+    permissions:
+      - group_name: rideops-platform-admins
+        level: CAN_MANAGE
+      - group_name: rideops-data-engineers
+        level: CAN_VIEW

@@ -21,5 +21,28 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # Spark + Delta Lake jobs. Not started by `docker compose up`; run on demand, e.g.
+  #   docker compose run --rm spark python -m rideops.spark all
+  #   docker compose run --rm spark pytest -m spark
+  spark:
+    profiles: ["spark"]
+    build:
+      context: .
+      dockerfile: docker/spark/Dockerfile
+    image: rideops-spark:local
+    working_dir: /app
+    env_file: .env
+    environment:
+      RIDEOPS_DATA_DIR: /app/data
+      SPARK_DRIVER_MEMORY: 1g          # the host has 8 GB RAM; raise on bigger machines
+      SPARK_LOCAL_IP: 127.0.0.1
+      POSTGRES_HOST: postgres          # the service name inside the compose network
+      POSTGRES_PORT: "5432"
+    volumes:
+      - .:/app                         # live source code and data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pgdata:

@@ -144,4 +144,10 @@ SELECT 'landing_schema_mismatch', 'all', 'schema',
            jsonb_agg(file_path) FILTER (WHERE status = 'failed' AND error_message LIKE 'Schema mismatch%'),
            '[]'::jsonb
        )
-FROM ops.ingestion_log;
+FROM ops.ingestion_log
+
+UNION ALL
+-- Reconciliation: SQL warehouse gold vs Spark lakehouse gold (absent until the first export).
+SELECT 'lakehouse_sql_reconciliation', 'bookings', 'reconciliation',
+       failed_rows, total_rows, 0.0, details
+FROM ops.reconcile_lakehouse_daily();

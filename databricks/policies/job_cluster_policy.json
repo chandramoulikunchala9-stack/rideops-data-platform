@@ -1,0 +1,10 @@
+{
+  "cluster_type": { "type": "fixed", "value": "job" },
+  "spark_version": { "type": "regex", "pattern": "1[6-9]\\.[0-9]+\\.x-scala2\\.1[23]" },
+  "node_type_id": { "type": "allowlist", "values": ["m5d.large", "m5d.xlarge", "r5d.large"], "defaultValue": "m5d.large" },
+  "autoscale.max_workers": { "type": "range", "maxValue": 4, "defaultValue": 3 },
+  "aws_attributes.availability": { "type": "allowlist", "values": ["SPOT_WITH_FALLBACK", "ON_DEMAND"], "defaultValue": "SPOT_WITH_FALLBACK" },
+  "data_security_mode": { "type": "allowlist", "values": ["SINGLE_USER", "USER_ISOLATION"] },
+  "custom_tags.project": { "type": "fixed", "value": "rideops" },
+  "custom_tags.cost_center": { "type": "fixed", "value": "data-platform" }
+}

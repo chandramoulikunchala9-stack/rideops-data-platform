@@ -74,7 +74,7 @@ ORDER BY c.cost_usd DESC;
 
 -- name: month_to_date_vs_budget
 -- Month-to-date spend, a linear end-of-month forecast and the budget status.
--- The budget is a parameter in the API (MONTHLY_BUDGET_USD); 500 is used here as an example.
+-- The budget is a parameter in the API (MONTHLY_BUDGET_USD); 1200 is used here as an example.
 WITH mtd AS (
     SELECT
         date_trunc('month', max(usage_date))::date      AS month,
@@ -91,8 +91,8 @@ SELECT
     round(spend / extract(day FROM as_of) *
           extract(day FROM (month + interval '1 month - 1 day')), 2) AS forecast_usd,
     CASE
-        WHEN spend > 500 THEN 'OVER_BUDGET'
-        WHEN spend / extract(day FROM as_of) * extract(day FROM (month + interval '1 month - 1 day')) > 500
+        WHEN spend > 1200 THEN 'OVER_BUDGET'
+        WHEN spend / extract(day FROM as_of) * extract(day FROM (month + interval '1 month - 1 day')) > 1200
             THEN 'FORECAST_OVER_BUDGET'
         ELSE 'OK'
     END AS budget_status

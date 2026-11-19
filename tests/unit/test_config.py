@@ -1,3 +1,4 @@
+import os
 from datetime import date
 from pathlib import Path
 
@@ -7,8 +8,10 @@ from pydantic import ValidationError
 from rideops.config import Settings
 
 
-def test_defaults_work_without_any_configuration() -> None:
-    settings = Settings(_env_file=None)  # ignore any local .env so the test is deterministic
+def test_defaults_work_without_any_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in [n for n in os.environ if n.startswith("RIDEOPS_")]:
+        monkeypatch.delenv(name)  # ignore the developer's shell environment...
+    settings = Settings(_env_file=None)  # ...and any local .env, so the test is deterministic
     assert settings.env == "local"
     assert settings.seed == 42
     assert settings.scale == "small"

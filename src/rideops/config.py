@@ -38,6 +38,21 @@ class PostgresSettings(BaseSettings):
         )
 
 
+class ApiSettings(BaseSettings):
+    """Backend API settings (variables without prefix, see .env.example)."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    api_cors_origins: str = "http://localhost:5173"  # comma-separated
+    retry_runner_enabled: bool = False
+    monthly_budget_usd: float = 1200.0
+    alert_webhook_url: str | None = None  # optional Slack/Teams-compatible incoming webhook
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.api_cors_origins.split(",") if o.strip()]
+
+
 class Settings(BaseSettings):
     """Typed settings. Pydantic converts and validates each value (e.g. "7" -> 7)."""
 

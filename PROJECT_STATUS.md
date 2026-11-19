@@ -3,7 +3,7 @@
 **Single source of truth for progress.** Updated at the end of every milestone.
 Nothing is marked done unless it was built **and** verified as described in the "Verification" column.
 
-Last updated: 2026-11-18 · Current phase: **Phase 2 complete → Phase 3 (PySpark + Delta Lake) next**
+Last updated: 2026-11-18 · Current phase: **Phases 3–5 complete → Phase 6 (AWS, Terraform, costs) next**
 
 ---
 
@@ -14,10 +14,10 @@ Last updated: 2026-11-18 · Current phase: **Phase 2 complete → Phase 3 (PySpa
 | 0 | Repository, architecture, project structure | ✅ Done |
 | 1 | Python package, config, logging, synthetic data generators, tests | ✅ Done |
 | 2 | PostgreSQL (Docker), schemas, data load, analytical SQL, optimization | ✅ Done |
-| 3 | Local Spark, Bronze/Silver/Gold with Delta Lake, data-quality checks, transformation tests | ⏳ Next |
-| 4 | Databricks notebooks, SQL, Jobs, Unity Catalog, Auto Loader, Streaming, DLT, Asset Bundles | ⬜ Not started |
-| 5 | FastAPI backend, monitoring, data-quality APIs, retry handling | ⬜ Not started |
-| 6 | AWS S3 integration, IAM, cost analytics, Terraform | ⬜ Not started |
+| 3 | Local Spark, Bronze/Silver/Gold with Delta Lake, data-quality checks, transformation tests | ✅ Done |
+| 4 | Databricks notebooks, SQL, Jobs, Unity Catalog, Auto Loader, Streaming, DLT, Asset Bundles | ✅ Written + statically validated (workspace deploy pending) |
+| 5 | FastAPI backend, monitoring, data-quality APIs, retry handling | ✅ Done |
+| 6 | AWS S3 integration, IAM, cost analytics, Terraform | ⏳ Next |
 | 7 | React + TypeScript dashboard | ⬜ Not started |
 | 8 | GitHub Actions CI | ⬜ Not started |
 | 9 | Hosted deployment and verification | ⬜ Not started |
@@ -93,6 +93,39 @@ Full scale: 10,000 customers (+100 duplicates), 2,000 drivers (+20), 1,000 vehic
 **Bug found and fixed during verification:** the `bookings_reject_reasons` check counted reasons instead of rows
 (reported 4 instead of 813); caught by reconciling against an independent query.
 
+## 2e. Phases 3–5 — done (2026-11-19)
+
+**Phase 3 — Spark + Delta Lake** (`src/rideops/spark/`, runs in `docker/spark` image: PySpark 4.2.0, delta-spark 4.4.1, Java 17)
+- Bronze: file streams with `availableNow` + checkpoints (exactly-once, incremental), all-string schemas, `_corrupt_record`.
+- Silver: per-entity pure transforms mirroring the SQL rules, quarantine table, `foreachBatch` MERGE upserts.
+- Gold: Change-Data-Feed-driven incremental daily tables (`replaceWhere`), full rebuild of small tables, app funnel.
+- Streaming: ride events with event-time watermark, `dropDuplicatesWithinWatermark`, 15-min windows, late-drop metrics.
+- Delta tour: ACID, schema enforcement/evolution, MERGE, time travel, history, OPTIMIZE ZORDER, VACUUM.
+- Spark DQ expectations (stored in `ops.data_quality_results`), gold export to PostgreSQL schema `lakehouse`,
+  SQL↔Spark reconciliation check (`ops.reconcile_lakehouse_daily()`).
+- **Tests:** `docker compose run --rm spark pytest tests/spark` → 15 passed (10 min on this 8 GB laptop).
+- Findings fixed during verification: import-time Column objects; Delta `count()` answered from log stats hid a
+  VACUUM effect; multi-stateful-operator late-event semantics (previous-batch watermark) — test corrected.
+
+**Phase 4 — Databricks** (`databricks/`): Asset Bundle (dev/prod, wheel artifact, run_as SP), 3 Lakeflow Jobs
+(DQ-gated DAG, 15-min stream, backfill), DLT pipeline (expectations, quarantine, SCD1 + SCD2), 6 notebooks
+(Auto Loader, MERGE, CDF gold, streaming, DQ gate, batch backfill), Unity Catalog SQL (credentials, external
+locations, volumes, 4 roles, column masks, row filter), Databricks SQL incl. system tables (job runs, query
+history, billing), cluster policy. **Status: Implemented, cloud verification pending** — statically validated by
+`tests/unit/test_bundle_config.py` (14 tests). Bug found in review: row-filter parameter shadowed by column.
+
+**Phase 5 — API + monitoring** (`src/rideops/api/`, `src/rideops/monitoring/`)
+- FastAPI with connection pool, typed responses, uniform JSON errors, request logging, pagination, OpenAPI docs.
+- Endpoints: health (503 when DB down), analytics (overview, revenue, bookings, drivers, cancellations, payments),
+  pipelines (list, history, logs, run detail, **real retry** via whitelisted job runner — 409 when disabled),
+  monitoring summary, alerts (evaluate/acknowledge), incidents, costs (summary, trends, anomalies), data quality,
+  settings/access.
+- 6 alert rules with de-duplication, auto-resolve and optional webhook; incident history from Markdown;
+  `simulate-incident` / `resolve-incident` for troubleshooting practice.
+- **Tests:** 27 API tests against a throwaway database; full local suite 107 passed.
+- Bugs found and fixed: positional `JSONResponse` argument broke all error handlers; dict-row vs tuple-row
+  cursor in alert storage; session-scoped env var leaking between test modules.
+
 ## 3. Environment inventory (2026-11-18)
 
 | Tool | Found | Notes / action |
@@ -161,6 +194,5 @@ Status labels: **Implemented and tested** · **Implemented, cloud verification p
 
 ## 7. Next steps
 
-1. Phase 3: local Spark + Delta Lake medallion pipelines (bronze/silver/gold), structured streaming of ride events,
-   transformation tests.
+1. Phase 6: S3 storage backend, Terraform (S3 + IAM), cost documentation and optional AWS CUR loader.
 2. Optional at any time: install Python 3.12 and recreate `.venv` (D1).
