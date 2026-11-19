@@ -29,12 +29,13 @@ class PostgresSettings(BaseSettings):
     db: str = "rideops"
     user: str = "rideops"
     password: SecretStr  # SecretStr hides the value in logs and repr()
+    sslmode: str = "prefer"  # hosted databases (e.g. Neon) need "require"
 
     def conninfo(self, dbname: str | None = None) -> str:
         return (
             f"host={self.host} port={self.port} dbname={dbname or self.db} "
             f"user={self.user} password={self.password.get_secret_value()} "
-            "application_name=rideops connect_timeout=5"
+            f"sslmode={self.sslmode} application_name=rideops connect_timeout=5"
         )
 
 

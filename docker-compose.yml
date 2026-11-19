@@ -44,5 +44,35 @@ services:
       postgres:
         condition: service_healthy
 
+  # Production-style local deployment of the app (API + dashboard behind nginx):
+  #   docker compose --profile app up -d --build      ->  http://localhost:8080
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: rideops-api:local
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      RETRY_RUNNER_ENABLED: "false"
+      API_CORS_ORIGINS: http://localhost:8080
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    profiles: ["app"]
+    build:
+      context: ./frontend
+    image: rideops-web:local
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
 volumes:
   pgdata:

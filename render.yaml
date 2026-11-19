@@ -1,0 +1,31 @@
+# Render Blueprint for the RideOps API (https://render.com/docs/blueprint-spec).
+# Free plan: spins down after 15 minutes idle (first request then takes ~1 minute).
+# Secrets are NOT stored here: `sync: false` makes Render ask for them in the dashboard.
+services:
+  - type: web
+    name: rideops-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeploy: false            # deploy deliberately, after CI is green
+    envVars:
+      - key: RIDEOPS_ENV
+        value: prod
+      - key: POSTGRES_HOST
+        sync: false              # e.g. ep-xxx.ap-southeast-1.aws.neon.tech
+      - key: POSTGRES_DB
+        sync: false
+      - key: POSTGRES_USER
+        sync: false
+      - key: POSTGRES_PASSWORD
+        sync: false
+      - key: POSTGRES_SSLMODE
+        value: require
+      - key: API_CORS_ORIGINS
+        sync: false              # e.g. https://rideops.pages.dev
+      - key: RETRY_RUNNER_ENABLED
+        value: "false"           # public demo: no job execution from the internet
+      - key: MONTHLY_BUDGET_USD
+        value: "1200"
