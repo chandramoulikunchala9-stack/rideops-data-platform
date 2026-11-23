@@ -15,13 +15,17 @@ interface ChartCardProps {
   actions?: ReactNode;
   chart: ReactNode;
   table: ReactNode;
+  /** Chart area height in px (default 280). */
+  height?: number;
+  /** HTML (non-Recharts) charts may grow past `height` when their rows wrap on small screens. */
+  grow?: boolean;
 }
 
 /**
  * Every chart has a table view (accessibility + exact numbers) and, for ≥ 2 series, a legend,
  * so identity never depends on colour alone.
  */
-export function ChartCard({ title, subtitle, legend, actions, chart, table }: ChartCardProps) {
+export function ChartCard({ title, subtitle, legend, actions, chart, table, height = 280, grow = false }: ChartCardProps) {
   const [view, setView] = useState<"chart" | "table">("chart");
   return (
     <Card
@@ -53,7 +57,7 @@ export function ChartCard({ title, subtitle, legend, actions, chart, table }: Ch
               ))}
             </ul>
           )}
-          <div style={{ width: "100%", height: 280 }}>{chart}</div>
+          <div className="chart-area" style={grow ? { minHeight: height } : { height }}>{chart}</div>
         </>
       ) : (
         <div className="table-wrap">{table}</div>

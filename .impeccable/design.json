@@ -1,0 +1,1497 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-22T06:07:29+00:00",
+  "title": "Design System: RideOps",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Workshop Ink",
+        "canonical": "#232323",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(25.6% 0.000 89.9)"
+      },
+      "mint": {
+        "role": "primary",
+        "displayName": "Signal Mint",
+        "canonical": "#a1ffcb",
+        "tonalRamp": [
+          "#001005",
+          "#002f18",
+          "#00512d",
+          "#007448",
+          "#379768",
+          "#5dbb8a",
+          "#90ddb2",
+          "#c9fdde"
+        ],
+        "oklch": "oklch(92.7% 0.115 158.9)"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(100.0% 0.000 89.9)"
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "#f3f3f3",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(96.4% 0.000 89.9)"
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#4a4a4a",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(40.9% 0.000 89.9)"
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Slate",
+        "canonical": "#686868",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(51.7% 0.000 89.9)"
+      },
+      "grid": {
+        "role": "neutral",
+        "displayName": "Grid",
+        "canonical": "#ececec",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(94.3% 0.000 89.9)"
+      },
+      "axis": {
+        "role": "neutral",
+        "displayName": "Axis",
+        "canonical": "#c9c9c9",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(83.6% 0.000 89.9)"
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(35, 35, 35, 0.13)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(25.6% 0.000 89.9)"
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Firm Hairline",
+        "canonical": "rgba(35, 35, 35, 0.22)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(25.6% 0.000 89.9)"
+      },
+      "ink-hover": {
+        "role": "primary",
+        "displayName": "Ink Hover",
+        "canonical": "#3a3a3a",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(34.8% 0.000 89.9)"
+      },
+      "row-hover": {
+        "role": "neutral",
+        "displayName": "Row Hover",
+        "canonical": "#f7f7f7",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(97.6% 0.000 89.9)"
+      },
+      "rail-text": {
+        "role": "neutral",
+        "displayName": "Rail Text",
+        "canonical": "#e9e9e9",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(93.4% 0.000 89.9)"
+      },
+      "rail-muted": {
+        "role": "neutral",
+        "displayName": "Rail Muted",
+        "canonical": "#a4a4a4",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(71.9% 0.000 89.9)"
+      },
+      "tint-good": {
+        "role": "tertiary",
+        "displayName": "Tint Good",
+        "canonical": "#e5f6e9",
+        "tonalRamp": [
+          "#090c09",
+          "#202722",
+          "#39463c",
+          "#57665b",
+          "#78877b",
+          "#9aaa9e",
+          "#bfcdc3",
+          "#e8f1ea"
+        ],
+        "oklch": "oklch(95.7% 0.025 152.9)"
+      },
+      "tint-warning": {
+        "role": "tertiary",
+        "displayName": "Tint Warning",
+        "canonical": "#fdf3d8",
+        "tonalRamp": [
+          "#0d0b06",
+          "#292518",
+          "#49412e",
+          "#696149",
+          "#8b8269",
+          "#aea58b",
+          "#d1c9b3",
+          "#f4eedf"
+        ],
+        "oklch": "oklch(96.5% 0.037 90.1)"
+      },
+      "tint-critical": {
+        "role": "tertiary",
+        "displayName": "Tint Critical",
+        "canonical": "#fbe6e6",
+        "tonalRamp": [
+          "#0e0a0a",
+          "#2c2222",
+          "#4c3e3e",
+          "#6e5c5c",
+          "#907d7d",
+          "#b3a0a0",
+          "#d6c4c4",
+          "#f7ebeb"
+        ],
+        "oklch": "oklch(94.2% 0.023 17.6)"
+      },
+      "tint-accent": {
+        "role": "tertiary",
+        "displayName": "Tint Accent",
+        "canonical": "#e6fff1",
+        "tonalRamp": [
+          "#070d0a",
+          "#1d2822",
+          "#35473d",
+          "#52675b",
+          "#72897c",
+          "#94ac9f",
+          "#bbcfc4",
+          "#e4f3ea"
+        ],
+        "oklch": "oklch(97.8% 0.032 161.3)"
+      },
+      "status-good": {
+        "role": "tertiary",
+        "displayName": "Status Good",
+        "canonical": "#0ca30c",
+        "tonalRamp": [
+          "#001200",
+          "#003200",
+          "#005600",
+          "#007b00",
+          "#009f00",
+          "#42c43d",
+          "#7ee578",
+          "#bfffb9"
+        ],
+        "oklch": "oklch(62.1% 0.207 142.6)"
+      },
+      "status-warning": {
+        "role": "tertiary",
+        "displayName": "Status Warning",
+        "canonical": "#fab219",
+        "tonalRamp": [
+          "#180600",
+          "#3e1b00",
+          "#693200",
+          "#924f00",
+          "#b67200",
+          "#dc9500",
+          "#fabd53",
+          "#ffe7a4"
+        ],
+        "oklch": "oklch(81.1% 0.164 78.5)"
+      },
+      "status-serious": {
+        "role": "tertiary",
+        "displayName": "Status Serious",
+        "canonical": "#ec835a",
+        "tonalRamp": [
+          "#1b0300",
+          "#451100",
+          "#752200",
+          "#a03e10",
+          "#c66138",
+          "#ed845b",
+          "#ffaf8b",
+          "#ffe2d0"
+        ],
+        "oklch": "oklch(71.7% 0.141 41.6)"
+      },
+      "status-critical": {
+        "role": "tertiary",
+        "displayName": "Status Critical",
+        "canonical": "#d03b3b",
+        "tonalRamp": [
+          "#200001",
+          "#4f0003",
+          "#840009",
+          "#b31923",
+          "#dc4645",
+          "#ff6d66",
+          "#ffaba3",
+          "#ffe0db"
+        ],
+        "oklch": "oklch(57.5% 0.186 25.2)"
+      },
+      "status-neutral": {
+        "role": "tertiary",
+        "displayName": "Status Neutral",
+        "canonical": "#898781",
+        "tonalRamp": [
+          "#0c0b0a",
+          "#262522",
+          "#43423d",
+          "#63615b",
+          "#84827c",
+          "#a7a59f",
+          "#cbc9c3",
+          "#f0eeea"
+        ],
+        "oklch": "oklch(62.3% 0.009 91.5)"
+      },
+      "status-good-text": {
+        "role": "tertiary",
+        "displayName": "Status Good Text",
+        "canonical": "#006300",
+        "tonalRamp": [
+          "#001000",
+          "#002f00",
+          "#005200",
+          "#1f751b",
+          "#469841",
+          "#6abc64",
+          "#98de92",
+          "#cefec9"
+        ],
+        "oklch": "oklch(43.3% 0.147 142.5)"
+      },
+      "status-warning-text": {
+        "role": "tertiary",
+        "displayName": "Status Warning Text",
+        "canonical": "#7a5200",
+        "tonalRamp": [
+          "#130900",
+          "#352000",
+          "#5c3a00",
+          "#81580c",
+          "#a47a37",
+          "#c89d5b",
+          "#e9c28b",
+          "#ffeac4"
+        ],
+        "oklch": "oklch(47.1% 0.099 76.3)"
+      },
+      "status-serious-text": {
+        "role": "tertiary",
+        "displayName": "Status Serious Text",
+        "canonical": "#9a3d14",
+        "tonalRamp": [
+          "#1a0400",
+          "#441200",
+          "#732400",
+          "#9e4018",
+          "#c4633d",
+          "#eb8660",
+          "#ffb08f",
+          "#ffe3d1"
+        ],
+        "oklch": "oklch(48.2% 0.135 41.2)"
+      },
+      "status-critical-text": {
+        "role": "tertiary",
+        "displayName": "Status Critical Text",
+        "canonical": "#b42f2f",
+        "tonalRamp": [
+          "#1e0001",
+          "#4c0206",
+          "#7f0511",
+          "#ad2829",
+          "#d54f4a",
+          "#fe746c",
+          "#ffaba2",
+          "#ffe0db"
+        ],
+        "oklch": "oklch(51.3% 0.170 25.5)"
+      },
+      "series-1": {
+        "role": "secondary",
+        "displayName": "Series 1 Route Blue",
+        "canonical": "#2a78d6",
+        "tonalRamp": [
+          "#000a22",
+          "#002354",
+          "#003e8b",
+          "#055fba",
+          "#3582e1",
+          "#59a6ff",
+          "#8bccff",
+          "#c4f2ff"
+        ],
+        "oklch": "oklch(57.5% 0.163 255.5)"
+      },
+      "series-2": {
+        "role": "secondary",
+        "displayName": "Series 2 Signal Orange",
+        "canonical": "#eb6834",
+        "tonalRamp": [
+          "#1e0100",
+          "#4c0400",
+          "#7f0c00",
+          "#ad2d00",
+          "#d5531b",
+          "#fd7845",
+          "#ffae8c",
+          "#ffe2d0"
+        ],
+        "oklch": "oklch(67.1% 0.175 40.6)"
+      },
+      "series-3": {
+        "role": "secondary",
+        "displayName": "Series 3 Fleet Green",
+        "canonical": "#1baf7a",
+        "tonalRamp": [
+          "#001105",
+          "#003117",
+          "#00552c",
+          "#007848",
+          "#009b68",
+          "#37c08a",
+          "#7ae2b1",
+          "#bdffde"
+        ],
+        "oklch": "oklch(66.9% 0.141 162.1)"
+      },
+      "series-4": {
+        "role": "secondary",
+        "displayName": "Series 4 Fare Amber",
+        "canonical": "#eda100",
+        "tonalRamp": [
+          "#180600",
+          "#3f1900",
+          "#6b3000",
+          "#944d00",
+          "#b97000",
+          "#de9300",
+          "#fdbb58",
+          "#ffe6a7"
+        ],
+        "oklch": "oklch(76.4% 0.161 75.1)"
+      },
+      "series-5": {
+        "role": "secondary",
+        "displayName": "Series 5 Telemetry Pink",
+        "canonical": "#e87ba4",
+        "tonalRamp": [
+          "#1a020b",
+          "#430c25",
+          "#721b42",
+          "#9c3762",
+          "#c35a83",
+          "#ea7da6",
+          "#ffa8ca",
+          "#ffddef"
+        ],
+        "oklch": "oklch(71.6% 0.141 357.4)"
+      },
+      "series-6": {
+        "role": "secondary",
+        "displayName": "Series 6 Deep Green",
+        "canonical": "#008300",
+        "tonalRamp": [
+          "#001100",
+          "#003100",
+          "#005400",
+          "#007800",
+          "#2e9c29",
+          "#57c051",
+          "#8be284",
+          "#c6ffc0"
+        ],
+        "oklch": "oklch(52.9% 0.180 142.5)"
+      },
+      "src-rider": {
+        "role": "secondary",
+        "displayName": "Rider App Blue",
+        "canonical": "#2a78d6",
+        "tonalRamp": [
+          "#000a22",
+          "#002354",
+          "#003e8b",
+          "#055fba",
+          "#3582e1",
+          "#59a6ff",
+          "#8bccff",
+          "#c4f2ff"
+        ],
+        "oklch": "oklch(57.5% 0.163 255.5)"
+      },
+      "src-driver": {
+        "role": "secondary",
+        "displayName": "Driver App Green",
+        "canonical": "#1baf7a",
+        "tonalRamp": [
+          "#001105",
+          "#003117",
+          "#00552c",
+          "#007848",
+          "#009b68",
+          "#37c08a",
+          "#7ae2b1",
+          "#bdffde"
+        ],
+        "oklch": "oklch(66.9% 0.141 162.1)"
+      },
+      "src-payments": {
+        "role": "secondary",
+        "displayName": "Payments Amber",
+        "canonical": "#eda100",
+        "tonalRamp": [
+          "#180600",
+          "#3f1900",
+          "#6b3000",
+          "#944d00",
+          "#b97000",
+          "#de9300",
+          "#fdbb58",
+          "#ffe6a7"
+        ],
+        "oklch": "oklch(76.4% 0.161 75.1)"
+      },
+      "src-billing": {
+        "role": "secondary",
+        "displayName": "Cloud Billing Orange",
+        "canonical": "#eb6834",
+        "tonalRamp": [
+          "#1e0100",
+          "#4c0400",
+          "#7f0c00",
+          "#ad2d00",
+          "#d5531b",
+          "#fd7845",
+          "#ffae8c",
+          "#ffe2d0"
+        ],
+        "oklch": "oklch(67.1% 0.175 40.6)"
+      },
+      "src-platform": {
+        "role": "secondary",
+        "displayName": "Platform Ops Pink",
+        "canonical": "#e87ba4",
+        "tonalRamp": [
+          "#1a020b",
+          "#430c25",
+          "#721b42",
+          "#9c3762",
+          "#c35a83",
+          "#ea7da6",
+          "#ffa8ca",
+          "#ffddef"
+        ],
+        "oklch": "oklch(71.6% 0.141 357.4)"
+      },
+      "page-dark": {
+        "role": "neutral",
+        "displayName": "Carbon Page",
+        "canonical": "#1c1c1c",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(22.6% 0.000 89.9)"
+      },
+      "surface-1-dark": {
+        "role": "neutral",
+        "displayName": "Carbon Card",
+        "canonical": "#242424",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(26.0% 0.000 89.9)"
+      },
+      "surface-2-dark": {
+        "role": "neutral",
+        "displayName": "Carbon Mist",
+        "canonical": "#2e2e2e",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(30.1% 0.000 89.9)"
+      },
+      "text-primary-dark": {
+        "role": "neutral",
+        "displayName": "Text Primary (dark)",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(100.0% 0.000 89.9)"
+      },
+      "text-secondary-dark": {
+        "role": "neutral",
+        "displayName": "Text Secondary (dark)",
+        "canonical": "#d2d2d2",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(86.4% 0.000 89.9)"
+      },
+      "text-muted-dark": {
+        "role": "neutral",
+        "displayName": "Text Muted (dark)",
+        "canonical": "#a4a4a4",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(71.9% 0.000 89.9)"
+      },
+      "grid-dark": {
+        "role": "neutral",
+        "displayName": "Grid (dark)",
+        "canonical": "#3a3a3a",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(34.8% 0.000 89.9)"
+      },
+      "axis-dark": {
+        "role": "neutral",
+        "displayName": "Axis (dark)",
+        "canonical": "#4a4a4a",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(40.9% 0.000 89.9)"
+      },
+      "border-dark": {
+        "role": "neutral",
+        "displayName": "Border (dark)",
+        "canonical": "rgba(255, 255, 255, 0.12)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(100.0% 0.000 89.9)"
+      },
+      "border-strong-dark": {
+        "role": "neutral",
+        "displayName": "Border Strong (dark)",
+        "canonical": "rgba(255, 255, 255, 0.22)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(100.0% 0.000 89.9)"
+      },
+      "mint-hover-dark": {
+        "role": "primary",
+        "displayName": "Pale Mint",
+        "canonical": "#c2ffdc",
+        "tonalRamp": [
+          "#020f07",
+          "#0c2c1d",
+          "#1b4d35",
+          "#356f51",
+          "#579172",
+          "#7ab494",
+          "#a5d7ba",
+          "#d6f8e4"
+        ],
+        "oklch": "oklch(94.9% 0.077 159.3)"
+      },
+      "row-hover-dark": {
+        "role": "neutral",
+        "displayName": "Row Hover (dark)",
+        "canonical": "#2c2c2c",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(29.3% 0.000 89.9)"
+      },
+      "rail-dark": {
+        "role": "neutral",
+        "displayName": "Night Rail",
+        "canonical": "#141414",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(19.1% 0.000 89.9)"
+      },
+      "rail-muted-dark": {
+        "role": "neutral",
+        "displayName": "Rail Muted (dark)",
+        "canonical": "#9a9a9a",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "oklch": "oklch(68.6% 0.000 89.9)"
+      },
+      "tint-good-dark": {
+        "role": "tertiary",
+        "displayName": "Tint Good (dark)",
+        "canonical": "#183322",
+        "tonalRamp": [
+          "#060d08",
+          "#1a291f",
+          "#314938",
+          "#4d6956",
+          "#6d8b76",
+          "#8fae99",
+          "#b6d1be",
+          "#e1f4e7"
+        ],
+        "oklch": "oklch(29.4% 0.046 154.8)"
+      },
+      "tint-warning-dark": {
+        "role": "tertiary",
+        "displayName": "Tint Warning (dark)",
+        "canonical": "#3a2f12",
+        "tonalRamp": [
+          "#0e0b04",
+          "#2b2414",
+          "#4b4128",
+          "#6c6042",
+          "#8e8162",
+          "#b1a484",
+          "#d4c8ac",
+          "#f6eeda"
+        ],
+        "oklch": "oklch(31.0% 0.047 88.7)"
+      },
+      "tint-critical-dark": {
+        "role": "tertiary",
+        "displayName": "Tint Critical (dark)",
+        "canonical": "#3d1c1c",
+        "tonalRamp": [
+          "#120808",
+          "#331f1e",
+          "#583837",
+          "#7c5654",
+          "#9f7675",
+          "#c49997",
+          "#e5bebd",
+          "#ffe7e6"
+        ],
+        "oklch": "oklch(27.3% 0.052 21.0)"
+      },
+      "tint-accent-dark": {
+        "role": "tertiary",
+        "displayName": "Tint Accent (dark)",
+        "canonical": "#1f3a2c",
+        "tonalRamp": [
+          "#060d09",
+          "#1a2921",
+          "#30483b",
+          "#4c6959",
+          "#6d8a7a",
+          "#8fae9c",
+          "#b6d1c1",
+          "#e1f4e9"
+        ],
+        "oklch": "oklch(32.2% 0.042 160.2)"
+      },
+      "status-good-text-dark": {
+        "role": "tertiary",
+        "displayName": "Status Good Text (dark)",
+        "canonical": "#3fcf6f",
+        "tonalRamp": [
+          "#001200",
+          "#003200",
+          "#005700",
+          "#007b1c",
+          "#009f41",
+          "#2ec364",
+          "#76e593",
+          "#bbffc9"
+        ],
+        "oklch": "oklch(75.7% 0.182 150.3)"
+      },
+      "status-warning-text-dark": {
+        "role": "tertiary",
+        "displayName": "Status Warning Text (dark)",
+        "canonical": "#f5c75a",
+        "tonalRamp": [
+          "#140900",
+          "#372000",
+          "#5e3a00",
+          "#835900",
+          "#a67b00",
+          "#cb9e28",
+          "#eac46c",
+          "#ffecb2"
+        ],
+        "oklch": "oklch(85.0% 0.136 86.1)"
+      },
+      "status-serious-text-dark": {
+        "role": "tertiary",
+        "displayName": "Status Serious Text (dark)",
+        "canonical": "#f2a07c",
+        "tonalRamp": [
+          "#180501",
+          "#3f1805",
+          "#6a2d0e",
+          "#934a27",
+          "#b86b49",
+          "#de8e6b",
+          "#fdb697",
+          "#ffe2cc"
+        ],
+        "oklch": "oklch(77.9% 0.110 44.4)"
+      },
+      "status-critical-text-dark": {
+        "role": "tertiary",
+        "displayName": "Status Critical Text (dark)",
+        "canonical": "#ff8080",
+        "tonalRamp": [
+          "#1d0103",
+          "#49070f",
+          "#7b131f",
+          "#a73038",
+          "#cf5558",
+          "#f77979",
+          "#ffaaa7",
+          "#ffe0dd"
+        ],
+        "oklch": "oklch(74.4% 0.155 21.5)"
+      },
+      "series-1-dark": {
+        "role": "secondary",
+        "displayName": "Series 1 Route Blue (dark)",
+        "canonical": "#3987e5",
+        "tonalRamp": [
+          "#000a22",
+          "#002353",
+          "#003f8b",
+          "#025fb9",
+          "#3482e0",
+          "#59a7ff",
+          "#8accff",
+          "#c4f2ff"
+        ],
+        "oklch": "oklch(62.2% 0.161 255.1)"
+      },
+      "series-2-dark": {
+        "role": "secondary",
+        "displayName": "Series 2 Signal Orange (dark)",
+        "canonical": "#d95926",
+        "tonalRamp": [
+          "#1e0100",
+          "#4c0500",
+          "#7f0e00",
+          "#ac2e00",
+          "#d45420",
+          "#fc7949",
+          "#ffae8d",
+          "#ffe2d1"
+        ],
+        "oklch": "oklch(62.2% 0.173 40.1)"
+      },
+      "series-3-dark": {
+        "role": "secondary",
+        "displayName": "Series 3 Fleet Green (dark)",
+        "canonical": "#199e70",
+        "tonalRamp": [
+          "#001106",
+          "#003019",
+          "#005330",
+          "#00774c",
+          "#0e9a6c",
+          "#47be8e",
+          "#82e0b5",
+          "#c1ffe0"
+        ],
+        "oklch": "oklch(62.1% 0.128 163.1)"
+      },
+      "series-4-dark": {
+        "role": "secondary",
+        "displayName": "Series 4 Fare Amber (dark)",
+        "canonical": "#c98500",
+        "tonalRamp": [
+          "#170700",
+          "#3d1b00",
+          "#683200",
+          "#905000",
+          "#b47200",
+          "#da9526",
+          "#f9bd6b",
+          "#ffe7b1"
+        ],
+        "oklch": "oklch(67.0% 0.143 73.2)"
+      },
+      "series-5-dark": {
+        "role": "secondary",
+        "displayName": "Series 5 Telemetry Pink (dark)",
+        "canonical": "#d55181",
+        "tonalRamp": [
+          "#1d000a",
+          "#490122",
+          "#7b033d",
+          "#a8255c",
+          "#d04c7c",
+          "#f8719f",
+          "#ffa4c4",
+          "#ffdfec"
+        ],
+        "oklch": "oklch(62.2% 0.171 0.8)"
+      },
+      "series-6-dark": {
+        "role": "secondary",
+        "displayName": "Series 6 Deep Green (dark)",
+        "canonical": "#0ca30c",
+        "tonalRamp": [
+          "#001200",
+          "#003200",
+          "#005600",
+          "#007b00",
+          "#009f00",
+          "#42c43d",
+          "#7ee578",
+          "#bfffb9"
+        ],
+        "oklch": "oklch(62.1% 0.207 142.6)"
+      },
+      "src-rider-dark": {
+        "role": "secondary",
+        "displayName": "Rider App Blue (dark)",
+        "canonical": "#3987e5",
+        "tonalRamp": [
+          "#000a22",
+          "#002353",
+          "#003f8b",
+          "#025fb9",
+          "#3482e0",
+          "#59a7ff",
+          "#8accff",
+          "#c4f2ff"
+        ],
+        "oklch": "oklch(62.2% 0.161 255.1)"
+      },
+      "src-driver-dark": {
+        "role": "secondary",
+        "displayName": "Driver App Green (dark)",
+        "canonical": "#199e70",
+        "tonalRamp": [
+          "#001106",
+          "#003019",
+          "#005330",
+          "#00774c",
+          "#0e9a6c",
+          "#47be8e",
+          "#82e0b5",
+          "#c1ffe0"
+        ],
+        "oklch": "oklch(62.1% 0.128 163.1)"
+      },
+      "src-payments-dark": {
+        "role": "secondary",
+        "displayName": "Payments Amber (dark)",
+        "canonical": "#c98500",
+        "tonalRamp": [
+          "#170700",
+          "#3d1b00",
+          "#683200",
+          "#905000",
+          "#b47200",
+          "#da9526",
+          "#f9bd6b",
+          "#ffe7b1"
+        ],
+        "oklch": "oklch(67.0% 0.143 73.2)"
+      },
+      "src-billing-dark": {
+        "role": "secondary",
+        "displayName": "Cloud Billing Orange (dark)",
+        "canonical": "#d95926",
+        "tonalRamp": [
+          "#1e0100",
+          "#4c0500",
+          "#7f0e00",
+          "#ac2e00",
+          "#d45420",
+          "#fc7949",
+          "#ffae8d",
+          "#ffe2d1"
+        ],
+        "oklch": "oklch(62.2% 0.173 40.1)"
+      },
+      "src-platform-dark": {
+        "role": "secondary",
+        "displayName": "Platform Ops Pink (dark)",
+        "canonical": "#d55181",
+        "tonalRamp": [
+          "#1d000a",
+          "#490122",
+          "#7b033d",
+          "#a8255c",
+          "#d04c7c",
+          "#f8719f",
+          "#ffa4c4",
+          "#ffdfec"
+        ],
+        "oklch": "oklch(62.2% 0.171 0.8)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page h1 only; 28px under 900px."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "The single headline number of a summary card, with a 15px unit."
+      },
+      "kpi-value": {
+        "displayName": "KPI Value",
+        "purpose": "Stat tile numbers; 24px under 640px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Report section h2."
+      },
+      "fact": {
+        "displayName": "Fact",
+        "purpose": "Values in a facts list (Delivery, freshness)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and layer column headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base text; page descriptions cap at 70ch."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Tables, buttons, inputs, notices, section descriptions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "KPI labels, card subtitles, legends, segmented options, tooltips."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Hints, fact notes, table headers (500), lineage, sidebar footer."
+      },
+      "badge": {
+        "displayName": "Badge",
+        "purpose": "Badges, field labels, nav group labels."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Table names, file paths, alert ids."
+      },
+      "mono-strong": {
+        "displayName": "Mono Strong",
+        "purpose": "Pipeline names on layer chips."
+      },
+      "brand": {
+        "displayName": "Brand",
+        "purpose": "The RideOps wordmark in the sidebar."
+      }
+    },
+    "themes": {
+      "default": "light",
+      "selector": {
+        "dark": ":root[data-theme=\"dark\"]",
+        "system": "@media (prefers-color-scheme: dark) :root:not([data-theme=\"light\"])"
+      },
+      "storageKey": "rideops-theme",
+      "note": "Light-theme frontmatter keys map to CSS custom properties in frontend/src/styles/tokens.css; '-dark' keys are the dark-theme values of the same properties. In dark mode --accent and --focus become mint and --accent-ink becomes ink."
+    },
+    "shadows": [
+      {
+        "name": "none",
+        "value": "none",
+        "purpose": "--shadow in both themes; every surface at rest."
+      },
+      {
+        "name": "tooltip-float",
+        "value": "0 6px 20px -6px rgba(0, 0, 0, 0.18)",
+        "purpose": "Chart tooltips only, transient while hovered."
+      }
+    ],
+    "motion": [
+      {
+        "name": "nav-transition",
+        "value": "background-color 160ms ease, color 160ms ease",
+        "purpose": "Sidebar nav item and icon hover."
+      },
+      {
+        "name": "control-transition",
+        "value": "background-color 150ms ease, border-color 150ms ease",
+        "purpose": "Buttons and section links."
+      },
+      {
+        "name": "chip-lift",
+        "value": "border-color 150ms ease, transform 150ms ease; hover translateY(-1px)",
+        "purpose": "Layer chip hover."
+      },
+      {
+        "name": "disclosure",
+        "value": "transform 160ms ease; open rotate(90deg)",
+        "purpose": "Incident <details> summary arrow icon; the native marker is hidden."
+      },
+      {
+        "name": "press",
+        "value": "translateY(1px)",
+        "purpose": "Button :active."
+      },
+      {
+        "name": "shimmer",
+        "value": "1.2s infinite, background-position to -200% 0",
+        "purpose": "Skeleton loading lines."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation: none; transition: none",
+        "purpose": "prefers-reduced-motion: reduce turns all motion off. Charts never animate (isAnimationActive false)."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "band-stack",
+        "value": "1100px",
+        "purpose": "Overview band grid (2:1) stacks to one column."
+      },
+      {
+        "name": "layer-two",
+        "value": "1000px",
+        "purpose": "Layer map 4 to 2 columns; arrows hidden."
+      },
+      {
+        "name": "rail-to-bar",
+        "value": "900px",
+        "purpose": "Sidebar becomes a horizontal top bar (footer hidden, dashed 'Synthetic data' pill shown); main gutter 16px; h1 28px; split stacks."
+      },
+      {
+        "name": "flow-to-list",
+        "value": "700px",
+        "purpose": "Source flow SVG hidden and replaced by its list (sources, duplicates merged, kept in validated tables)."
+      },
+      {
+        "name": "kpi-two",
+        "value": "640px",
+        "purpose": "KPI grid fixed at two columns, value 24px; compact facts one column; checks-by-type rows stack with counts left-aligned."
+      },
+      {
+        "name": "layer-one",
+        "value": "560px",
+        "purpose": "Layer map one column."
+      }
+    ],
+    "charts": {
+      "grid": "horizontal only, var(--grid), no axis lines or tick marks, ticks 12px var(--text-muted)",
+      "barSize": "24px max (16-18px horizontal lists)",
+      "barRadius": "4px on the data end, square at baseline",
+      "stackSeparator": "2px var(--surface-1) stroke",
+      "line": "2px, no dots",
+      "cityOrder": [
+        "BLR",
+        "MUM",
+        "HYD",
+        "DEL",
+        "CHE",
+        "PUN"
+      ],
+      "sourceColors": {
+        "rider_app": "--src-rider",
+        "driver_app": "--src-driver",
+        "payments": "--src-payments",
+        "cloud_billing": "--src-billing",
+        "platform_ops": "--src-platform"
+      },
+      "chartCard": "Chart area height 280px by default; HTML charts pass `grow` so the height becomes a min-height and wrapped rows extend the card.",
+      "sourceFlowBranches": {
+        "quarantine": "1.5px var(--status-critical), dasharray 3 4, opacity 0.7, into a var(--tint-critical) node",
+        "duplicates": "1.5px var(--text-muted), dasharray 1 4, round caps, opacity 0.8, into a var(--surface-2) node"
+      },
+      "cityMap": "viewBox 0 0 440 410, schematic positions; .city-name 18 / 500 and .city-value 16, in viewBox units"
+    },
+    "icons": "One inline SVG set (components/Icon.tsx): 24px grid, 1.75 stroke, round caps and joins, paths after Lucide (ISC); decorative unless labelled.",
+    "status": "lib/status.ts: one TONES table maps every backend and source-health status to tone, icon and label; toneOf() serves non-badge uses (layer map)."
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default outlined button for page and card actions; small variant for inline table actions.",
+      "html": "<div class=\"ds-row\"><button class=\"ds-btn\">Refresh</button><button class=\"ds-btn ds-btn-small\">Acknowledge</button><button class=\"ds-btn\" disabled>Disabled</button></div>",
+      "css": ".ds-row { display: flex; gap: 8px; align-items: center; font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); } .ds-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong, rgba(35,35,35,0.22)); background: var(--surface-1, #ffffff); color: var(--text-primary, #232323); border-radius: var(--radius-sm, 6px); padding: 6px 12px; font: 500 14px/1.5 var(--font, 'Familjen Grotesk', system-ui, sans-serif); cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease; } .ds-btn:hover:not(:disabled) { background: var(--surface-2, #f3f3f3); } .ds-btn:active:not(:disabled) { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid var(--focus, #232323); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.55; cursor: not-allowed; } .ds-btn-small { padding: 3px 9px; font-size: 13px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ink-filled action (mint in dark mode), reserved for the page's own action.",
+      "html": "<button class=\"ds-btn-primary\">Evaluate alerts</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--accent, #232323); background: var(--accent, #232323); color: var(--accent-ink, #ffffff); border-radius: var(--radius-sm, 6px); padding: 6px 12px; font: 500 14px/1.5 var(--font, 'Familjen Grotesk', system-ui, sans-serif); cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease; } .ds-btn-primary:hover { background: var(--accent-hover, #3a3a3a); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid var(--focus, #232323); outline-offset: 2px; }"
+    },
+    {
+      "name": "Select Field and Chart/Table Switch",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled select with a themed SVG chevron (native arrow removed), beside the segmented Chart / Table switch every chart card carries.",
+      "html": "<div class=\"ds-controls\"><label class=\"ds-field\"><span>City</span><select><option>All cities</option><option>Bengaluru</option></select></label><div class=\"ds-seg\" role=\"group\" aria-label=\"Revenue view\"><button aria-pressed=\"true\">Chart</button><button aria-pressed=\"false\">Table</button></div></div>",
+      "css": ".ds-controls { display: flex; gap: 12px; align-items: flex-end; font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); } .ds-field { display: inline-flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-secondary, #4a4a4a); } .ds-field select { font: 400 14px var(--font, 'Familjen Grotesk', system-ui, sans-serif); color: var(--text-primary, #232323); border: 1px solid var(--border-strong, rgba(35,35,35,0.22)); background: var(--surface-1, #ffffff); border-radius: var(--radius-sm, 6px); padding: 5px 30px 5px 8px; min-height: 34px; appearance: none; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23686868' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\"); background-repeat: no-repeat; background-position: right 9px center; } .ds-field select:focus-visible { outline: 2px solid var(--focus, #232323); outline-offset: 2px; } .ds-seg { display: inline-flex; border: 1px solid var(--border-strong, rgba(35,35,35,0.22)); border-radius: var(--radius-sm, 6px); overflow: hidden; background: var(--surface-1, #ffffff); } .ds-seg button { border: 0; background: transparent; padding: 5px 11px; font: 400 13px var(--font, 'Familjen Grotesk', system-ui, sans-serif); color: var(--text-secondary, #4a4a4a); cursor: pointer; } .ds-seg button + button { border-left: 1px solid var(--border, rgba(35,35,35,0.13)); } .ds-seg button:hover { color: var(--text-primary, #232323); } .ds-seg button:focus-visible { outline: 2px solid var(--focus, #232323); outline-offset: -2px; } .ds-seg button[aria-pressed=\"true\"] { background: var(--accent, #232323); color: var(--accent-ink, #ffffff); font-weight: 500; }"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "The ink band: brand, grouped nav with the active page filled mint, API status in the footer; under 900px a dashed 'Synthetic data' pill keeps the notice.",
+      "html": "<nav class=\"ds-rail\" aria-label=\"Main\"><a class=\"ds-brand\" href=\"#\"><span>RideOps</span><small>Transport data platform</small></a><p class=\"ds-group\">Data</p><a class=\"ds-nav\" href=\"#\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5v14a9 3 0 0 0 18 0V5\"/><path d=\"M3 12a9 3 0 0 0 18 0\"/></svg>Source apps</a><a class=\"ds-nav ds-active\" href=\"#\" aria-current=\"page\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"8\" height=\"8\" rx=\"2\"/><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"/><rect x=\"13\" y=\"13\" width=\"8\" height=\"8\" rx=\"2\"/></svg>Pipelines</a><div class=\"ds-api\"><i></i>API connected</div><span class=\"ds-mobile-note\">Synthetic data</span></nav>",
+      "css": ".ds-rail { display: grid; gap: 2px; width: 248px; padding: 22px 14px 18px; background: var(--rail, #232323); color: var(--rail-text, #e9e9e9); font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); } .ds-brand { display: grid; gap: 2px; padding: 0 10px 18px; color: #ffffff; text-decoration: none; } .ds-brand span { font-size: 21px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; } .ds-brand small { font-size: 12.5px; color: var(--rail-muted, #a4a4a4); } .ds-group { margin: 0 0 4px; padding: 0 10px; font-size: 12px; font-weight: 500; color: var(--rail-muted, #a4a4a4); } .ds-nav { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm, 6px); color: var(--rail-text, #e9e9e9); text-decoration: none; font-weight: 500; font-size: 15px; transition: background-color 160ms ease, color 160ms ease; } .ds-nav svg { color: var(--rail-muted, #a4a4a4); } .ds-nav:hover { background: rgba(255,255,255,0.08); color: #ffffff; } .ds-nav:hover svg { color: #ffffff; } .ds-nav:focus-visible { outline: 2px solid var(--mint, #a1ffcb); outline-offset: 2px; } .ds-nav.ds-active { background: var(--mint, #a1ffcb); color: #232323; } .ds-nav.ds-active svg { color: #232323; } .ds-api { display: flex; gap: 8px; align-items: center; margin-top: 18px; padding: 14px 10px 0; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12.5px; } .ds-api i { width: 8px; height: 8px; border-radius: 50%; background: var(--mint, #a1ffcb); } .ds-mobile-note { justify-self: start; margin-top: 10px; font-size: 12px; color: var(--rail-muted, #a4a4a4); border: 1px dashed rgba(255,255,255,0.3); border-radius: 999px; padding: 2px 8px; }"
+    },
+    {
+      "name": "Status Badges",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Pill badges pairing tone, icon and label; the dashed variant marks simulated figures.",
+      "html": "<div class=\"ds-badges\"><span class=\"ds-badge\" data-tone=\"good\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>Pass</span><span class=\"ds-badge\" data-tone=\"warning\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg>Warn</span><span class=\"ds-badge\" data-tone=\"critical\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg>Fail</span><span class=\"ds-badge\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/></svg>Running</span><span class=\"ds-badge ds-simulated\">Simulated</span></div>",
+      "css": ".ds-badges { display: flex; flex-wrap: wrap; gap: 8px; font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); } .ds-badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; line-height: 1.5; background: var(--surface-2, #f3f3f3); color: var(--text-primary, #232323); white-space: nowrap; } .ds-badge[data-tone=\"good\"] { background: var(--tint-good, #e5f6e9); color: var(--status-good-text, #006300); } .ds-badge[data-tone=\"warning\"] { background: var(--tint-warning, #fdf3d8); color: var(--status-warning-text, #7a5200); } .ds-badge[data-tone=\"serious\"] { background: var(--tint-warning, #fdf3d8); color: var(--status-serious-text, #9a3d14); } .ds-badge[data-tone=\"critical\"] { background: var(--tint-critical, #fbe6e6); color: var(--status-critical-text, #b42f2f); } .ds-simulated { background: transparent; border: 1px dashed var(--border-strong, rgba(35,35,35,0.22)); color: var(--text-secondary, #4a4a4a); }"
+    },
+    {
+      "name": "KPI Card",
+      "kind": "card",
+      "refersTo": "kpi-card",
+      "description": "Stat tile: label, tabular value, hint; tinted and borderless when the number is a state.",
+      "html": "<div class=\"ds-kpis\"><div class=\"ds-kpi\"><div class=\"ds-kpi-label\">Total bookings</div><div class=\"ds-kpi-value\">1,00,000</div><div class=\"ds-kpi-hint\">71,842 completed</div></div><div class=\"ds-kpi\" data-tone=\"critical\"><div class=\"ds-kpi-label\">Failing checks</div><div class=\"ds-kpi-value\">2</div><div class=\"ds-kpi-hint\">of 35 checks</div></div></div>",
+      "css": ".ds-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); } .ds-kpi { display: grid; gap: 4px; align-content: start; background: var(--surface-1, #ffffff); border: 1px solid var(--border, rgba(35,35,35,0.13)); border-radius: var(--radius, 8px); padding: 18px 20px; color: var(--text-primary, #232323); } .ds-kpi-label { font-size: 13px; color: var(--text-secondary, #4a4a4a); } .ds-kpi-value { font-size: 30px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.15; font-variant-numeric: tabular-nums; } .ds-kpi-hint { font-size: 12.5px; color: var(--text-muted, #686868); } .ds-kpi[data-tone=\"good\"] { background: var(--tint-good, #e5f6e9); border-color: transparent; } .ds-kpi[data-tone=\"warning\"] { background: var(--tint-warning, #fdf3d8); border-color: transparent; } .ds-kpi[data-tone=\"critical\"] { background: var(--tint-critical, #fbe6e6); border-color: transparent; }"
+    },
+    {
+      "name": "Report Section Head",
+      "kind": "custom",
+      "refersTo": "section-link",
+      "description": "Every band of every page: title and description, mono lineage, drill-in link, hairline rule.",
+      "html": "<section class=\"ds-section\"><div class=\"ds-section-head\"><div><h2>Sources</h2><p>The applications that delivered data, and how many rows survived validation.</p></div><div class=\"ds-section-tools\"><span class=\"ds-lineage\"><code>ops.ingestion_log</code></span><a class=\"ds-section-link\" href=\"#\">Source apps <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></a></div></div></section>",
+      "css": ".ds-section { font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); color: var(--text-primary, #232323); } .ds-section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border, rgba(35,35,35,0.13)); } .ds-section-head h2 { margin: 0; font-size: 21px; font-weight: 500; letter-spacing: -0.015em; } .ds-section-head p { margin: 2px 0 0; font-size: 14px; color: var(--text-secondary, #4a4a4a); } .ds-section-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .ds-lineage { font-size: 12.5px; color: var(--text-muted, #686868); } .ds-lineage code { font-family: var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace); font-size: 12px; color: var(--text-secondary, #4a4a4a); } .ds-section-link { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; color: var(--text-primary, #232323); text-decoration: none; padding: 4px 10px; border-radius: var(--radius-sm, 6px); border: 1px solid var(--border-strong, rgba(35,35,35,0.22)); transition: background-color 150ms ease; } .ds-section-link:hover { background: var(--surface-2, #f3f3f3); } .ds-section-link:focus-visible { outline: 2px solid var(--focus, #232323); outline-offset: 2px; }"
+    },
+    {
+      "name": "Trust Strip",
+      "kind": "custom",
+      "refersTo": "trust-strip",
+      "description": "A report's provenance before its figures: feeding apps with their swatches, last file, icon-led check counts, quarantined rows, links to the evidence.",
+      "html": "<section class=\"ds-trust\" aria-label=\"Where this report's data comes from\"><div class=\"ds-trust-item\"><span class=\"ds-trust-label\">Built from</span><span class=\"ds-trust-value\"><span class=\"ds-key\"><i style=\"background: var(--src-rider, #2a78d6)\"></i>Rider app</span><span class=\"ds-key\"><i style=\"background: var(--src-payments, #eda100)\"></i>Payments</span></span></div><div class=\"ds-trust-item\"><span class=\"ds-trust-label\">Last file</span><span class=\"ds-trust-value\">2h ago</span></div><div class=\"ds-trust-item\"><span class=\"ds-trust-label\">Checks</span><span class=\"ds-trust-value\"><span class=\"ds-count\" data-tone=\"good\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>31 pass</span><span class=\"ds-count\" data-tone=\"warning\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg>2 warn</span><span class=\"ds-count\" data-tone=\"critical\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg>2 fail</span></span></div><div class=\"ds-trust-item\"><span class=\"ds-trust-label\">Quarantined</span><span class=\"ds-trust-value\">1,104 rows</span></div><div class=\"ds-trust-links\"><a class=\"ds-trust-link\" href=\"#\">Data quality <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></a></div></section>",
+      "css": ".ds-trust { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; padding: 12px 16px; background: var(--surface-2, #f3f3f3); border-radius: var(--radius, 8px); font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); color: var(--text-primary, #232323); } .ds-trust-item { display: grid; gap: 2px; } .ds-trust-label { font-size: 12px; color: var(--text-muted, #686868); } .ds-trust-value { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; font-weight: 500; } .ds-key { display: inline-flex; align-items: center; gap: 6px; } .ds-key i { width: 10px; height: 10px; border-radius: 2px; } .ds-count { display: inline-flex; align-items: center; gap: 4px; } .ds-count[data-tone=\"good\"] { color: var(--status-good-text, #006300); } .ds-count[data-tone=\"warning\"] { color: var(--status-warning-text, #7a5200); } .ds-count[data-tone=\"critical\"] { color: var(--status-critical-text, #b42f2f); } .ds-trust-links { display: flex; gap: 8px; margin-left: auto; } .ds-trust-link { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; color: var(--text-primary, #232323); text-decoration: none; padding: 4px 10px; border-radius: var(--radius-sm, 6px); border: 1px solid var(--border-strong, rgba(35,35,35,0.22)); transition: background-color 150ms ease; } .ds-trust-link:hover { background: var(--surface-1, #ffffff); } .ds-trust-link:focus-visible { outline: 2px solid var(--focus, #232323); outline-offset: 2px; }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "custom",
+      "refersTo": "table-header",
+      "description": "Mist header row, grid-ruled rows, right-aligned tabular numbers, mono identifiers, row hover and selection.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>Pipeline</th><th>Status</th><th class=\"ds-num\">Rows</th></tr></thead><tbody><tr><td class=\"ds-mono\">silver_bookings</td><td>Success</td><td class=\"ds-num\">99,412</td></tr><tr class=\"ds-selected\"><td class=\"ds-mono\">gold_city_daily</td><td>Running</td><td class=\"ds-num\">540</td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; border-collapse: collapse; font: 400 14px/1.5 var(--font, 'Familjen Grotesk', system-ui, sans-serif); color: var(--text-primary, #232323); } .ds-table th, .ds-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--grid, #ececec); vertical-align: top; } .ds-table th { font-size: 12.5px; font-weight: 500; color: var(--text-secondary, #4a4a4a); background: var(--surface-2, #f3f3f3); border-bottom-color: var(--border, rgba(35,35,35,0.13)); white-space: nowrap; } .ds-table thead th:first-child { border-top-left-radius: 6px; } .ds-table thead th:last-child { border-top-right-radius: 6px; } .ds-table .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-table .ds-mono { font-family: var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace); font-size: 12.5px; } .ds-table tbody tr:hover { background: var(--row-hover, #f7f7f7); } .ds-table tr.ds-selected { background: var(--tint-accent, #e6fff1); }"
+    },
+    {
+      "name": "Layer Map",
+      "kind": "custom",
+      "refersTo": "layer-chip",
+      "description": "Bronze to serving columns of pipeline chips, tinted by last run state, arrow between columns.",
+      "html": "<ol class=\"ds-layers\"><li class=\"ds-layer\"><div class=\"ds-layer-head\"><h3>Silver</h3><p>Validated, typed tables</p></div><ul><li><a class=\"ds-chip\" data-tone=\"good\" href=\"#\"><span class=\"ds-chip-name\">silver_bookings</span><span class=\"ds-chip-meta\">Success · 2h ago</span></a></li><li><a class=\"ds-chip\" data-tone=\"critical\" href=\"#\"><span class=\"ds-chip-name\">silver_payments</span><span class=\"ds-chip-meta\">Failed · 40m ago</span></a></li></ul></li><li class=\"ds-layer\"><div class=\"ds-layer-head\"><h3>Gold</h3><p>Reporting aggregates</p></div><ul><li><a class=\"ds-chip\" data-tone=\"warning\" href=\"#\"><span class=\"ds-chip-name\">gold_city_daily</span><span class=\"ds-chip-meta\">Warn · 1h ago</span></a></li></ul></li></ol>",
+      "css": ".ds-layers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); color: var(--text-primary, #232323); } .ds-layer { background: var(--surface-2, #f3f3f3); border-radius: var(--radius, 8px); padding: 14px; display: grid; align-content: start; gap: 12px; } .ds-layer-head h3 { margin: 0; font-size: 16px; font-weight: 500; } .ds-layer-head p { margin: 2px 0 0; font-size: 13px; color: var(--text-muted, #686868); } .ds-layer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; } .ds-chip { display: grid; gap: 1px; padding: 9px 11px; border-radius: var(--radius-sm, 6px); background: var(--surface-1, #ffffff); border: 1px solid var(--border, rgba(35,35,35,0.13)); color: var(--text-primary, #232323); text-decoration: none; transition: border-color 150ms ease, transform 150ms ease; } .ds-chip:hover { border-color: var(--border-strong, rgba(35,35,35,0.22)); transform: translateY(-1px); } .ds-chip:focus-visible { outline: 2px solid var(--focus, #232323); outline-offset: 2px; } .ds-chip[data-tone=\"critical\"] { background: var(--tint-critical, #fbe6e6); border-color: transparent; } .ds-chip[data-tone=\"warning\"] { background: var(--tint-warning, #fdf3d8); border-color: transparent; } .ds-chip-name { font-family: var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace); font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-chip-meta { font-size: 12.5px; color: var(--text-muted, #686868); } .ds-chip[data-tone=\"good\"] .ds-chip-meta::before { content: \"\"; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--status-good, #0ca30c); }"
+    },
+    {
+      "name": "Source Flow",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Signature drawing: source nodes, row-weighted bands into the ink validated-tables node, a dashed critical quarantine branch and a grey dotted duplicates-merged branch.",
+      "html": "<svg class=\"ds-flow\" viewBox=\"0 0 600 236\" role=\"img\" aria-label=\"Data flow from two source applications into validated tables, quarantine and duplicates merged\"><path d=\"M200 35 C296 35, 296 72, 392 72\" stroke=\"var(--src-rider, #2a78d6)\" stroke-width=\"18\" stroke-opacity=\"0.5\" fill=\"none\"/><path d=\"M200 105 C296 105, 296 72, 392 72\" stroke=\"var(--src-payments, #eda100)\" stroke-width=\"9\" stroke-opacity=\"0.5\" fill=\"none\"/><path d=\"M200 105 C296 105, 296 140, 392 140\" stroke=\"var(--status-critical, #d03b3b)\" stroke-width=\"1.5\" stroke-dasharray=\"3 4\" stroke-opacity=\"0.7\" fill=\"none\"/><path d=\"M200 35 C296 35, 296 206, 392 206\" stroke=\"var(--text-muted, #686868)\" stroke-width=\"1.5\" stroke-dasharray=\"1 4\" stroke-linecap=\"round\" stroke-opacity=\"0.8\" fill=\"none\"/><rect x=\"1\" y=\"8\" width=\"199\" height=\"54\" rx=\"6\" class=\"ds-node\"/><circle cx=\"20\" cy=\"35\" r=\"6\" fill=\"var(--src-rider, #2a78d6)\"/><text x=\"36\" y=\"31\" class=\"ds-name\">Rider app</text><text x=\"36\" y=\"49\" class=\"ds-meta\">100K rows · bookings</text><rect x=\"1\" y=\"78\" width=\"199\" height=\"54\" rx=\"6\" class=\"ds-node\"/><circle cx=\"20\" cy=\"105\" r=\"6\" fill=\"var(--src-payments, #eda100)\"/><text x=\"36\" y=\"101\" class=\"ds-name\">Payments</text><text x=\"36\" y=\"119\" class=\"ds-meta\">71K rows · payments</text><rect x=\"392\" y=\"40\" width=\"196\" height=\"64\" rx=\"6\" class=\"ds-core\"/><text x=\"408\" y=\"66\" class=\"ds-name ds-on-ink\">Validated tables</text><text x=\"408\" y=\"86\" class=\"ds-meta ds-on-ink-meta\">170K rows · 99.4% kept</text><rect x=\"392\" y=\"114\" width=\"196\" height=\"52\" rx=\"6\" class=\"ds-quarantine\"/><text x=\"408\" y=\"137\" class=\"ds-name\">Quarantine</text><text x=\"408\" y=\"155\" class=\"ds-meta\">1.1K rows rejected</text><rect x=\"392\" y=\"180\" width=\"196\" height=\"52\" rx=\"6\" class=\"ds-duplicates\"/><text x=\"408\" y=\"203\" class=\"ds-name\">Duplicates merged</text><text x=\"408\" y=\"221\" class=\"ds-meta\">420 rows delivered twice</text></svg>",
+      "css": ".ds-flow { display: block; width: 100%; height: auto; font-family: var(--font, 'Familjen Grotesk', system-ui, sans-serif); background: var(--surface-1, #ffffff); } .ds-node { fill: var(--surface-1, #ffffff); stroke: var(--border-strong, rgba(35,35,35,0.22)); } .ds-core { fill: var(--rail, #232323); } .ds-quarantine { fill: var(--tint-critical, #fbe6e6); } .ds-duplicates { fill: var(--surface-2, #f3f3f3); } .ds-name { font-size: 15px; font-weight: 500; fill: var(--text-primary, #232323); } .ds-meta { font-size: 13px; fill: var(--text-muted, #686868); } .ds-on-ink { fill: #ffffff; } .ds-on-ink-meta { fill: var(--mint, #a1ffcb); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Traced Report",
+    "overview": "RideOps reads like a printed operations report that keeps its receipts. Each page is a column of bands under hairline rules (Sources, then Checks, then Results on the Overview), and every band names the table it was computed from in small mono type beside its heading. The figures are large, tabular and quiet; the lineage is small and always present. Density is that of a working tool: 14-15px text, 16px gutters, tables with 9px cell padding, nothing padded for show.\n\nThe world is shared with the landing page at `/` (`frontend/index.html`): a white ground, one warm near-black ink used for text, primary actions and the sidebar band, a single mint accent, Familjen Grotesk for everything with IBM Plex Mono for identifiers, small sharp corners and hairlines in place of shadows. The landing page draws on its own kit in `frontend/public/assets`; this document covers the dashboard at `/app` (`frontend/src`) only, and the two meet in fonts, ink, mint and corner language rather than in shared components.\n\nColour does jobs, never decoration. The five source applications each own one hue, the six cities each own one series slot, the four state tones tint fills and badges, and mint marks only where you are and what is healthy. Everything else is ink on white, or white on near-black in dark mode.",
+    "keyCharacteristics": [
+      "Ink band sidebar (#232323 light, #141414 dark) with the active page filled mint.",
+      "Reports built from bands with a hairline section head and a mono lineage line.",
+      "Flat surfaces: 1px hairline borders, no shadows at rest; tints carry state.",
+      "Familjen Grotesk at two weights (400, 500), tabular figures for every number; IBM Plex Mono only for table, file and pipeline names.",
+      "Corners at 6-8px for containers and controls, 2-4px for data marks, full pills only for badges and meters.",
+      "Entity colour is fixed: a source or a city keeps its hue on every page and in both themes.",
+      "Light by default (like the landing page), with Dark and System one select away in the sidebar footer."
+    ],
+    "rules": [
+      {
+        "name": "The Jobs-Only Colour Rule",
+        "body": "A hue appears only when it identifies a source, a city or a state. Nothing is coloured to make a section look lively.",
+        "section": "colors"
+      },
+      {
+        "name": "The Mint Means Here-and-Healthy Rule",
+        "body": "Mint fills the active place (current nav item) and confirms health (API connected, validated tables). It is not a highlight colour for figures, cards or headings.",
+        "section": "colors"
+      },
+      {
+        "name": "The Fixed Entity Rule",
+        "body": "Colour follows the entity, never its rank: a city or source keeps the same slot when filters remove its neighbours, in every chart and both themes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never-Alone Rule",
+        "body": "State colour always travels with an icon and a label (StatusBadge, or an icon-led count such as \"check 12 pass\"), and every chart with two or more series carries a legend and a table view. Three light-theme categorical slots sit under 3:1 against the surface, which is why the legend and table are mandatory, not optional.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Weights Rule",
+        "body": "Familjen Grotesk runs at 400 and 500 only. Emphasis comes from size and colour, not bold.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "Every number that can be compared (KPI values, facts, table numeric columns, tooltip values, bar list values) uses `font-variant-numeric: tabular-nums`, and numeric table columns align right.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Is an Identifier Rule",
+        "body": "IBM Plex Mono marks names that exist in the system: `ops.ingestion_log`, `monitoring/incidents/*.md`, a pipeline name. It is never used for labels, numbers or decoration.",
+        "section": "typography"
+      },
+      {
+        "name": "The Report Column Rule",
+        "body": "A page is one column of named sections read top to bottom; side-by-side placement happens only inside a section, never between sections.",
+        "section": "layout"
+      },
+      {
+        "name": "The Hairline-Not-Shadow Rule",
+        "body": "Containers separate with a 1px `border` hairline or a change of surface, never with a shadow. Only transient overlays (the chart tooltip) cast one.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Pill Is a Tag Rule",
+        "body": "Only badges and meters are pills. Anything a user clicks or reads as a container keeps its 6-8px corner.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do open each section with its hairline head and name its source tables in the lineage line, in mono (`ops.data_quality_results`).",
+      "Do give every chart a Chart / Table segmented switch and a legend once it has two series.",
+      "Do take city colours from the fixed series order and source colours from `--src-*`, so an entity never changes hue between pages.",
+      "Do tint the whole KPI tile (good, warning, critical) when the number is itself a state, and drop its border when you do.",
+      "Do pair every state colour with an icon and a label through StatusBadge, and mark simulated figures with the dashed Simulated badge.",
+      "Do keep containers at 8px, controls at 6px, data marks at 2-4px.",
+      "Do set every comparable number in tabular figures and right-align numeric columns.",
+      "Do keep text on mint in Workshop Ink (#232323), in both themes."
+    ],
+    "donts": [
+      "Don't add drop shadows to cards, tiles, columns or the sidebar; only the transient chart tooltip floats.",
+      "Don't use mint to highlight a figure, card or heading; it marks the active place and healthy confirmations only.",
+      "Don't colour an element that does not identify a source, a city or a state.",
+      "Don't use IBM Plex Mono for labels, numbers or decoration.",
+      "Don't set Familjen Grotesk above 500 weight.",
+      "Don't make a button, card or chip a pill; pills are for badges and meters.",
+      "Don't let state colour stand alone as the only signal."
+    ]
+  }
+}

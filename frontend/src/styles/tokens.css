@@ -4,20 +4,43 @@
  * slots are < 3:1 against the surface, so every chart ships a legend + a table view.
  * Status colours are reserved for state and always appear with an icon and a label.
  */
+/* Shared with the landing page (index.html): white ground, one warm near-black ink, mint as the
+   single accent, Familjen Grotesk with IBM Plex Mono, sharp corners and hairlines instead of shadows. */
 :root {
   color-scheme: light;
-  --page: #f9f9f7;
-  --surface-1: #fcfcfb;
-  --surface-2: #f3f2ee;
-  --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #6f6d68;
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
-  --accent: #2a78d6;
-  --accent-text: #1c5cab;
-  --focus: #2a78d6;
+  --page: #ffffff;
+  --surface-1: #ffffff;
+  --surface-2: #f3f3f3;
+  --text-primary: #232323;
+  --text-secondary: #4a4a4a;
+  --text-muted: #686868;
+  --grid: #ececec;
+  --axis: #c9c9c9;
+  --border: rgba(35, 35, 35, 0.13);
+  --accent: #232323;
+  --accent-ink: #ffffff;
+  --accent-text: #232323;
+  --mint: #a1ffcb;
+  --focus: #232323;
+  --border-strong: rgba(35, 35, 35, 0.22);
+  --accent-hover: #3a3a3a;
+  --row-hover: #f7f7f7;
+  --rail: #232323;
+  --rail-text: #e9e9e9;
+  --rail-muted: #a4a4a4;
+  --tint-good: #e5f6e9;
+  --tint-warning: #fdf3d8;
+  --tint-critical: #fbe6e6;
+  --tint-accent: #e6fff1;
+  --status-warning-text: #7a5200;
+  --status-serious-text: #9a3d14;
+
+  /* One colour per source application, taken from the validated categorical palette. */
+  --src-rider: #2a78d6;
+  --src-driver: #1baf7a;
+  --src-payments: #eda100;
+  --src-billing: #eb6834;
+  --src-platform: #e87ba4;
 
   --series-1: #2a78d6;
   --series-2: #eb6834;
@@ -34,59 +57,98 @@
   --status-critical-text: #b42f2f;
   --status-neutral: #898781;
 
-  --radius: 10px;
-  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 2px 8px rgba(11, 11, 11, 0.04);
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --shadow: none;
+  --font: "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --display-tracking: -0.03em;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --page: #0d0d0d;
-    --surface-1: #1a1a19;
-    --surface-2: #232321;
-    --text-primary: #f0efec;
-    --text-secondary: #c3c2b7;
-    --text-muted: #9a988f;
-    --grid: #2c2c2a;
-    --axis: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --accent: #3987e5;
-    --accent-text: #86b6ef;
-    --focus: #5598e7;
+    --page: #1c1c1c;
+    --surface-1: #242424;
+    --surface-2: #2e2e2e;
+    --text-primary: #ffffff;
+    --text-secondary: #d2d2d2;
+    --text-muted: #a4a4a4;
+    --grid: #3a3a3a;
+    --axis: #4a4a4a;
+    --border: rgba(255, 255, 255, 0.12);
+    --accent: #a1ffcb;
+    --accent-ink: #232323;
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --accent-hover: #c2ffdc;
+    --row-hover: #2c2c2c;
+    --rail: #141414;
+    --rail-text: #e9e9e9;
+    --rail-muted: #9a9a9a;
+    --tint-good: #183322;
+    --tint-warning: #3a2f12;
+    --tint-critical: #3d1c1c;
+    --tint-accent: #1f3a2c;
+    --status-warning-text: #f5c75a;
+    --status-serious-text: #f2a07c;
+    --src-rider: #3987e5;
+    --src-driver: #199e70;
+    --src-payments: #c98500;
+    --src-billing: #d95926;
+    --src-platform: #d55181;
+    --accent-text: #a1ffcb;
+    --focus: #a1ffcb;
     --series-1: #3987e5;
     --series-2: #d95926;
     --series-3: #199e70;
     --series-4: #c98500;
     --series-5: #d55181;
     --series-6: #0ca30c;
-    --status-good-text: #0ca30c;
-    --status-critical-text: #e66767;
+    --status-good-text: #3fcf6f;
+    --status-critical-text: #ff8080;
     --shadow: none;
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #0d0d0d;
-  --surface-1: #1a1a19;
-  --surface-2: #232321;
-  --text-primary: #f0efec;
-  --text-secondary: #c3c2b7;
-  --text-muted: #9a988f;
-  --grid: #2c2c2a;
-  --axis: #383835;
-  --border: rgba(255, 255, 255, 0.1);
-  --accent: #3987e5;
-  --accent-text: #86b6ef;
-  --focus: #5598e7;
+  --page: #1c1c1c;
+  --surface-1: #242424;
+  --surface-2: #2e2e2e;
+  --text-primary: #ffffff;
+  --text-secondary: #d2d2d2;
+  --text-muted: #a4a4a4;
+  --grid: #3a3a3a;
+  --axis: #4a4a4a;
+  --border: rgba(255, 255, 255, 0.12);
+  --accent: #a1ffcb;
+  --accent-ink: #232323;
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --accent-hover: #c2ffdc;
+  --row-hover: #2c2c2c;
+  --rail: #141414;
+  --rail-text: #e9e9e9;
+  --rail-muted: #9a9a9a;
+  --tint-good: #183322;
+  --tint-warning: #3a2f12;
+  --tint-critical: #3d1c1c;
+  --tint-accent: #1f3a2c;
+  --status-warning-text: #f5c75a;
+  --status-serious-text: #f2a07c;
+  --src-rider: #3987e5;
+  --src-driver: #199e70;
+  --src-payments: #c98500;
+  --src-billing: #d95926;
+  --src-platform: #d55181;
+  --accent-text: #a1ffcb;
+  --focus: #a1ffcb;
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;
   --series-4: #c98500;
   --series-5: #d55181;
   --series-6: #0ca30c;
-  --status-good-text: #0ca30c;
-  --status-critical-text: #e66767;
+  --status-good-text: #3fcf6f;
+  --status-critical-text: #ff8080;
   --shadow: none;
 }

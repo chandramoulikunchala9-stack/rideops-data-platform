@@ -5,7 +5,8 @@ import { api, ApiError } from "../api/client";
 import type { Alert, Incident, MonitoringSummary } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AsyncView } from "../components/AsyncView";
-import { Card, KpiCard } from "../components/Card";
+import { Card, KpiCard, ReportSection } from "../components/Card";
+import { Icon } from "../components/Icon";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatDateTime, formatInt, humanize } from "../lib/format";
 
@@ -44,7 +45,7 @@ export function MonitoringPage() {
       <header className="page-header">
         <div>
           <h1>Alerts &amp; incidents</h1>
-          <p>Failed and long-running jobs, freshness, data quality, budget and cost anomalies</p>
+          <p>Six alert rules watch failed and slow runs, stale data, failing checks, budget and cost spikes. Every incident keeps its postmortem.</p>
         </div>
         <button type="button" className="btn primary" disabled={busy} onClick={evaluate}>
           {busy ? "Evaluating…" : "Evaluate alert rules now"}
@@ -52,22 +53,31 @@ export function MonitoringPage() {
       </header>
       {message && <div className="notice" role="status" style={{ marginBottom: 16 }}>{message}</div>}
 
-      <div className="stack">
+      <div className="report">
+        <ReportSection id="health" title="Platform health" description="The state of the platform right now." lineage={<code>ops.pipeline_runs</code>}>
         <AsyncView state={summary}>
           {(s) => (
             <div className="grid kpis">
-              <KpiCard label="Failing pipelines" value={formatInt(s.failing_pipelines.length)} hint={s.failing_pipelines.join(", ") || "none"} />
+              <KpiCard label="Failing pipelines" value={formatInt(s.failing_pipelines.length)} hint={s.failing_pipelines.join(", ") || "none"}
+                tone={s.failing_pipelines.length ? "critical" : "good"} />
               <KpiCard label="Runs in last 24 h" value={formatInt(Object.values(s.runs_last_24h).reduce((a, b) => a + b, 0))}
                 hint={Object.entries(s.runs_last_24h).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(" · ") || "no runs"} />
               <KpiCard label="Long-running runs (30 d)" value={formatInt(s.long_running_runs_30d)} hint="> 2× pipeline median" />
               <KpiCard label="Hours since last ingestion" value={s.hours_since_ingestion?.toFixed(1) ?? "–"}
                 hint={s.hours_since_ingestion != null && s.hours_since_ingestion > 26 ? <StatusBadge status="WARNING" /> : "threshold 26 h"} />
-              <KpiCard label="Open incidents" value={formatInt(s.open_incidents)} />
+              <KpiCard label="Open incidents" value={formatInt(s.open_incidents)} tone={s.open_incidents ? "critical" : undefined} />
             </div>
           )}
         </AsyncView>
+        </ReportSection>
 
-        <Card title="Active alerts" subtitle="De-duplicated per rule and subject; resolved automatically when the condition clears">
+        <ReportSection
+          id="alerts"
+          title="Active alerts"
+          description="De-duplicated per rule and subject; each one resolves itself when its condition clears."
+          lineage={<code>ops.alerts</code>}
+        >
+        <Card>
           <AsyncView state={alerts} isEmpty={(a) => a.length === 0} empty="No active alerts.">
             {(list) => (
               <div className="table-wrap">
@@ -90,14 +100,22 @@ export function MonitoringPage() {
             )}
           </AsyncView>
         </Card>
+        </ReportSection>
 
-        <Card title="Incident history" subtitle="Impact, timeline, root cause and resolution for every incident">
+        <ReportSection
+          id="incidents"
+          title="Incident history"
+          description="Impact, timeline, root cause and resolution for every incident."
+          lineage={<code>monitoring/incidents/*.md</code>}
+        >
+        <Card>
           <AsyncView state={incidents} isEmpty={(i) => i.length === 0} empty="No incidents recorded.">
             {(list) => (
               <div className="stack">
                 {list.map((incident) => (
-                  <details key={incident.incident_id} className="card" style={{ boxShadow: "none" }}>
-                    <summary style={{ cursor: "pointer" }}>
+                  <details key={incident.incident_id} className="incident">
+                    <summary>
+                      <Icon name="arrowRight" size={15} />
                       <span className="toolbar" style={{ display: "inline-flex" }}>
                         <strong>{incident.incident_id}</strong>
                         <StatusBadge status={incident.status} />
@@ -119,6 +137,7 @@ export function MonitoringPage() {
             )}
           </AsyncView>
         </Card>
+        </ReportSection>
       </div>
     </>
   );

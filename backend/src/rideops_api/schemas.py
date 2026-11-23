@@ -141,6 +141,56 @@ class Payments(Model):
     by_method: list[PaymentMethodStats]
 
 
+# ------------------------------------------------------------------ source applications
+class SourceEntity(Model):
+    entity: str
+    files: int
+    failed_files: int
+    rows_loaded: int
+    rows_current: int
+    rows_rejected: int
+    bytes: int
+    last_loaded_at: datetime | None
+
+
+class SourceApp(Model):
+    id: str
+    name: str
+    description: str
+    status: Literal["ok", "warn", "fail", "empty"]
+    rows_loaded: int
+    rows_rejected: int
+    last_loaded_at: datetime | None
+    entities: list[SourceEntity]
+
+
+class Sources(Model):
+    sources: list[SourceApp]
+
+
+class AppPlatformStats(Model):
+    platform: str
+    sessions: int
+    fare_views: int
+    bookings: int
+    crashes: int
+    conversion_rate: float | None
+
+
+class AppDay(Model):
+    date: date
+    platform: str
+    sessions: int
+    bookings: int
+
+
+class AppFunnel(Model):
+    available: bool
+    period: Period
+    platforms: list[AppPlatformStats]
+    daily: list[AppDay]
+
+
 # ------------------------------------------------------------------ pipelines
 class PipelineSummary(Model):
     pipeline_name: str

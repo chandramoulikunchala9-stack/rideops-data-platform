@@ -18,7 +18,8 @@ docker compose --profile app up -d --build # API (8001) + dashboard behind nginx
 python scripts/verify_deployment.py --api http://localhost:8001 --web http://localhost:8080
 ```
 
-Open http://localhost:8080. API docs: http://localhost:8001/docs.
+Open http://localhost:8080 (landing page) and http://localhost:8080/app/ (dashboard). API docs:
+http://localhost:8001/docs.
 
 Lakehouse (optional): `docker compose --profile spark run --rm spark python -m rideops.spark all`.
 

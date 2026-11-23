@@ -4,10 +4,11 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import type { DataQuality } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AsyncView } from "../components/AsyncView";
-import { Card, KpiCard } from "../components/Card";
+import { Card, KpiCard, ReportSection } from "../components/Card";
 import { ChartCard, ChartTooltip } from "../components/ChartCard";
+import { Icon } from "../components/Icon";
 import { StatusBadge } from "../components/StatusBadge";
-import { axisProps, gridProps, HBAR_RADIUS, seriesColor } from "../lib/charts";
+import { axisProps, gridProps, HBAR_RADIUS } from "../lib/charts";
 import { formatDateTime, formatInt, formatPct, humanize } from "../lib/format";
 
 interface TooltipLike {
@@ -30,21 +31,79 @@ export function DataQualityPage() {
       <header className="page-header">
         <div>
           <h1>Data quality</h1>
-          <p>Validation, uniqueness, completeness, referential, freshness, volume, schema and reconciliation checks</p>
+          <p>The checks every batch must pass before it reaches the reports, and the rows they kept out.</p>
         </div>
         <button type="button" className="btn" onClick={dq.reload}>Refresh</button>
       </header>
 
       <AsyncView state={dq} skeletonRows={6}>
         {(d) => (
-          <div className="stack">
+          <div className="report">
+            <ReportSection
+              id="summary"
+              title="Summary"
+              description="WARN means some rows failed within the agreed threshold; FAIL means above it, which blocks the gold refresh."
+              lineage={<code>ops.data_quality_results</code>}
+            >
             <div className="grid kpis">
-              <KpiCard label="Checks passing" value={formatInt(d.status_counts.PASS)} hint={<StatusBadge status="PASS" />} />
-              <KpiCard label="Warnings (within threshold)" value={formatInt(d.status_counts.WARN)} hint={<StatusBadge status="WARN" />} />
-              <KpiCard label="Failing checks" value={formatInt(d.status_counts.FAIL)} hint={<StatusBadge status="FAIL" />} />
+              <KpiCard label="Checks passing" value={formatInt(d.status_counts.PASS)} hint={<StatusBadge status="PASS" />} tone="good" />
+              <KpiCard label="Warnings, within threshold" value={formatInt(d.status_counts.WARN)} hint={<StatusBadge status="WARN" />} tone={d.status_counts.WARN ? "warning" : undefined} />
+              <KpiCard label="Failing checks" value={formatInt(d.status_counts.FAIL)} hint={<StatusBadge status="FAIL" />} tone={d.status_counts.FAIL ? "critical" : undefined} />
               <KpiCard label="Quarantined records" value={formatInt(d.rejections.reduce((n, r) => n + r.rows, 0))} hint={`Last checked ${formatDateTime(d.last_checked_at)}`} />
             </div>
+            <ChartCard
+              title="Checks by type"
+              subtitle="Pass, warn and fail per kind of check"
+              height={Math.max(types.length * 38, 120)}
+              grow
+              chart={
+                <ul className="type-matrix">
+                  {types.map((t) => {
+                    const of = d.checks.filter((c) => c.check_type === t);
+                    const n = (st: string) => of.filter((c) => c.status === st).length;
+                    return (
+                      <li key={t}>
+                        <span className="type-name">{humanize(t)}</span>
+                        <div className="stacked-bar" aria-hidden="true">
+                          {(["PASS", "WARN", "FAIL"] as const).map((st) =>
+                            n(st) ? <span key={st} data-tone={st === "PASS" ? "good" : st === "WARN" ? "warning" : "critical"} style={{ flexGrow: n(st) }} /> : null,
+                          )}
+                        </div>
+                        <span className="type-counts">
+                          {(["PASS", "WARN", "FAIL"] as const).map((st) =>
+                            n(st) ? (
+                              <span key={st} className="type-count-item" data-tone={st === "PASS" ? "good" : st === "WARN" ? "warning" : "critical"}>
+                                <Icon name={st === "PASS" ? "check" : st === "WARN" ? "warning" : "x"} size={13} />
+                                {n(st)} {st.toLowerCase()}
+                              </span>
+                            ) : null,
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              }
+              table={
+                <table>
+                  <thead>
+                    <tr><th scope="col">Type</th><th scope="col" className="num">Pass</th><th scope="col" className="num">Warn</th><th scope="col" className="num">Fail</th><th scope="col" className="num">Total</th></tr>
+                  </thead>
+                  <tbody>
+                    {types.map((t) => {
+                      const of = d.checks.filter((c) => c.check_type === t);
+                      const n = (st: string) => of.filter((c) => c.status === st).length;
+                      return (
+                        <tr key={t}><td>{humanize(t)}</td><td className="num">{n("PASS")}</td><td className="num">{n("WARN")}</td><td className="num">{n("FAIL")}</td><td className="num">{of.length}</td></tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              }
+            />
+            </ReportSection>
 
+            <ReportSection id="results" title="Check results" description="The latest result of every check, with the rows it flagged.">
             <Card
               title="Latest check results"
               subtitle="WARN = some rows failed but within the agreed threshold; FAIL = above it (blocks gold refresh on Databricks)"
@@ -91,7 +150,14 @@ export function DataQualityPage() {
                 </div>
               )}
             </Card>
+            </ReportSection>
 
+            <ReportSection
+              id="quarantine"
+              title="Quarantine"
+              description="Rows rejected on the way in, kept for inspection instead of being dropped."
+              lineage={<code>core.rejected_records</code>}
+            >
             <ChartCard
               title="Quarantined records by reason"
               subtitle="Rows rejected by the SQL pipeline (core.rejected_records)"
@@ -110,7 +176,7 @@ export function DataQualityPage() {
                         return <ChartTooltip title={row.label} rows={[{ label: "Rows", value: formatInt(row.rows) }]} />;
                       }}
                     />
-                    <Bar dataKey="rows" fill={seriesColor(1)} maxBarSize={16} radius={HBAR_RADIUS} isAnimationActive={false} />
+                    <Bar dataKey="rows" fill="var(--status-critical)" maxBarSize={16} radius={HBAR_RADIUS} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               }
@@ -125,6 +191,7 @@ export function DataQualityPage() {
                 </table>
               }
             />
+            </ReportSection>
           </div>
         )}
       </AsyncView>

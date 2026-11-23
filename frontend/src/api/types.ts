@@ -260,3 +260,45 @@ export interface AccessSettings {
   users_note: string;
   environment: Record<string, string | number | boolean | null>;
 }
+
+export interface SourceEntity {
+  entity: string;
+  files: number;
+  failed_files: number;
+  rows_loaded: number;
+  rows_current: number;
+  rows_rejected: number;
+  bytes: number;
+  last_loaded_at: string | null;
+}
+
+export interface SourceApp {
+  id: "rider_app" | "driver_app" | "payments" | "cloud_billing" | "platform_ops";
+  name: string;
+  description: string;
+  status: "ok" | "warn" | "fail" | "empty";
+  rows_loaded: number;
+  rows_rejected: number;
+  last_loaded_at: string | null;
+  entities: SourceEntity[];
+}
+
+export interface Sources {
+  sources: SourceApp[];
+}
+
+export interface AppPlatformStats {
+  platform: string;
+  sessions: number;
+  fare_views: number;
+  bookings: number;
+  crashes: number;
+  conversion_rate: number | null;
+}
+
+export interface AppFunnel {
+  available: boolean;
+  period: Period;
+  platforms: AppPlatformStats[];
+  daily: { date: string; platform: string; sessions: number; bookings: number }[];
+}

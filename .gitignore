@@ -55,3 +55,11 @@ crash.log
 Thumbs.db
 desktop.ini
 ~$*
+
+# --- Landing page design-check output (taste-skill) ---
+frontend/.taste-skill/
+frontend/shots/
+
+# --- Local scratch: nested repo copy and design-tool logs ---
+/rideops-data-platform/
+.impeccable/tmp/

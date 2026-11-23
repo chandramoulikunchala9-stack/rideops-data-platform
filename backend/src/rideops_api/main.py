@@ -18,7 +18,7 @@ from rideops.logging_config import configure_logging
 from rideops_api import __version__
 from rideops_api.db import Database
 from rideops_api.errors import register_error_handlers
-from rideops_api.routers import analytics, costs, monitoring, pipelines, quality, system
+from rideops_api.routers import analytics, costs, monitoring, pipelines, quality, sources, system
 from rideops_api.runner import JobRunner
 
 logger = logging.getLogger("rideops_api")
@@ -67,7 +67,7 @@ def create_app(db: Database | None = None, runner: JobRunner | None = None) -> F
         return response
 
     register_error_handlers(app)
-    for module in (system, analytics, pipelines, monitoring, costs, quality):
+    for module in (system, analytics, sources, pipelines, monitoring, costs, quality):
         app.include_router(module.router, prefix=API_PREFIX)
     return app
 

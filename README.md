@@ -61,7 +61,8 @@ rideops-data-platform/
 │   ├── src/rideops_api/    main · routers/ · schemas · db pool · errors · retry runner
 │   ├── tests/              API tests against a throwaway PostgreSQL database
 │   └── Dockerfile          production image (non-root, health check)
-├── frontend/               Dashboard: React + TypeScript + Vite (src/pages, components, api, lib)
+├── frontend/               Landing page (index.html, design kit in public/assets) and the
+│                           dashboard at /app (app/index.html; React + TypeScript + Vite in src/)
 ├── databricks/             Asset Bundle, Lakeflow Jobs, DLT pipeline, notebooks, Unity Catalog, SQL
 ├── infra/terraform/        AWS: S3, IAM, Budgets, CUR export
 ├── monitoring/             runbooks/ (8) and incidents/ (history with resolution notes)
@@ -117,7 +118,8 @@ commands from the repository root, where `.env` and the generated `data/` live.
 
 ## Quick start
 
-Prerequisites: Python 3.10+, Docker Desktop, Node 22+. Details: [local development](docs/local-development.md).
+Prerequisites: Python 3.10+, Docker Desktop, Node 22+. Step-by-step: [how to run](docs/how-to-run.md);
+more detail: [local development](docs/local-development.md).
 
 ```bash
 py -3 -m venv .venv && .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
@@ -131,7 +133,7 @@ python -m rideops.monitoring seed-incidents
 python -m rideops.monitoring alerts
 
 uvicorn rideops_api.main:app --reload                  # http://localhost:8000/docs
-cd frontend && npm ci && npm run dev                   # http://localhost:5173
+cd frontend && npm ci && npm run dev                   # landing http://localhost:5173, dashboard /app/
 ```
 
 Lakehouse (Spark in Docker):
@@ -142,7 +144,8 @@ docker compose --profile spark run --rm spark python -m rideops.spark all
 docker compose --profile spark run --rm spark python -m rideops.spark delta-demo
 ```
 
-Full stack as containers: `docker compose --profile app up -d --build` → http://localhost:8080.
+Full stack as containers: `docker compose --profile app up -d --build` → http://localhost:8080 (landing page)
+and http://localhost:8080/app/ (dashboard).
 
 ## Screenshots
 

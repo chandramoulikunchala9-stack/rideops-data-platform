@@ -1,5 +1,7 @@
 # Local Development
 
+New here? [How to run](how-to-run.md) is the short, step-by-step version for the backend and frontend.
+
 ## Prerequisites
 
 | Tool | Version used | Needed for |
@@ -29,7 +31,7 @@ python -m rideops.db all                         # incremental: re-runs only pro
 python -m rideops.monitoring seed-incidents
 python -m rideops.monitoring alerts
 uvicorn rideops_api.main:app --reload            # http://localhost:8000/docs
-cd frontend && npm run dev                       # http://localhost:5173 (proxies /api to :8000)
+cd frontend && npm run dev                       # http://localhost:5173 landing, /app/ dashboard (proxies /api to :8000)
 ```
 
 Spark / Delta Lake (Docker):

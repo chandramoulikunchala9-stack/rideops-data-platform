@@ -241,3 +241,27 @@ def test_access_settings_never_expose_the_password(client) -> None:
     ]  # fmt: skip
     password = PostgresSettings().password.get_secret_value()
     assert password not in client.get(f"{V1}/settings/access").text
+
+
+def test_sources_group_ingestion_by_application(client, pg) -> None:
+    body = client.get("/api/v1/sources").json()
+    apps = {a["id"]: a for a in body["sources"]}
+    assert set(apps) == {"rider_app", "driver_app", "payments", "cloud_billing", "platform_ops"}
+    rider = apps["rider_app"]
+    assert [e["entity"] for e in rider["entities"]] == ["bookings", "customers"]
+    # Every loaded row is counted once, and the per-app totals add up from the ingestion log.
+    loaded = sql(pg, "SELECT sum(rows_loaded) FROM ops.ingestion_log WHERE status = 'loaded'")
+    assert sum(a["rows_loaded"] for a in body["sources"]) == loaded
+    rejected = sql(pg, "SELECT count(*) FROM core.rejected_records WHERE entity = 'bookings'")
+    bookings = next(e for e in rider["entities"] if e["entity"] == "bookings")
+    assert bookings["rows_rejected"] == rejected
+    assert bookings["rows_current"] == sql(pg, "SELECT count(*) FROM core.bookings")
+    assert rider["status"] == ("warn" if rejected else "ok")
+
+
+def test_app_funnel_reports_unavailable_without_the_lakehouse_export(client) -> None:
+    # The API test database is built by the PostgreSQL pipeline only; Spark never exported to it.
+    body = client.get("/api/v1/analytics/apps").json()
+    assert body["available"] is False
+    assert body["platforms"] == [] and body["daily"] == []
+    assert body["period"]["start"] <= body["period"]["end"]

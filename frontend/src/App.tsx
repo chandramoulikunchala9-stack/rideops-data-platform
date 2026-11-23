@@ -6,6 +6,7 @@ import { Layout } from "./components/Layout";
 // Route-based code splitting: each page (and the chart library) loads only when first visited.
 const OverviewPage = lazy(() => import("./pages/OverviewPage").then((m) => ({ default: m.OverviewPage })));
 const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })));
+const SourcesPage = lazy(() => import("./pages/SourcesPage").then((m) => ({ default: m.SourcesPage })));
 const PipelinesPage = lazy(() => import("./pages/PipelinesPage").then((m) => ({ default: m.PipelinesPage })));
 const PipelineDetailPage = lazy(() => import("./pages/PipelineDetailPage").then((m) => ({ default: m.PipelineDetailPage })));
 const DataQualityPage = lazy(() => import("./pages/DataQualityPage").then((m) => ({ default: m.DataQualityPage })));
@@ -26,6 +27,7 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<OverviewPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="sources" element={<SourcesPage />} />
         <Route path="pipelines" element={<PipelinesPage />} />
         <Route path="pipelines/:name" element={<PipelineDetailPage />} />
         <Route path="data-quality" element={<DataQualityPage />} />
@@ -49,7 +51,8 @@ export function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    // The dashboard lives under /app; the landing page owns the site root.
+    <BrowserRouter basename="/app">
       <AppRoutes />
     </BrowserRouter>
   );

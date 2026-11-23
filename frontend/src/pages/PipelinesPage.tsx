@@ -5,11 +5,53 @@ import { api, ApiError } from "../api/client";
 import type { PipelineSummary, RetryAccepted } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AsyncView } from "../components/AsyncView";
-import { Card } from "../components/Card";
+import { Card, ReportSection } from "../components/Card";
+import { Icon } from "../components/Icon";
 import { SourceBadge, StatusBadge } from "../components/StatusBadge";
+import { toneOf } from "../lib/status";
 import { formatDuration, formatPct, relativeTime } from "../lib/format";
 
 const LAYERS = ["all", "bronze", "silver", "gold", "serving", "ops"];
+
+const LAYER_STEPS = [
+  { id: "bronze", title: "Bronze", note: "Raw files landed as they arrived" },
+  { id: "silver", title: "Silver", note: "Validated, de-duplicated, checked" },
+  { id: "gold", title: "Gold", note: "Daily business aggregates" },
+  { id: "serving", title: "Serving", note: "Copied to Postgres for the API" },
+] as const;
+
+/** The medallion layers left to right, each pipeline under the layer it writes. */
+function LayerMap({ pipelines }: { pipelines: PipelineSummary[] }) {
+  return (
+    <ol className="layer-map">
+      {LAYER_STEPS.map((step, i) => {
+        const inLayer = pipelines.filter((p) => p.layer === step.id);
+        return (
+          <li key={step.id} className="layer-col">
+            <div className="layer-head">
+              <h3>{step.title}</h3>
+              <p>{step.note}</p>
+              {i < LAYER_STEPS.length - 1 && <Icon name="arrowRight" size={16} className="layer-arrow" />}
+            </div>
+            <ul>
+              {inLayer.map((p) => (
+                <li key={p.pipeline_name}>
+                  <Link className="layer-chip" data-tone={toneOf(p.last_status)} to={`/pipelines/${p.pipeline_name}`}>
+                    <span className="layer-chip-name">{p.pipeline_name}</span>
+                    <span className="layer-chip-meta">
+                      {p.last_status === "SUCCESS" ? "Success" : p.last_status.toLowerCase()} · {formatDuration(p.last_duration_sec)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+              {inLayer.length === 0 && <li className="layer-empty">No pipeline</li>}
+            </ul>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 export function RetryButton({ pipeline, onDone }: { pipeline: string; onDone: (message: string, ok: boolean) => void }) {
   const [busy, setBusy] = useState(false);
@@ -58,7 +100,7 @@ export function PipelinesPage() {
       <header className="page-header">
         <div>
           <h1>Pipelines</h1>
-          <p>Latest status, reliability and duration of every data pipeline</p>
+          <p>Every job that moves data from the source apps to the reports: where it sits, how it last ran, and how reliable it is.</p>
         </div>
         <div className="toolbar">
           <label className="field">
@@ -89,7 +131,24 @@ export function PipelinesPage() {
         </div>
       )}
 
-      <Card title="All pipelines" subtitle="Success rate over the last 30 days. Retry runs the pipeline for real (local pipelines only).">
+      <div className="report">
+      <ReportSection
+        id="layers"
+        title="Layers"
+        description="Data moves left to right; each pipeline sits under the layer it writes."
+        lineage={<code>ops.pipeline_runs</code>}
+      >
+        <AsyncView state={pipelines} skeletonRows={4}>
+          {(list) => <LayerMap pipelines={Array.isArray(list) ? list : []} />}
+        </AsyncView>
+      </ReportSection>
+
+      <ReportSection
+        id="all"
+        title="All pipelines"
+        description="Success rate over the last 30 days. Retry runs the pipeline for real (local pipelines only)."
+      >
+      <Card>
         <AsyncView state={pipelines} isEmpty={() => filtered.length === 0} empty="No pipelines match the filters.">
           {() => (
             <div className="table-wrap">
@@ -103,7 +162,7 @@ export function PipelinesPage() {
                     <th scope="col" className="num">Median</th>
                     <th scope="col" className="num">Success (30d)</th>
                     <th scope="col">Source</th>
-                    <th scope="col"><span className="skip-link">Actions</span></th>
+                    <th scope="col">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -145,6 +204,8 @@ export function PipelinesPage() {
           )}
         </AsyncView>
       </Card>
+      </ReportSection>
+      </div>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { CITY_NAMES, CITY_ORDER } from "../lib/charts";
 import { presetRange, useFilters } from "../lib/filters";
+import { DateRangePicker } from "./DatePicker";
 
 const PRESETS = [
   { label: "7d", days: 7 },
@@ -14,6 +15,9 @@ export function DateRangeFilter({ dataEnd, showCity = false }: { dataEnd: string
     startDate && endDate
       ? Math.round((Date.parse(endDate) - Date.parse(startDate)) / 86_400_000) + 1
       : 30; // the API default
+
+  // With no dates in the URL the API reports the last 30 days of data: show that period, not an empty input.
+  const shown = dataEnd && !startDate && !endDate ? presetRange(dataEnd, 30) : null;
 
   return (
     <div className="toolbar" role="group" aria-label="Filters">
@@ -34,16 +38,11 @@ export function DateRangeFilter({ dataEnd, showCity = false }: { dataEnd: string
           ))}
         </div>
       )}
-      <label className="field">
-        From
-        <input type="date" value={startDate ?? ""} max={endDate ?? dataEnd ?? undefined}
-          onChange={(e) => set({ start_date: e.target.value || null })} />
-      </label>
-      <label className="field">
-        To
-        <input type="date" value={endDate ?? ""} min={startDate ?? undefined} max={dataEnd ?? undefined}
-          onChange={(e) => set({ end_date: e.target.value || null })} />
-      </label>
+      <DateRangePicker
+        value={{ start: startDate ?? shown?.start ?? null, end: endDate ?? shown?.end ?? null }}
+        max={dataEnd}
+        onChange={(range) => set({ start_date: range.start, end_date: range.end })}
+      />
       {showCity && (
         <label className="field">
           City

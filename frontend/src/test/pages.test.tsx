@@ -70,9 +70,12 @@ describe("Overview page", () => {
     renderAt("/");
     expect(await screen.findByText("39,759")).toBeInTheDocument();
     expect(screen.getByText("17.1%")).toBeInTheDocument();
-    expect(screen.getByText("SIMULATED")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "ingest_payments" })).toHaveAttribute("href", "/pipelines/ingest_payments?run=RUN-1");
-  });
+    expect(screen.getByText("Simulated")).toBeInTheDocument();
+    // getByText, not getByRole: role queries walk the whole (large) report page and are slow in jsdom.
+    expect(screen.getByText("ingest_payments").closest("a")).toHaveAttribute("href", "/pipelines/ingest_payments?run=RUN-1");
+    // The Overview report renders three bands, two charts and a map; jsdom needs more than the default 5 s
+    // when the test files run in parallel.
+  }, 15_000);
 
   it("passes the date filter from the URL to the API", async () => {
     const fetchMock = stubApi({

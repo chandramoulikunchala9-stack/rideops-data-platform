@@ -68,11 +68,17 @@ def main() -> int:
         web = args.web.rstrip("/")
         status, body = fetch(web + "/", args.timeout)
         check(
-            "frontend serves index.html",
+            "landing page is served at /",
+            status == 200 and 'id="hero-h"' in body,
+            f"status={status}",
+        )
+        status, body = fetch(web + "/app/", args.timeout)
+        check(
+            "dashboard is served at /app/",
             status == 200 and '<div id="root">' in body,
             f"status={status}",
         )
-        status, body = fetch(web + "/pipelines/ingest_payments", args.timeout)
+        status, body = fetch(web + "/app/pipelines/ingest_payments", args.timeout)
         check(
             "SPA deep link works (no 404)",
             status == 200 and '<div id="root">' in body,

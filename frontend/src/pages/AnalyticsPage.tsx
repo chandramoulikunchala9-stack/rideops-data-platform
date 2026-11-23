@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { query } from "../api/client";
-import type { Bookings, Cancellations, Driver, Page, Payments, Revenue } from "../api/types";
+import type { Bookings, Cancellations, Driver, Overview, Page, Payments, Revenue } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AsyncView } from "../components/AsyncView";
-import { Card } from "../components/Card";
+import { Card, KpiCard, ReportSection } from "../components/Card";
 import { ChartCard, ChartTooltip } from "../components/ChartCard";
 import { DateRangeFilter, Pagination } from "../components/Filters";
+import { TrustStrip } from "../components/TrustStrip";
 import {
   axisProps,
   BAR_RADIUS,
@@ -42,6 +43,7 @@ export function AnalyticsPage() {
   const bookings = useApi<Bookings>(`/analytics/bookings${filter}`);
   const cancellations = useApi<Cancellations>(`/analytics/cancellations${filter}`);
   const payments = useApi<Payments>(`/analytics/payments${query({ start_date: startDate, end_date: endDate })}`);
+  const overview = useApi<Overview>(`/analytics/overview${query({ start_date: startDate, end_date: endDate })}`);
 
   const [sort, setSort] = useState("revenue");
   const [offset, setOffset] = useState(0);
@@ -52,12 +54,47 @@ export function AnalyticsPage() {
       <header className="page-header">
         <div>
           <h1>Business analytics</h1>
-          <p>Revenue, demand, drivers, cancellations and payments{city && ` · ${CITY_NAMES[city]}`}</p>
+          <p>Revenue, demand, cancellations, payments and drivers from the validated booking data{city && ` · ${CITY_NAMES[city]}`}</p>
         </div>
         <DateRangeFilter dataEnd={revenue.data?.period.end ?? null} showCity />
       </header>
 
-      <div className="stack">
+      <TrustStrip apps={["rider_app", "driver_app", "payments"]} />
+
+      <div className="report">
+        <ReportSection
+          id="summary"
+          title="Summary"
+          description="The period at a glance, all cities."
+          lineage={<code>analytics.daily_city_summary</code>}
+        >
+          <AsyncView state={overview} skeletonRows={2}>
+            {(o) => (
+              <div className="grid kpis">
+                <KpiCard label="Bookings" value={formatInt(o.total_bookings)} hint={`${formatInt(o.completed_rides)} completed`} />
+                <KpiCard label="Revenue" value={formatInrCompact(o.total_revenue_inr)} hint={formatInr(o.total_revenue_inr)} />
+                <KpiCard
+                  label="Average per booking"
+                  value={formatInr(o.total_bookings ? o.total_revenue_inr / o.total_bookings : null)}
+                  hint="Revenue divided by all bookings"
+                />
+                <KpiCard label="Cancellation rate" value={formatPct(o.cancellation_rate)} />
+                <KpiCard label="Active riders" value={formatInt(o.active_customers)} hint={`${formatInt(o.active_drivers)} active drivers`} />
+              </div>
+            )}
+          </AsyncView>
+        </ReportSection>
+
+        <ReportSection
+          id="revenue-demand"
+          title="Revenue and demand"
+          description="Which cities earn the most, and how each day's bookings ended."
+          lineage={
+            <>
+              <code>analytics.daily_city_summary</code> · <code>core.bookings</code>
+            </>
+          }
+        >
         <div className="grid two">
           <AsyncView state={revenue} isEmpty={(r) => r.by_city.length === 0}>
             {(r) => (
@@ -170,7 +207,18 @@ export function AnalyticsPage() {
             )}
           </AsyncView>
         </div>
+        </ReportSection>
 
+        <ReportSection
+          id="cancellations-payments"
+          title="Cancellations and payments"
+          description="Why rides were lost, and how reliably each payment method charges."
+          lineage={
+            <>
+              <code>analytics.cancellation_summary</code> · <code>analytics.payment_summary</code>
+            </>
+          }
+        >
         <div className="grid two">
           <AsyncView state={cancellations} isEmpty={(c) => c.by_reason.length === 0}>
             {(c) => {
@@ -255,7 +303,14 @@ export function AnalyticsPage() {
             </AsyncView>
           </Card>
         </div>
+        </ReportSection>
 
+        <ReportSection
+          id="drivers"
+          title="Drivers"
+          description="Who completes the most rides and earns the most, ranked within their city."
+          lineage={<code>analytics.driver_performance</code>}
+        >
         <Card
           title="Driver performance"
           subtitle={`All-time leaderboard${city ? ` · ${CITY_NAMES[city]}` : ""}`}
@@ -305,6 +360,7 @@ export function AnalyticsPage() {
             )}
           </AsyncView>
         </Card>
+        </ReportSection>
       </div>
     </>
   );

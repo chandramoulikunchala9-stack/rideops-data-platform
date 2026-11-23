@@ -1,14 +1,501 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="RideOps data platform operations dashboard" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><path d='M9 22V10h7a4 4 0 0 1 0 8h-7m7 0 5 4' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
-    <title>RideOps Dashboard</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="en" data-type="software" data-radius="sharp" data-ground="sand" data-buttons="solid" data-motion>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RideOps: a data platform for ride-hailing operations</title>
+<meta name="description" content="Open-source portfolio project: one data platform for a ride-hailing company's rider, driver and payments apps, with Postgres and Spark pipelines, 35 data-quality checks and 100,000 synthetic bookings.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="RideOps: a data platform for ride-hailing operations">
+<meta property="og:description" content="Postgres and Spark pipelines, 35 data-quality checks, alerts and cost tracking over 100,000 synthetic ride bookings.">
+<meta property="og:image" content="/share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ffffff">
+<!-- <link rel="canonical" href="https://[the deployed domain]/"> -->
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/system.css">
+<link rel="stylesheet" href="/assets/ui/cards.css">
+<link rel="stylesheet" href="/assets/motion/motion.css">
+<link rel="stylesheet" href="/assets/backgrounds/backgrounds.css">
+<link rel="stylesheet" href="/assets/layout/layout.css">
+<link rel="stylesheet" href="/assets/icons/icon.css">
+<style>
+:root {
+  --p-bg: #ffffff; --p-surface: #f3f3f3; --p-ink: #232323; --p-muted: #686868;
+  --p-accent: #a1ffcb; --p-accent-ink: #232323; --p-action: #232323; --p-action-ink: #ffffff;
+  --p-inv-bg: #232323; --p-inv-surface: #303030; --p-inv-ink: #ffffff; --p-inv-muted: #a4a4a4;
+  --p-inv-accent: #a1ffcb; --p-inv-accent-ink: #232323; --p-inv-action: #a1ffcb; --p-inv-action-ink: #232323;
+  --font-display: "Familjen Grotesk", system-ui, sans-serif;
+  --font-text: "Familjen Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.03em;
+  --display-tracking-xl: -0.04em;
+}
+</style>
+<link rel="stylesheet" href="/assets/ui/base.css">
+<link rel="stylesheet" href="/assets/ui/window/fragment.css">
+<link rel="stylesheet" href="/assets/ui/pipeline-board/fragment.css">
+<link rel="stylesheet" href="/assets/ui/notify/fragment.css">
+<link rel="stylesheet" href="/assets/ui/stat/fragment.css">
+<link rel="stylesheet" href="/assets/ui/checklist/fragment.css">
+<link rel="stylesheet" href="/assets/ui/terminal-run/fragment.css">
+<link rel="stylesheet" href="/assets/diagrams/diagram.css">
+<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+<script src="/assets/backgrounds/backgrounds.js"></script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="/assets/moments/moments.js">
+<link rel="modulepreload" href="/assets/moments/lib.js">
+<link rel="modulepreload" href="/assets/moments/liquid-type/moment.js">
+<style>
+  /* hero window: the RideOps data-quality view, light, on the lit ground (page CSS inside the visual) */
+  .hero__window { background: linear-gradient(180deg, #e9e0d2, #d9ccb7); }
+  .rw { background: #fff; color: #1e1f21; border-radius: 12px; overflow: hidden; font: 400 14px/1.45 var(--font-text);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 30px 70px -34px rgb(40 30 20 / .45); }
+  .rw__bar { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-bottom: 1px solid rgb(0 0 0 / .07); font-size: 13px; color: #5d6268; }
+  .rw__bar b { color: #1e1f21; font-weight: 500; } .rw__bar .sp { flex: 1; }
+  .rw__dots { display: flex; gap: 6px; } .rw__dots i { width: 10px; height: 10px; border-radius: 50%; background: #dcdfe2; }
+  .rw__body { display: flex; align-items: flex-start; min-height: 420px; }
+  .rw__body > .rw__list { flex: 0 0 330px; align-self: stretch; }
+  .rw__body > .rw__open { flex: 1 1 auto; }
+  .rw__list { border-right: 1px solid rgb(0 0 0 / .07); padding: 14px 10px; display: grid; align-content: start; gap: 2px; }
+  .rw__q { height: 34px; margin-bottom: 6px; border-radius: 8px; background: #f3f3f3; display: flex; align-items: center; padding: 0 10px; color: #6b7076; font-size: 13px; }
+  .rw__t { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; padding: 9px 10px; border-radius: 8px; font-size: 13px; }
+  .rw__t.is-on { background: #f3f3f3; }
+  .rw__t b { font-weight: 500; font-family: var(--font-mono); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rw__t em { font-style: normal; font-size: 12px; font-weight: 500; padding: 0 7px; border-radius: 99px; background: #efefef; color: #3b3d40; }
+  .rw__t em.is-pass { background: #e8f8ef; color: #1f5135; }
+  .rw__t span { grid-column: 1 / -1; color: #6b7076; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rw__open { display: grid; align-content: start; gap: 10px; padding: 14px 18px; min-width: 0; }
+  .rw__head { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: #6b7076; }
+  .rw__head b { font: 500 13px/1.4 var(--font-mono); color: #1e1f21; }
+  .rw__msg { padding: 10px 14px; border-radius: 12px; background: #f3f3f3; max-width: 92%; }
+  .rw__tool { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7076; }
+  .rw__tool::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; }
+  .rw__ans { padding: 10px 14px; border-radius: 12px; border: 1px solid rgb(0 0 0 / .09); max-width: 92%; }
+  .rw__ans small { display: inline; margin-left: 8px; color: #6b7076; font-size: 13px; white-space: nowrap; }
+  .rw__acts { display: flex; gap: 8px; } .rw__acts span { height: 30px; padding: 0 12px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 500; background: #232323; color: #fff; }
+  .rw__acts span + span { background: #f3f3f3; color: #1e1f21; }
+  .rw__list .rw__t b { max-width: 100%; }
+  .hero--centred .hero__lead { color: var(--ink); }
+  @media (max-width: 639px) { .hero__c .pill .muted { display: none; } }
+  @media (max-width: 1023px) { .rw__list { display: none; } }
+  @media (max-width: 639px) { .rw__bar .sp ~ span { display: none; } .rw__open { padding: 12px; } }
+  @media (max-height: 820px) { .rw__acts { display: none; } }
+
+  /* app-frame (sections-library.md, the whole recipe) */
+  .app.ui { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); margin-top: var(--s-7); background: var(--u-bg); border: 1px solid var(--u-border); border-radius: var(--u-r); box-shadow: var(--u-shadow); }
+  .app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+  .app > .app__pane + .app__pane { border-left: 1px solid var(--u-line); }
+  .app > .app__pane > .ui-panel { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .app > .app__pane::after { content: ""; position: absolute; inset: auto 0 0 0; height: 64px; background: linear-gradient(transparent, var(--u-bg)); pointer-events: none; }
+  @media (min-width: 1024px) and (max-width: 1279px) { .app.ui { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+  @media (max-width: 1023px) {
+    .app.ui { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .app > .app__pane--list { max-height: 252px; }
+    .app > .app__pane--list::after { display: none; }
+    .app .ui-win__side { display: none; }
+    .app .ui-win__body { grid-template-columns: minmax(0, 1fr); }
+    .app > .app__pane + .app__pane { border-left: 0; border-top: 1px solid var(--u-line); }
+  }
+  @media (max-width: 639px) {
+    .app.ui { grid-template-rows: minmax(0, 1fr); }
+    .app > .app__pane--list { display: none; }
+    .app > .app__pane + .app__pane { border-top: 0; }
+  }
+
+  #monitoring .panel { --p-h: 336px; }
+  @media (min-width: 640px) and (max-width: 1023px) { #monitoring .card { grid-column: 1 / -1; } #monitoring .panel { --p-h: clamp(180px, calc((100svh - 580px) / 2), 336px); } .app .ui-pipe__log { background: none; } }
+  @media (max-width: 639px) { #monitoring .panel { --p-h: 168px; } }
+  #faq .tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3) var(--s-5); }
+  #faq .tool { display: flex; align-items: center; gap: var(--s-4); font-weight: 500; }
+  #faq .tools-frame { justify-content: center; padding: var(--s-6); }
+  #faq .tools { width: 100%; }
+  @media (min-width: 640px) and (max-width: 1023px) { #faq .tools { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) {
+    #faq .grid { grid-template-rows: auto minmax(0, 1fr); row-gap: var(--s-7); }
+    #faq .grid > h2 { grid-row: 1; } #faq .tools-frame { grid-row: 2; } #faq .faq { grid-row: 1 / span 2; }
+  }
+</style>
+</head>
+<body>
+<!-- type: software (site-kind software)
+     deal: hero centred, nav nav-mega, close close-type, footer footer-columns, rhythm surface-pairs, buttons solid,
+     mark wordmark, ground sand, palette white-mint-tiles, type familjen, radius sharp (a developer tool)
+     effect: grain-gradient in the hero window; card grounds: gradient-mesh (still), #monitoring
+     moments: liquid-type in #reconcile (the reconciliation result, the page's strongest fact, set large) -->
+
+<header class="nav">
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#top">Skip to content</a>
+    <a class="nav__logo" href="#top">RideOps</a>
+    <nav class="nav__links" aria-label="Main">
+      <div class="nav__item">
+        <a class="nav__link" href="#pipelines">Pipelines <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="nav__menu">
+          <div class="wrap grid">
+            <div class="menu-col span-3">
+              <p class="t-label">Lakehouse</p>
+              <a href="#pipelines">Bronze ingest<span>Six feeds into Delta tables</span></a>
+              <a href="#pipelines">Silver transform<span>Validate, merge, quarantine</span></a>
+              <a href="#pipelines">Gold aggregates<span>Daily metrics by city</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Postgres</p>
+              <a href="#stack">Raw load<span>COPY with schema contracts</span></a>
+              <a href="#stack">Core transform<span>Watermark and MERGE</span></a>
+              <a href="#monitoring">Quality checks<span>35 checks, two engines</span></a>
+            </div>
+            <a class="menu-card span-3 start-10" href="#monitoring">
+              <div class="panel"><div class="stage stage--fade-br"><div class="at-corner" style="--ax:24px;--ay:24px">
+                <div class="ui ui-notify" data-ui="notify">
+                  <ul class="ui-notify__list" data-notify-list>
+                    <li class="ui-note"><span class="ui-agent ui-note__av" aria-hidden="true"></span><span class="ui-note__text"><span class="ui-note__title">Budget alert<time>06:10</time></span><span class="ui-note__body">Simulated spend $1,218.26 of $1,200</span></span></li>
+                  </ul>
+                </div>
+              </div></div></div>
+              <span class="t-card">Alerts</span>
+              <span class="t-small muted">Six rules, merged and closed by themselves</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="nav__item"><a class="nav__link" href="#monitoring">Monitoring</a></div>
+      <div class="nav__item"><a class="nav__link" href="#stack">Lakehouse</a></div>
+      <div class="nav__item"><a class="nav__link" href="#faq">FAQ</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="nav__link" href="https://github.com/chandramoulikunchala9-stack/rideops-data-platform">GitHub</a>
+      <a class="btn btn--primary" href="/app/">Open the dashboard</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero hero--centred" data-enter aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text">
+      <div class="hero__c">
+        <a class="pill" href="#faq"><span>Portfolio project</span><span class="muted">Synthetic data, open source</span></a>
+        <h1 id="hero-h">The data platform for ride-hailing</h1>
+        <p class="hero__lead">RideOps joins the rider, driver and payments apps into one platform, then checks 100,000 bookings a run against 35 rules.</p>
+        <div class="btn-row"><a class="btn btn--primary" href="/app/">Open the dashboard<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a><a class="btn btn--secondary" href="https://github.com/chandramoulikunchala9-stack/rideops-data-platform">Read the code</a></div>
+      </div>
+      <div class="hero__window" data-fx="grain-gradient" data-fx-seed="7" data-fx-palette='{"bg":"#d9ccb7","surface":"#e9e0d2","ink":"#2a2622","accent":"#a8794a"}' data-fx-params='{"grainMotion":0}' role="img" aria-label="The RideOps data-quality view explaining why 813 bookings were quarantined">
+        <div class="ly-piece ui rw" aria-hidden="true">
+          <div class="rw__bar"><span class="rw__dots"><i></i><i></i><i></i></span><span>RideOps / Data quality / <b>bookings_reject_reasons</b></span><span class="sp"></span><span>Postgres 17 · local</span></div>
+          <div class="rw__body">
+            <div class="rw__list">
+              <div class="rw__q">Search 35 checks</div>
+              <div class="rw__t is-on"><b>bookings_reject_reasons</b><em>Warn</em><span>813 of 100,000 rows · 0.81%</span></div>
+              <div class="rw__t"><b>bookings_duplicate_deliveries</b><em>Warn</em><span>1,000 of 101,000 rows · 0.99%</span></div>
+              <div class="rw__t"><b>bookings_primary_key_unique</b><em class="is-pass">Pass</em><span>0 of 99,187 rows</span></div>
+            </div>
+            <div class="rw__open">
+              <div class="d-chat" data-ly-steps="900" style="display:grid;gap:10px">
+                <div class="rw__msg">813 of 100,000 bookings failed validation.</div>
+                <div class="rw__tool" data-step>Grouping core.quarantine by reject reason</div>
+                <div class="rw__ans" data-step>523 missing customer_id, 122 unknown customer_id, 100 bad fares, 68 drop-offs before pickup.<small>Under the 2% threshold</small></div>
+                <div class="rw__acts" data-step><span>Open quarantine</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="section" id="pipelines" aria-labelledby="pipelines-h">
+    <div class="wrap">
+      <div class="grid">
+        <h2 class="span-5" id="pipelines-h">Every RideOps pipeline run in one window</h2>
+        <div class="span-6 start-7 stack-4">
+          <p class="t-lead">The list holds all 14 pipelines, from the Spark lakehouse to the Postgres load. Open a run to follow it step by step, bronze to export, with its log.</p>
+          <a class="link" href="/app/pipelines">See the pipelines page</a>
+        </div>
+      </div>
+      <div class="ui app fill" role="img" aria-label="The RideOps run list beside the daily lakehouse run, with gold aggregation in progress" data-ui-pause-host>
+        <div class="app__pane app__pane--list">
+          <div class="ui ui-panel ui-win" data-ui="window" data-open="Queued" data-work="Running" data-done="Success">
+            <div class="ui-win__bar">
+              <span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="ui-win__crumb">RideOps <i>/</i> <b>Runs</b></span>
+              <span class="ui-spacer"></span>
+              <span class="ui-win__search" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg><span class="ui-win__ph">Search</span><span class="ui-kbd">/</span></span>
+            </div>
+            <div class="ui-win__body">
+              <nav class="ui-win__side" aria-hidden="true">
+                <span class="ui-win__nav is-on"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M2.5 9h3l1 1.5h3l1-1.5h3"/><path d="M2.5 9 4 3.5h8L13.5 9v3.5h-11z"/></svg>Runs<em>14</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></svg>Failing<em>0</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg>Alerts<em>4</em></span>
+                <span class="ui-win__label">Layers</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>Bronze</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>Silver</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>Gold</span>
+              </nav>
+              <div class="ui-win__main">
+                <div class="ui-win__cols" aria-hidden="true"><span>Pipeline</span><span>Detail</span><span>Status</span><span>Took</span></div>
+                <ul class="ui-win__rows">
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">G</span><span class="ui-win__who">gold_aggregations</span><span class="ui-win__sub">Gold · 99,187 read</span><span class="ui-win__st" data-st>Running</span><span class="ui-win__age">1m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">S</span><span class="ui-win__who">silver_transform</span><span class="ui-win__sub">Silver · 197,111 written</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">4m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">B</span><span class="ui-win__who">ingest_bookings</span><span class="ui-win__sub">Bronze · +101,000 rows</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">14s</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">B</span><span class="ui-win__who">ingest_payments</span><span class="ui-win__sub">Bronze · payments</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">14s</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">B</span><span class="ui-win__who">ingest_app_events</span><span class="ui-win__sub">Bronze · app events</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">40s</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">B</span><span class="ui-win__who">ingest_reference_data</span><span class="ui-win__sub">Bronze · drivers, cars</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">61s</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">Q</span><span class="ui-win__who">data_quality_checks</span><span class="ui-win__sub">Silver · no failed checks</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">5m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="5">E</span><span class="ui-win__who">export_to_postgres</span><span class="ui-win__sub">Serving · gold to Postgres</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">4m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">R</span><span class="ui-win__who">stream_ride_events</span><span class="ui-win__sub">Bronze · windowed stream</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">62m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">P</span><span class="ui-win__who">pg_load_raw</span><span class="ui-win__sub">Bronze · COPY into raw</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">1s</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">P</span><span class="ui-win__who">pg_quality_checks</span><span class="ui-win__sub">Silver · SQL checks</span><span class="ui-win__st is-done" data-st>Success</span><span class="ui-win__age">2s</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="app__pane app__pane--open" data-ui-loop>
+          <div class="ui ui-panel ui-pipe" data-ui="pipeline-board">
+            <div class="ui-pipe__head">
+              <svg class="ui-icon ui-pipe__branch" viewBox="0 0 16 16" aria-hidden="true"><circle cx="4.5" cy="3.5" r="1.5"/><circle cx="4.5" cy="12.5" r="1.5"/><circle cx="11.5" cy="5" r="1.5"/><path d="M4.5 5v6M11.5 6.5c0 2.6-2.2 3.6-5.6 4.6"/></svg>
+              <span class="ui-pipe__repo">rideops/lakehouse</span><i class="ui-pipe__slash">/</i><code class="ui-pipe__ref">main</code>
+              <span class="ui-pipe__run">#12</span>
+              <span class="ui-spacer"></span>
+              <span class="ui-pipe__total"><svg class="ui-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8.5" r="5.5"/><path d="M8 5.5v3l2 1.25M6.5 1.75h3"/></svg><span data-pipe-total>8m 23s</span></span>
+              <span class="ui-chip ui-chip--ink ui-chip--live ui-pipe__chip" data-pipe-chip data-done="Success">Running</span>
+            </div>
+            <div class="ui-pipe__commit">
+              <span class="ui-avatar" data-tone="4">RO</span>
+              <span class="ui-pipe__msg">Daily lakehouse run, manual trigger</span>
+              <code class="ui-pipe__sha">1341d99</code>
+              <button class="ui-btn ui-btn--ghost ui-btn--sm ui-pipe__btn" type="button" tabindex="-1" data-pipe-btn data-done="Re-run">Cancel</button>
+            </div>
+            <ol class="ui-pipe__steps">
+              <li class="ui-pipe__step is-done" data-step="bronze"><span class="ui-pipe__ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-pipe__name"><span class="ui-pipe__tool" aria-hidden="true"><img data-icon="si:apachespark" src="/assets/icons/apachespark.svg" alt="" width="16" height="16" loading="lazy"></span><span class="ui-pipe__nm">Bronze</span></span><code class="ui-pipe__cmd">spark bronze</code><span class="ui-pipe__time" data-time>2m 09s</span><span class="ui-pipe__bar"><i></i></span></li>
+              <li class="ui-pipe__step is-done" data-step="silver"><span class="ui-pipe__ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-pipe__name"><span class="ui-pipe__tool" aria-hidden="true"><img data-icon="si:apachespark" src="/assets/icons/apachespark.svg" alt="" width="16" height="16" loading="lazy"></span><span class="ui-pipe__nm">Silver</span></span><code class="ui-pipe__cmd">spark silver</code><span class="ui-pipe__time" data-time>4m 36s</span><span class="ui-pipe__bar"><i></i></span></li>
+              <li class="ui-pipe__step is-run" data-step="gold" style="--k:0.6"><span class="ui-pipe__ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-pipe__name"><span class="ui-pipe__tool" aria-hidden="true"><img data-icon="si:apachespark" src="/assets/icons/apachespark.svg" alt="" width="16" height="16" loading="lazy"></span><span class="ui-pipe__nm">Gold</span></span><code class="ui-pipe__cmd">spark gold</code><span class="ui-pipe__time" data-time="2m 43s">1m 38s</span><span class="ui-pipe__bar"><i></i></span></li>
+              <li class="ui-pipe__step" data-step="quality"><span class="ui-pipe__ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-pipe__name"><span class="ui-pipe__tool" aria-hidden="true"><img data-icon="python" src="/assets/icons/python.svg" alt="" width="16" height="16" loading="lazy"></span><span class="ui-pipe__nm">Quality</span></span><code class="ui-pipe__cmd">spark quality</code><span class="ui-pipe__time" data-time="5m 31s">Queued</span><span class="ui-pipe__bar"><i></i></span></li>
+              <li class="ui-pipe__step" data-step="export"><span class="ui-pipe__ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-pipe__name"><span class="ui-pipe__tool" aria-hidden="true"><img data-icon="postgres" src="/assets/icons/postgres.svg" alt="" width="16" height="16" loading="lazy"></span><span class="ui-pipe__nm">Export</span></span><code class="ui-pipe__cmd">spark export</code><span class="ui-pipe__time" data-time="4m 35s">Queued</span><span class="ui-pipe__bar"><i></i></span></li>
+            </ol>
+            <div class="ui-pipe__log" aria-hidden="true">
+              <span class="ui-pipe__line" data-step="bronze"><b>$</b>python -m rideops.spark bronze</span>
+              <span class="ui-pipe__line" data-step="bronze">bronze bookings: +101000 rows</span>
+              <span class="ui-pipe__line" data-step="bronze">ingest_bookings finished SUCCESS in 14s</span>
+              <span class="ui-pipe__line" data-step="silver"><b>$</b>python -m rideops.spark silver</span>
+              <span class="ui-pipe__line" data-step="silver">silver: read 201035, written 197111, rejected 1934</span>
+              <span class="ui-pipe__line" data-step="silver">silver_transform finished SUCCESS in 276s</span>
+              <span class="ui-pipe__line is-on" data-step="gold"><b>$</b>python -m rideops.spark gold</span>
+              <span class="ui-pipe__line is-on" data-step="gold">reading change data feed from silver.bookings</span>
+              <span class="ui-pipe__line is-on" data-step="gold">gold: read 99187, written 17991</span>
+              <span class="ui-pipe__line" data-step="quality"><b>$</b>python -m rideops.spark quality</span>
+              <span class="ui-pipe__line" data-step="quality">failed expectations: none</span>
+              <span class="ui-pipe__line" data-step="quality">data_quality_checks finished SUCCESS in 331s</span>
+              <span class="ui-pipe__line" data-step="export"><b>$</b>python -m rideops.spark export</span>
+              <span class="ui-pipe__line" data-step="export">gold to Postgres schema lakehouse</span>
+              <span class="ui-pipe__line" data-step="export">export_to_postgres finished SUCCESS in 275s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section g2" id="monitoring" aria-labelledby="monitoring-h">
+    <div class="wrap">
+      <div class="group">
+        <div class="section-head">
+          <h2 id="monitoring-h">Monitoring for when the data goes wrong</h2>
+        </div>
+        <div class="grid">
+          <article class="card card--row card--open span-6 m-nolift">
+            <h3>Raises alerts on 6 rules</h3>
+            <p>Failed and long runs, stale ingestion, failed checks, budget and cost spikes. Repeats merge; alerts close once the cause clears.</p>
+            <div class="panel" data-fx="gradient-mesh" data-fx-seed="21" data-fx-palette='{"bg":"#c6d3df","surface":"#d6e0e9","ink":"#25303a","accent":"#3f6a92"}' data-fx-params='{"drift":0,"speed":0}'>
+              <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:380px;--ax:max(24px, 50% - 190px);--ay:calc(100% - 180px);--ay-sm:calc(100% - 180px)">
+                <div class="ui ui-notify" data-ui="notify">
+                  <ul class="ui-notify__list" data-notify-list>
+                    <li class="ui-note"><span class="ui-agent ui-note__av" aria-hidden="true"></span><span class="ui-note__text"><span class="ui-note__title">Budget exceeded<time>06:10</time></span><span class="ui-note__body">Simulated spend $1,218.26 of $1,200</span></span><span class="ui-btn ui-btn--sm ui-note__btn">Open</span></li>
+                    <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M2.5 11.5 6 8l2.5 2.5 5-5"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Cost anomaly<time>06:10</time></span><span class="ui-note__body">1 Oct: $156.89 against a $31.38 mean</span></span></li>
+                    <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Long-running run<time>06:10</time></span><span class="ui-note__body">Export past its 340s median</span></span></li>
+                  </ul>
+                </div>
+              </div></div>
+            </div>
+          </article>
+          <article class="card card--row card--open span-6 m-nolift">
+            <h3>Tracks spend against a $1,200 budget</h3>
+            <p>Daily cost by service and workload from a simulated AWS cost report. SQL Warehouse took 51% of October.</p>
+            <div class="panel" data-fx="gradient-mesh" data-fx-seed="34" data-fx-palette='{"bg":"#cdd6c6","surface":"#dce3d6","ink":"#262d24","accent":"#6c8e63"}' data-fx-params='{"drift":0,"speed":0}'>
+              <div class="stage stage--fade-b"><div class="at-rise fit to-edge" style="--fit-max:420px;--ax:max(24px, 50% - 210px);--ay:48px;--ay-sm:24px" data-ui-loop>
+                <div class="ui ui-panel ui-stat" data-ui="stat" data-ui-opts='{"fill":true}' data-values="9.6,32.1,38.8,38.6,39.7,37.9,7.6,18.9,40.1,40.2,37.6,32.9,37.2,15.8" data-prev="19.0,34.9,39.8,42.2,37.8,39.1,14.6,14.3,41.0,43.6,39.1,39.8,36.8,16.3">
+                  <div class="ui-stat__head">
+                    <div class="ui-stat__top">
+                      <span class="ui-stat__label">Simulated spend, October</span>
+                      <span class="ui-stat__range">Last 14 days<svg class="ui-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></span>
+                    </div>
+                    <div class="ui-stat__line">
+                      <span class="ui-stat__num" data-stat-num>$1,218.26</span>
+                      <span class="ui-chip ui-chip--plain ui-stat__delta"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 9.5v-7M3 5.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>$18.26</span>
+                      <span class="ui-stat__sub">over the $1,200 budget</span>
+                    </div>
+                  </div>
+                  <div class="ui-stat__chart">
+                    <svg class="ui-stat__svg" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
+                      <path class="ui-stat__grid" d="M0 30.5H400M0 60.5H400M0 90.5H400"/>
+                      <path class="ui-stat__cover" fill-rule="evenodd" d=""/>
+                      <g class="ui-stat__bars"></g>
+                    </svg>
+                    <div class="ui-stat__axis" aria-hidden="true"><span>Oct 18</span><span>Oct 25</span><span>Oct 31</span></div>
+                  </div>
+                </div>
+              </div></div>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="grid">
+        <article class="card card--row card--open span-6 m-nolift">
+          <h3>Keeps 8 runbooks for known failures</h3>
+          <p>From a missing source file to a broken stream checkpoint. Each lists triage, the fix, a check that it worked and prevention.</p>
+          <div class="panel" data-fx="gradient-mesh" data-fx-seed="47" data-fx-palette='{"bg":"#d9ccb7","surface":"#e9e0d2","ink":"#2a2622","accent":"#a8794a"}' data-fx-params='{"drift":0,"speed":0}'>
+            <div class="stage stage--fade-b"><div class="at-right to-edge" style="--ax:32px;--ay:48px;--ay-sm:24px">
+              <div class="ui ui-panel ui-checks" data-ui="checklist">
+                <div class="ui-checks__head">
+                  <div class="ui-title">Runbook: missing source file</div>
+                  <span class="ui-spacer"></span>
+                  <div class="ui-meta" data-checks-count>2 of 5</div>
+                </div>
+                <div class="ui-checks__bar"><i data-checks-bar style="--k:0.4"></i></div>
+                <ul class="ui-checks__list">
+                  <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Read ops.ingestion_log</span></li>
+                  <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Check the partition path</span></li>
+                  <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Re-run once the file lands</span></li>
+                  <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Confirm missing-days passes</span></li>
+                  <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Rebuild gold for that date</span></li>
+                </ul>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-6 m-nolift">
+          <h3>Runs 153 tests on every push</h3>
+          <p>Four GitHub Actions workflows cover pipelines, API, Spark jobs and dashboard. The Postgres tests load a real database.</p>
+          <div class="panel" data-fx="gradient-mesh" data-fx-seed="58" data-fx-palette='{"bg":"#c6d3df","surface":"#d6e0e9","ink":"#25303a","accent":"#3f6a92"}' data-fx-params='{"drift":0,"speed":0}'>
+            <div class="stage"><div class="at-rise fit" style="--fit-max:440px;--ax:max(24px, 50% - 220px);--ay:40px;--ay-sm:24px">
+              <div class="ui ui-panel ui-term" data-ui="terminal-run">
+                <div class="ui-term__head">
+                  <span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <span class="ui-term__title">rideops/pipelines</span>
+                  <span class="ui-meta">bash</span>
+                  <span class="ui-spacer"></span>
+                  <span class="ui-chip ui-chip--plain ui-term__branch"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="3.5" r="1.5"/><circle cx="5" cy="12.5" r="1.5"/><circle cx="11" cy="5.5" r="1.5"/><path d="M5 5v6M11 7c0 2.6-6 1.8-6 4"/></svg>main</span>
+                </div>
+                <div class="ui-term__screen" data-term-screen>
+                  <div class="ui-term__track" data-term-track>
+                    <div class="ui-term__ln ui-term__cmd"><span class="ui-term__cwd"><span class="ui-term__up">tests/</span>integration</span><span class="ui-term__sig">$</span><span class="ui-term__typed" data-term-cmd>pytest</span></div>
+                    <div class="ui-term__ln ui-term__meter" data-term-out data-term-meter><span class="ui-term__bar" style="--p:1"><i></i></span><span class="ui-term__count" data-term-count>2 of 2 files</span></div>
+                    <div class="ui-term__ln ui-term__log" data-term-out data-term-step><svg class="ui-term__tick" viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg><span class="ui-term__path">test_generator_cli.py</span><span class="ui-term__n">3 tests</span><span class="ui-term__t">17.12s</span></div>
+                    <div class="ui-term__ln ui-term__log" data-term-out data-term-step><svg class="ui-term__tick" viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg><span class="ui-term__path">test_postgres_pipeline.py</span><span class="ui-term__n">9 tests</span><span class="ui-term__t">8.02s</span></div>
+                    <div class="ui-term__ln ui-term__gap" data-term-out aria-hidden="true"></div>
+                    <div class="ui-term__ln ui-term__sum" data-term-out><span class="ui-term__key">Test files</span><span class="ui-term__val">2 passed</span><span class="ui-term__dim">(2)</span></div>
+                    <div class="ui-term__ln ui-term__sum" data-term-out><span class="ui-term__key">Tests</span><span class="ui-term__val">12 passed</span><span class="ui-term__dim">(12)</span></div>
+                    <div class="ui-term__ln ui-term__done" data-term-out data-term-done><span class="ui-term__ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.3 2.4 2.4 4.6-5"/></svg></span><b>Done</b><span class="ui-term__dim">in 25.62s</span></div>
+                    <div class="ui-term__ln ui-term__cmd" data-term-next><span class="ui-term__cwd"><span class="ui-term__up">tests/</span>integration</span><span class="ui-term__sig">$</span><span class="ui-term__typed"></span><i class="ui-term__caret" aria-hidden="true"></i></div>
+                  </div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section statement" id="reconcile" data-moment="liquid-type" aria-labelledby="reconcile-h">
+    <div class="wrap stack-6">
+      <h2 class="mo-lt__type" id="reconcile-h">540 cells, zero differences</h2>
+      <p class="t-lead measure">Postgres SQL and Spark compute the same daily revenue by city from the same 100,000 bookings. Every one of the 540 date and city cells matches: ₹13,095,490.51 in both.</p>
+    </div>
+  </section>
+
+  <section class="section ground-surface" id="stack" aria-labelledby="stack-h">
+    <div class="wrap">
+      <div class="grid fill">
+        <div class="span-5 stack-6">
+          <h2 id="stack-h">Six data feeds into one lakehouse</h2>
+          <p class="t-lead">The rider app, driver app, payments gateway, app telemetry and cloud billing each land in bronze Delta tables exactly once. Gold rebuilds only the dates that changed; Postgres serves it through 45 named SQL queries.</p>
+          <a class="link" href="https://github.com/chandramoulikunchala9-stack/rideops-data-platform/blob/main/docs/architecture.md">Read the architecture</a>
+        </div>
+        <div class="frame frame--fill frame--lit span-6 start-7" data-visual>
+          <div class="dg" data-diagram='{"layout":"fanin","alt":"Bookings, payments, app events, ride events, reference data and simulated cloud costs flow into the Spark and Delta lakehouse, then into Postgres for the API and dashboard.","sources":[{"label":"Bookings","icon":"ui:file-text","sub":"CSV"},{"label":"Payments","icon":"ui:file-text","sub":"CSV"},{"label":"App events","icon":"json","sub":"JSON lines"},{"label":"Ride events","icon":"ui:radio","sub":"Stream"},{"label":"Drivers, cars","icon":"ui:file-text","sub":"Reference"},{"label":"Cloud costs","icon":"aws","sub":"Simulated CUR"}],"target":{"label":"Lakehouse","icon":"si:apachespark"},"then":{"label":"Postgres","icon":"postgres","meta":"serving"}}'></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq" style="--hm: 2" aria-labelledby="faq-h">
+    <div class="wrap">
+      <div class="grid grid--top fill">
+        <h2 class="span-5" id="faq-h">Questions about RideOps</h2>
+        <div class="frame frame--fill frame--lit span-5 tools-frame">
+          <div class="tools">
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="python" src="/assets/icons/python.svg" alt="" width="29" height="29" loading="lazy"></span>Python</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="postgres" src="/assets/icons/postgres.svg" alt="" width="29" height="29" loading="lazy"></span>PostgreSQL</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="apachespark" src="/assets/icons/apachespark.svg" alt="" width="29" height="29" loading="lazy"></span>Apache Spark</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="databricks" src="/assets/icons/databricks.svg" alt="" width="29" height="29" loading="lazy"></span>Databricks</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="aws" src="/assets/icons/aws.svg" alt="" width="29" height="29" loading="lazy"></span>AWS</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="terraform" src="/assets/icons/terraform.svg" alt="" width="29" height="29" loading="lazy"></span>Terraform</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="fastapi" src="/assets/icons/fastapi.svg" alt="" width="29" height="29" loading="lazy"></span>FastAPI</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="react" src="/assets/icons/react.svg" alt="" width="29" height="29" loading="lazy"></span>React</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="github-actions" src="/assets/icons/github-actions.svg" alt="" width="29" height="29" loading="lazy"></span>GitHub Actions</span>
+            <span class="tool"><span class="ic-tile ic-tile--48"><img class="ic" data-icon="docker" src="/assets/icons/docker.svg" alt="" width="29" height="29" loading="lazy"></span>Docker</span>
+          </div>
+        </div>
+        <div class="faq span-6 start-7">
+          <div class="faq__item"><h3>Is any of this real data?</h3><p>No. A fixed seed generates every customer, driver and booking, with defects planted so the checks have work to do.</p></div>
+          <div class="faq__item"><h3>Are the RideOps cloud costs real?</h3><p>No. They are simulated rows in the AWS cost report format, labelled simulated on every screen.</p></div>
+          <div class="faq__item"><h3>Where does RideOps run today?</h3><p>In Docker on one laptop. The Terraform and the Databricks bundle validate but are not applied yet.</p></div>
+          <div class="faq__item"><h3>What went wrong while building RideOps?</h3><p>Four incidents, each with a postmortem. One check reported 4 rejected bookings when there were 813.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer closing" id="contact" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta close--type">
+      <div class="section-head">
+        <h2 id="close-h">Open the RideOps dashboard</h2>
+        <p>It runs locally with Docker Compose and reads the RideOps API.</p>
+      </div>
+      <a class="btn btn--primary btn--xl btn--wide" href="/app/">Open the dashboard<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-6 stack-4">
+          <a class="nav__logo" href="#top">RideOps</a>
+          <p class="footer__lede">A ride-hailing data platform on synthetic data, built as a portfolio project.</p>
+        </div>
+        <div class="span-3 footer__col"><h3>Platform</h3><ul><li><a href="#pipelines">Pipelines</a></li><li><a href="#monitoring">Monitoring</a></li><li><a href="#stack">Lakehouse</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+        <div class="span-3 footer__col"><h3>Docs</h3><ul><li><a href="https://github.com/chandramoulikunchala9-stack/rideops-data-platform">Code</a></li><li><a href="https://github.com/chandramoulikunchala9-stack/rideops-data-platform/blob/main/docs/architecture.md">Architecture</a></li><li><a href="https://github.com/chandramoulikunchala9-stack/rideops-data-platform/tree/main/monitoring/runbooks">Runbooks</a></li><li><a href="https://github.com/chandramoulikunchala9-stack/rideops-data-platform/tree/main/monitoring/incidents">Incidents</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 RideOps &nbsp; Product names and logos are trademarks of their owners.</span>
+        <div class="socials"></div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/assets/system.js"></script>
+<script type="module" src="/assets/motion/motion.js"></script>
+<script type="module" src="/assets/layout/layout.js"></script>
+<script type="module" src="/assets/diagrams/mount.js"></script>
+</body>
 </html>

@@ -23,13 +23,15 @@ afterEach(() => vi.unstubAllGlobals());
 describe("StatusBadge", () => {
   it("never relies on colour alone: icon + text label", () => {
     render(<StatusBadge status="FAILED" />);
-    expect(screen.getByText("Failed")).toBeInTheDocument();
-    expect(screen.getByText("✕")).toBeInTheDocument();
+    const badge = screen.getByText("Failed");
+    expect(badge).toBeInTheDocument();
+    expect(badge.querySelector("svg")).not.toBeNull(); // a drawn icon, not colour alone
+    expect(badge).toHaveAttribute("data-tone", "critical");
   });
 
   it("labels simulated data", () => {
     render(<SourceBadge sources={["simulated"]} />);
-    expect(screen.getByText("SIMULATED")).toBeInTheDocument();
+    expect(screen.getByText("Simulated")).toBeInTheDocument();
   });
 });
 

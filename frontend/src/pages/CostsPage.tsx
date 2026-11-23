@@ -16,7 +16,8 @@ import { query } from "../api/client";
 import type { CostSummary, CostTrends } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AsyncView } from "../components/AsyncView";
-import { Card, KpiCard } from "../components/Card";
+import { Card, KpiCard, ReportSection } from "../components/Card";
+import { Icon } from "../components/Icon";
 import { ChartCard, ChartTooltip } from "../components/ChartCard";
 import { SourceBadge, StatusBadge } from "../components/StatusBadge";
 import { axisProps, gridProps, HBAR_RADIUS, seriesColor } from "../lib/charts";
@@ -39,7 +40,7 @@ export function CostsPage() {
       <header className="page-header">
         <div>
           <h1>Cloud costs</h1>
-          <p>Usage and spend by service, workload and environment, with budget and anomaly checks</p>
+          <p>What running the platform costs, which workloads spend it, and whether the month stays inside its budget.</p>
         </div>
         <label className="field">
           Month
@@ -49,20 +50,25 @@ export function CostsPage() {
         </label>
       </header>
 
-      <div className="notice" style={{ marginBottom: 16 }}>
+      <div className="notice" style={{ marginBottom: 24 }}>
+        <Icon name="warning" size={16} />
+        <span>
         <SourceBadge sources={summary.data?.sources ?? []} /> These figures are <strong>simulated</strong> from pipeline
         run times with illustrative unit prices. Real AWS (CUR) or Databricks billing rows would be labelled with their
         source. See <code>docs/cost-management.md</code>.
+        </span>
       </div>
 
-      <div className="stack">
+      <div className="report">
         <AsyncView state={summary} skeletonRows={4}>
           {(s) => {
             const used = s.total_usd / s.budget_usd;
             return (
               <>
+                <ReportSection id="budget" title="Budget" description={`Month to date for ${s.month}, against the monthly budget.`} lineage={<code>ops.cloud_costs</code>}>
                 <div className="grid kpis">
-                  <KpiCard label={`Spend ${s.month}`} value={formatUsd(s.total_usd)} hint={`as of ${formatDate(s.as_of)}`} />
+                  <KpiCard label={`Spend ${s.month}`} value={formatUsd(s.total_usd)} hint={`as of ${formatDate(s.as_of)}`}
+                    tone={s.budget_status === "OVER_BUDGET" ? "critical" : undefined} />
                   <KpiCard label="Forecast (month end)" value={formatUsd(s.forecast_usd)} hint="linear run-rate" />
                   <KpiCard label="Monthly budget" value={formatUsd(s.budget_usd, 0)} hint={<StatusBadge status={s.budget_status} />} />
                   <KpiCard label="Untagged spend" value={formatUsd(s.untagged_usd)} hint="cannot be charged back" />
@@ -74,6 +80,8 @@ export function CostsPage() {
                       background: used > 1 ? "var(--status-critical)" : used > 0.8 ? "var(--status-warning)" : "var(--status-good)" }} />
                   </div>
                 </Card>
+                </ReportSection>
+                <ReportSection id="breakdown" title="Where the money goes" description="Spend split by cloud service and by the workload that used it.">
                 <div className="grid two">
                   {([["Spend by service", s.by_service], ["Spend by workload", s.by_workload]] as const).map(([title, rows]) => (
                     <ChartCard
@@ -122,11 +130,13 @@ export function CostsPage() {
                     </table>
                   </div>
                 </Card>
+                </ReportSection>
               </>
             );
           }}
         </AsyncView>
 
+        <ReportSection id="trend" title="Trend" description="Daily spend, with days flagged as anomalies by the cost alert rule.">
         <AsyncView state={trends} isEmpty={(t) => t.daily_totals.length === 0}>
           {(t) => (
             <ChartCard
@@ -151,7 +161,7 @@ export function CostsPage() {
                         const anomaly = t.anomalies.find((a) => a.date === date);
                         return <ChartTooltip title={formatDate(date)} rows={[
                           { label: "Spend", value: formatUsd(Number(tt.payload[0]?.value)) },
-                          ...(anomaly ? [{ label: "⚠ Anomaly (z-score)", value: anomaly.z_score.toFixed(1) }] : []),
+                          ...(anomaly ? [{ label: "Anomaly (z-score)", value: anomaly.z_score.toFixed(1) }] : []),
                         ]} />;
                       }}
                     />
@@ -180,6 +190,7 @@ export function CostsPage() {
             />
           )}
         </AsyncView>
+        </ReportSection>
       </div>
     </>
   );
