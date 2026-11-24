@@ -4,8 +4,11 @@ A pool keeps a few connections open and lends them to requests, instead of payin
 connect/authenticate cost (tens of milliseconds) on every request.
 """
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
+import psycopg
 from fastapi import Request
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
@@ -15,11 +18,17 @@ from rideops.config import PostgresSettings
 
 class Database:
     def __init__(
-        self, settings: PostgresSettings | None = None, *, max_size: int = 8, timeout: float = 5.0
+        self,
+        settings: PostgresSettings | None = None,
+        *,
+        conninfo: str | None = None,
+        max_size: int = 8,
+        timeout: float = 5.0,
     ) -> None:
-        settings = settings or PostgresSettings()
+        if conninfo is None:
+            conninfo = (settings or PostgresSettings()).conninfo()
         self.pool = ConnectionPool(
-            settings.conninfo(),
+            conninfo,
             min_size=1,
             max_size=max_size,
             open=False,
@@ -41,6 +50,12 @@ class Database:
         with self.pool.connection() as conn:
             return conn.execute(sql, params).fetchone()
 
+    @contextmanager
+    def transaction(self) -> Iterator[psycopg.Connection]:
+        """A pooled connection inside one transaction: commit on success, roll back on error."""
+        with self.pool.connection() as conn, conn.transaction():
+            yield conn
+
     def scalar(self, sql: str, params: dict | tuple | None = None) -> Any:
         row = self.fetch_one(sql, params)
         return next(iter(row.values())) if row else None
@@ -49,3 +64,8 @@ class Database:
 def get_db(request: Request) -> Database:
     """FastAPI dependency: the Database created at startup (overridden in tests)."""
     return request.app.state.db
+
+
+def get_meta_db(request: Request) -> Database:
+    """FastAPI dependency: the Lens metadata database (the RideOps DB unless DATABASE_URL is set)."""
+    return request.app.state.meta_db
