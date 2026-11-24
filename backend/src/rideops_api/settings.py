@@ -50,6 +50,8 @@ class LensSettings(BaseSettings):
     uploads_dir: str = "data/lens-uploads"
     upload_max_bytes: int = 200 * 1024 * 1024
 
+    rate_limit_per_minute: int = 600  # §13.9 "everything else", per user session (or IP)
+
     worker_poll_interval_s: float = 1.0
     scheduler_interval_s: float = 15.0
 

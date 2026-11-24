@@ -12,10 +12,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from rideops.config import ApiSettings, get_settings
 from rideops.logging_config import configure_logging
-from rideops_api import __version__
+from rideops_api import __version__, hardening
 from rideops_api.auth import router as auth_router
 from rideops_api.auth.deps import get_session
 from rideops_api.background import Background
@@ -55,6 +56,7 @@ def create_app(
 ) -> FastAPI:
     """Build the app. Tests pass their own dependencies; production creates them here."""
     configure_logging(get_settings().log_level)
+    hardening.install_log_redaction()
     api_settings = ApiSettings()
     lens = lens_settings or get_lens_settings()
 
@@ -99,12 +101,45 @@ def create_app(
         allow_credentials=lens.lens_enabled,  # session cookie (Lens)
     )
 
+    limiter = hardening.SlidingWindowLimiter(lens.rate_limit_per_minute)
+
     @app.middleware("http")
     async def request_logging(request: Request, call_next):
         request_id = request.headers.get("x-request-id") or uuid.uuid4().hex[:12]
         request.state.request_id = request_id[:64]
         started = time.perf_counter()
-        response = await call_next(request)
+        path = request.url.path
+        # §13.9 generic limit for Lens API routes (per session, else per IP); stricter limits live
+        # in the endpoints themselves. Health and the internal tick are exempt.
+        if (
+            lens.lens_enabled
+            and path.startswith(API_PREFIX)
+            and not path.startswith(f"{API_PREFIX}/health")
+        ):
+            key = hardening.client_key(request.cookies.get("lens_session"),
+                                       request.client.host if request.client else None)  # fmt: skip
+            allowed, retry_after = limiter.hit(key)
+            if not allowed:
+                body = {
+                    "error": {
+                        "code": "RATE_LIMITED",
+                        "message": f"Too many requests; retry after {retry_after} s.",
+                        "details": {"retry_after_s": retry_after},
+                    }
+                }
+                response = JSONResponse(
+                    status_code=429, content=body, headers={"Retry-After": str(retry_after)}
+                )
+            else:
+                response = await call_next(request)
+        else:
+            response = await call_next(request)
+        route = request.scope.get("route")
+        hardening.METRICS.observe(getattr(route, "path", "unmatched"), response.status_code)
+        for name, value in hardening.security_headers(
+            path, hsts=lens.session_cookie_secure and lens.lens_enabled
+        ).items():
+            response.headers.setdefault(name, value)
         elapsed_ms = (time.perf_counter() - started) * 1000
         response.headers["x-request-id"] = request_id
         logger.info("%s %s %d %.1fms id=%s", request.method, request.url.path,
