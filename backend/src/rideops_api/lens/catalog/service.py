@@ -9,7 +9,6 @@ from typing import Any
 from rideops_api.jobs import queue
 from rideops_api.jobs.registry import JobContext, job
 from rideops_api.lens import pools
-from rideops_api.lens.adapters import pg_catalog
 from rideops_api.lens.catalog import detect
 from rideops_api.lens.connections.service import TargetUnavailable, load_target
 from rideops_api.lens.queries import sqlguard
@@ -88,8 +87,8 @@ def sync(
             pools.target_slot(str(connection_id), settings.max_target_sessions, wait_s=5.0),
             adapter.connect() as t,
         ):
-            tables = pg_catalog.list_tables(t) if include_schema else None
-            stats = pg_catalog.table_stats(t)
+            tables = adapter.list_tables(t) if include_schema else None
+            stats = adapter.table_stats(t)
             if row["is_demo"]:  # never expose Lens's own metadata through the shared demo database
                 hidden = sqlguard.DEMO_FORBIDDEN_SCHEMAS
                 tables = (
@@ -127,7 +126,7 @@ def sync(
                     or (s["row_estimate"] or 0) < FRESHNESS_EXACT_MAX_ROWS
                 ):
                     try:
-                        freshness[ref] = pg_catalog.freshness_max(t, s["schema"], s["name"], col)
+                        freshness[ref] = adapter.freshness_max(t, s["schema"], s["name"], col)
                     except Exception as exc:  # noqa: BLE001 - one table must not fail the sync
                         logger.info("freshness skipped for %s: %s", ref, exc)
     except Exception as exc:

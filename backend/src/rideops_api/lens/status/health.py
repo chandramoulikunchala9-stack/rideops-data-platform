@@ -9,10 +9,9 @@ from typing import Any
 from rideops_api.jobs import queue
 from rideops_api.jobs.registry import JobContext, job
 from rideops_api.lens import pools
-from rideops_api.lens.adapters.base import ConnectionConfig, StatusSnapshot, now
+from rideops_api.lens.adapters.base import StatusSnapshot, now
 from rideops_api.lens.adapters.registry import AdapterUnavailable, get_adapter_class
 from rideops_api.lens.connections import service
-from rideops_api.lens.security import netguard
 from rideops_api.lens.security.crypto import DecryptError, KeyRingError
 from rideops_api.lens.status import scoring
 from rideops_api.settings import get_lens_settings
@@ -81,24 +80,11 @@ def _probe(row: dict[str, Any], secret, settings) -> StatusSnapshot:
         adapter_cls = get_adapter_class(row["engine"])
     except AdapterUnavailable as exc:
         return _failed(exc.code, exc.message, "ADAPTER")
-    pinned = None
-    if not row["is_demo"]:
-        try:
-            guard = netguard.check(
-                row["host"], row["port"], **service._policy_kwargs(row["ws_settings"], settings)
-            )
-            pinned = guard.pinned_ip
-        except netguard.NetworkPolicyError as err:
-            return _failed(err.code, err.message, err.stage)
-    if row["tls_mode"] == "disable" and not row["ws_settings"].get(
-        "allow_insecure_connections", False
-    ):
-        return _failed(
-            "CONN_TLS_REQUIRED", "Insecure connections are disabled for this workspace.", "TLS"
-        )
-    cfg = ConnectionConfig(connection_id=str(row["id"]), engine=row["engine"], host=row["host"], port=row["port"],
-                           database=row["database"], username=row["username"], options=row["options"] or {},
-                           tls_mode=row["tls_mode"], pinned_ip=pinned, timeout_s=settings.health_timeout_s)  # fmt: skip
+    try:
+        cfg = service.target_config(row, row["ws_settings"], settings)
+    except service.TargetUnavailable as exc:
+        stage = "TLS" if exc.code == "CONN_TLS_REQUIRED" else "NETWORK_POLICY"
+        return _failed(exc.code, exc.message, stage)
     try:
         with pools.target_slot(str(row["id"]), settings.max_target_sessions, wait_s=1.0):
             return adapter_cls(cfg, secret).status()

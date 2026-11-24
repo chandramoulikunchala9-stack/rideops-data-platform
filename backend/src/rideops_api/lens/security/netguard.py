@@ -111,3 +111,25 @@ def check(
                 )  # fmt: skip
     return GuardResult(host=host, port=port, addresses=tuple(addresses), pinned_ip=addresses[0],
                        private_allowed=private_ok)  # fmt: skip
+
+
+def check_srv(host: str, **policy) -> GuardResult:
+    """mongodb+srv: every host the SRV record points at must pass the same policy (§10.2)."""
+    import dns.resolver  # dnspython ships with pymongo
+
+    try:
+        answers = dns.resolver.resolve(f"_mongodb._tcp.{host}", "SRV", lifetime=5)
+    except Exception as exc:  # noqa: BLE001 - NXDOMAIN, timeout, no answer
+        raise NetworkPolicyError(
+            "CONN_DNS_FAILED", 400, f"No SRV records for {host!r}.", "DNS"
+        ) from exc
+    addresses: list[str] = []
+    private_ok = False
+    for a in answers:
+        target = str(a.target).rstrip(".")
+        r = check(target, int(a.port), **policy)
+        addresses += list(r.addresses)
+        private_ok = private_ok or r.private_allowed
+    return GuardResult(
+        host=host, port=27017, addresses=tuple(addresses), pinned_ip="", private_allowed=private_ok
+    )

@@ -196,7 +196,7 @@ def profile(db: Any, connection_id: Any, schema: str, table: str, *, sample_rows
         pools.target_slot(str(connection_id), settings.max_target_sessions, wait_s=10.0),
         adapter.connect() as t,
     ):
-        rows, method = pg_catalog.sample(t, schema, table, cols, sample_rows, meta["row_estimate"])
+        rows, method = adapter.sample(t, schema, table, cols, sample_rows, meta["row_estimate"])
     profiles, charts = [], []
     pii = set(meta["pii_columns"])
     for c in cols:

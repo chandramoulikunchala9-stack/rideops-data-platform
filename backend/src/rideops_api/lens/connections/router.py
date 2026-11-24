@@ -154,9 +154,8 @@ def test_draft(
         keyring = service.keyring_for(settings)
         with db.tenant_transaction(ctx.workspace_id) as conn:
             _check_test_rate(conn, ctx.workspace_id)
-        result = service.run_test(
-            draft, workspace_settings=ctx.workspace["settings"], settings=settings
-        )
+        result = service.run_test(draft, workspace_settings=ctx.workspace["settings"], settings=settings,
+                                  workspace_id=ctx.workspace_id)  # fmt: skip
         with db.tenant_transaction(ctx.workspace_id) as conn:
             test_id = service.record_test(conn, workspace_id=ctx.workspace_id, connection_id=None,
                                           user_id=ctx.user_id, result=result,
@@ -292,7 +291,8 @@ def retest_connection(connection_id: UUID, ctx: Editor, request: Request, db: Me
             raise ApiError(409, "SECRET_UNAVAILABLE", "This connection has no stored credentials.")
         draft = service.draft_from_row(row, secret)
         result = service.run_test(draft, workspace_settings=ctx.workspace["settings"], settings=settings,
-                                  connection_id=str(connection_id), trusted=row["is_demo"])  # fmt: skip
+                                  connection_id=str(connection_id), trusted=row["is_demo"],
+                                  workspace_id=ctx.workspace_id)  # fmt: skip
         with db.tenant_transaction(ctx.workspace_id) as conn:
             test_id = service.record_test(conn, workspace_id=ctx.workspace_id, connection_id=connection_id,
                                           user_id=ctx.user_id, result=result,
@@ -571,3 +571,65 @@ def uptime_bars(connection_id: UUID, ctx: Viewer, db: MetaDbDep,
              "uptime_pct": round(100.0 * r["up"] / r["total"], 2) if r["total"] else None} for r in rows]  # fmt: skip
     return s.UptimeOut(window=window, uptime_pct=round(100.0 * up / total, 2) if total else None, checks=total,
                        bars=bars)  # fmt: skip
+
+
+# -------------------------------------------------------------------- uploads
+@router.post("/workspaces/{ws}/uploads/sqlite", status_code=status.HTTP_201_CREATED)
+async def upload_sqlite(
+    ctx: Editor, request: Request, db: MetaDbDep, settings: LensSettingsDep
+) -> dict:
+    """Upload a SQLite file as the raw request body (Content-Type: application/octet-stream,
+    optional X-Filename header). Max UPLOAD_MAX_BYTES; must start with the SQLite header. The file
+    is stored at a server-chosen path (workspace id / upload id) with mode 0600 and opened read-only."""
+    import hashlib
+    import os
+    import tempfile
+    import uuid as _uuid
+
+    from rideops_api.lens.adapters.sqlite import MAGIC
+
+    filename = (
+        os.path.basename(request.headers.get("x-filename", "database.sqlite"))[:200]
+        or "database.sqlite"
+    )
+    upload_id = _uuid.uuid4()
+    final = service.upload_path(settings, ctx.workspace_id, upload_id)
+    os.makedirs(os.path.dirname(final), mode=0o700, exist_ok=True)
+    digest, size = hashlib.sha256(), 0
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(final), suffix=".part")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            async for chunk in request.stream():
+                size += len(chunk)
+                if size > settings.upload_max_bytes:
+                    raise ApiError(
+                        413,
+                        "UPLOAD_TOO_LARGE",
+                        f"Files are limited to {settings.upload_max_bytes // (1024 * 1024)} MB.",
+                    )
+                digest.update(chunk)
+                fh.write(chunk)
+        with open(tmp, "rb") as fh:
+            if fh.read(16) != MAGIC:
+                raise ApiError(422, "UPLOAD_NOT_SQLITE", "That file is not a SQLite database.")
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, final)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+    with db.tenant_transaction(ctx.workspace_id) as conn:
+        conn.execute(
+            """INSERT INTO app.uploads (id, workspace_id, filename, bytes, sha256, created_by)
+               VALUES (%s, %s, %s, %s, %s, %s)""",
+            (upload_id, ctx.workspace_id, filename, size, digest.hexdigest(), ctx.user_id),
+        )
+        audit.record(conn, "upload.create", request=request, workspace_id=ctx.workspace_id,
+                     actor_user_id=ctx.user_id, target_type="upload", target_id=upload_id,
+                     metadata={"filename": filename, "bytes": size})  # fmt: skip
+    return {
+        "upload_id": str(upload_id),
+        "filename": filename,
+        "bytes": size,
+        "sha256": digest.hexdigest(),
+    }

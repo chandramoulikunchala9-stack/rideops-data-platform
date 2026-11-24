@@ -12,6 +12,7 @@ from typing import Any, ClassVar
 import psycopg
 from psycopg.rows import dict_row
 
+from rideops_api.lens.adapters import pg_catalog
 from rideops_api.lens.adapters.base import (
     AdapterError,
     Capability,
@@ -380,6 +381,32 @@ class PostgresAdapter(DatabaseAdapter):
                               server_version=short_version(base["version"]), uptime_s=base["uptime_s"],
                               db_size_bytes=base["size"], metrics=metrics, details=details,
                               unavailable=unavailable)  # fmt: skip
+
+    # ------------------------------------------------------------------ analytics
+    def list_tables(self, s):
+        return pg_catalog.list_tables(s)
+
+    def table_stats(self, s):
+        return pg_catalog.table_stats(s)
+
+    def freshness_max(self, s, schema, table, column):
+        return pg_catalog.freshness_max(s, schema, table, column)
+
+    def exact_count(self, s, schema, table):
+        return pg_catalog.exact_count(s, schema, table)
+
+    def sample(self, s, schema, table, columns, n, row_estimate):
+        return pg_catalog.sample(s, schema, table, columns, n, row_estimate)
+
+    def preview(self, s, schema, table, limit=50):
+        return pg_catalog.preview(s, schema, table, limit)
+
+    def run_readonly(self, s, statement, *, wrap, max_rows, max_bytes, timeout_s):
+        return pg_catalog.run_readonly(s, statement, wrap=wrap, max_rows=max_rows, max_bytes=max_bytes,
+                                       timeout_s=timeout_s)  # fmt: skip
+
+    def explain(self, s, statement):
+        return pg_catalog.explain(s, statement)
 
     # ---------------------------------------------------------------- grant script
     @staticmethod

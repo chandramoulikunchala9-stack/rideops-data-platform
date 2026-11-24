@@ -139,6 +139,25 @@ class Stopwatch:
         return int((time.perf_counter() - self.started) * 1000)
 
 
+def tcp_stage(cfg: "ConnectionConfig", default_port: int) -> "StageResult":
+    """TCP reachability of the pinned IP (or host), shared by every network adapter."""
+    import socket
+
+    sw = Stopwatch()
+    target = cfg.pinned_ip or cfg.host
+    port = cfg.port or default_port
+    try:
+        with socket.create_connection((target, port), timeout=cfg.timeout_s):
+            pass
+    except TimeoutError:
+        return StageResult("TCP", False, sw.ms, "Timed out. Is the database public and is our IP allowlisted?",
+                           "CONN_TIMEOUT")  # fmt: skip
+    except OSError as exc:
+        return StageResult("TCP", False, sw.ms, f"Connection refused or unreachable ({exc.strerror or exc}).",
+                           "CONN_REFUSED")  # fmt: skip
+    return StageResult("TCP", True, sw.ms, f"{target}:{port}")
+
+
 def now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -160,6 +179,38 @@ class DatabaseAdapter:
         raise NotImplementedError
 
     def privilege_findings(self) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    # -- analytics (Phase 13): every method takes the open, read-only session from connect() --
+    def connect(self):  # context manager yielding an engine session
+        raise NotImplementedError
+
+    def list_tables(self, s) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    def table_stats(self, s) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    def freshness_max(self, s, schema: str, table: str, column: str) -> Any:
+        raise NotImplementedError
+
+    def exact_count(self, s, schema: str, table: str) -> int:
+        raise NotImplementedError
+
+    def sample(self, s, schema: str, table: str, columns: list[str], n: int,
+               row_estimate: int | None) -> tuple[list[dict[str, Any]], str]:  # fmt: skip
+        raise NotImplementedError
+
+    def preview(
+        self, s, schema: str, table: str, limit: int = 50
+    ) -> tuple[list[str], list[list[Any]]]:
+        raise NotImplementedError
+
+    def run_readonly(self, s, statement: str, *, wrap: bool, max_rows: int, max_bytes: int,
+                     timeout_s: int) -> dict[str, Any]:  # fmt: skip
+        raise NotImplementedError
+
+    def explain(self, s, statement: str) -> Any:
         raise NotImplementedError
 
     @staticmethod

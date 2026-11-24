@@ -199,6 +199,8 @@ def parse(url: str) -> ParsedUrl:
     if tls_mode not in TLS_MODES:
         raise UrlError("URL_INVALID", f"Unknown TLS mode {tls_mode!r}.")
     options = {k: v for k, v in params.items() if k not in TLS_PARAMS}
+    if srv:
+        options["srv"] = "true"  # set by the parser itself, never accepted from the query string
     return ParsedUrl(engine=engine, host=host, port=port, database=database, username=username,
                      password=password, options=options, tls_mode=tls_mode, srv=srv)  # fmt: skip
 
@@ -212,6 +214,11 @@ def build_display_url(
     options: dict[str, Any] | None = None,
     srv: bool = False,
 ) -> str:
+    options = dict(options or {})
+    srv_flag = (
+        str(options.pop("srv", "")).lower() == "true"
+    )  # SRV shows in the scheme, not the query
+    srv = srv or srv_flag
     scheme = CANONICAL_SCHEME.get(engine, engine) + ("+srv" if srv else "")
     user = f"{quote(username, safe='')}@" if username else ""
     shown_host = f"[{host}]" if host and ":" in host else (host or "")

@@ -5,6 +5,29 @@ from rideops_api.lens.adapters.postgres import PostgresAdapter
 
 ADAPTERS: dict[str, type[DatabaseAdapter]] = {Engine.POSTGRES: PostgresAdapter}
 
+# Optional drivers (§7.1): an engine is available only if its driver is installed.
+try:
+    from rideops_api.lens.adapters.mysql import MySQLAdapter
+
+    ADAPTERS[Engine.MYSQL] = MySQLAdapter
+except ImportError:  # pragma: no cover - pip install "rideops-api[mysql]"
+    pass
+try:
+    from rideops_api.lens.adapters.mssql import MSSQLAdapter
+
+    ADAPTERS[Engine.MSSQL] = MSSQLAdapter
+except ImportError:  # pragma: no cover - pip install "rideops-api[mssql]"
+    pass
+try:
+    from rideops_api.lens.adapters.mongodb import MongoAdapter
+
+    ADAPTERS[Engine.MONGODB] = MongoAdapter
+except ImportError:  # pragma: no cover - pip install "rideops-api[mongo]"
+    pass
+from rideops_api.lens.adapters.sqlite import SQLiteAdapter  # noqa: E402 - stdlib driver, always available
+
+ADAPTERS[Engine.SQLITE] = SQLiteAdapter
+
 # Shown by GET /meta/engines and the wizard's engine picker.
 ENGINE_INFO: dict[str, dict] = {
     "postgres": {"label": "PostgreSQL", "default_port": 5432, "release": "v1",

@@ -99,13 +99,30 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U rideops -d rideops"
           --health-interval 5s --health-timeout 3s --health-retries 20
+      # Lens adapter contract suite (backend/tests/lens/test_adapter_contract.py). SQL Server is not
+      # run in CI (2 GB image); the suite skips any engine it can't reach.
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: RootPass-123  # ephemeral CI container, not a real secret
+          MYSQL_DATABASE: shop
+        ports: ["3307:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -pRootPass-123"
+          --health-interval 5s --health-timeout 3s --health-retries 30
+      mongo:
+        image: mongo:8.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: RootPass-123  # ephemeral CI container, not a real secret
+        ports: ["27018:27017"]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e ./pipelines -e "./backend[dev]"
-      - run: pytest backend -q
+      - run: pip install -e ./pipelines -e "./backend[dev,engines]"
+      - run: pytest backend -q -rs
       - name: Build the API image
         run: docker build -f backend/Dockerfile -t rideops-api:ci .

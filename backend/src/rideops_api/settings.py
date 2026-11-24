@@ -46,6 +46,9 @@ class LensSettings(BaseSettings):
     max_target_sessions: int = 2
     rideops_demo_url: SecretStr | None = None  # read-only URL to the RideOps DB → demo connection
     connection_test_max_age_min: int = 10
+    # SQLite uploads (stored as files: <uploads_dir>/<workspace_id>/<upload_id>.sqlite, mode 0600)
+    uploads_dir: str = "data/lens-uploads"
+    upload_max_bytes: int = 200 * 1024 * 1024
 
     worker_poll_interval_s: float = 1.0
     scheduler_interval_s: float = 15.0

@@ -125,10 +125,16 @@ def test_staged_test_failures(client, outbox):
     )  # FR-14: insecure needs owner opt-in
     port = test_draft(client, ws, url=TARGET_URL.replace(f":{PG.port}/", ":2222/"))
     assert port["stages"][-1]["code"] == "CONN_PORT_NOT_ALLOWED"
-    r = client.post(
-        f"/api/v1/workspaces/{ws}/connections/test", json={"url": "mysql://u@db.example.com/x"}
-    )
-    assert r.status_code == 500 and r.json()["error"]["code"] == "DRIVER_MISSING"
+    from rideops_api.lens.adapters import registry
+
+    saved = registry.ADAPTERS.pop("mysql")  # simulate a server installed without the MySQL extra
+    try:
+        r = client.post(
+            f"/api/v1/workspaces/{ws}/connections/test", json={"url": "mysql://u@db.example.com/x"}
+        )
+        assert r.status_code == 500 and r.json()["error"]["code"] == "DRIVER_MISSING"
+    finally:
+        registry.ADAPTERS["mysql"] = saved
 
 
 def test_create_requires_matching_passing_test_and_verified_email(client, new_client, outbox):
@@ -423,4 +429,11 @@ def test_meta_engines(client):
     body = client.get("/api/v1/meta/engines").json()
     pg = next(e for e in body["engines"] if e["engine"] == "postgres")
     assert pg["available"] and "status_basic" in pg["capabilities"]
-    assert next(e for e in body["engines"] if e["engine"] == "mysql")["available"] is False
+    available = {e["engine"]: e["available"] for e in body["engines"]}
+    assert available == {
+        "postgres": True,
+        "mysql": True,
+        "mssql": True,
+        "sqlite": True,
+        "mongodb": True,
+    }

@@ -16,7 +16,7 @@ COPY pipelines/sql pipelines/sql
 COPY monitoring/incidents monitoring/incidents
 COPY backend/pyproject.toml backend/README.md backend/
 COPY backend/src backend/src
-RUN pip install --no-cache-dir ./pipelines ./backend \
+RUN pip install --no-cache-dir ./pipelines "./backend[engines]" \
     && useradd --create-home --uid 10001 rideops
 USER rideops
 

@@ -1,5 +1,6 @@
 """Run guarded, read-only statements against a stored connection (FR-34, FR-36, §14.5)."""
 
+import contextlib
 import json
 import logging
 from typing import Any
@@ -8,7 +9,6 @@ import psycopg
 
 from rideops_api.jobs.registry import JobContext, job
 from rideops_api.lens import pools
-from rideops_api.lens.adapters import pg_catalog
 from rideops_api.lens.catalog import detect
 from rideops_api.lens.connections.service import TargetUnavailable, load_target
 from rideops_api.lens.queries import sqlguard
@@ -21,6 +21,57 @@ MAX_BYTES = 10_000_000
 TIMEOUT_S = 30
 CACHE_ROWS = 2_000  # dashboards cache at most this many rows per widget
 MASK = "•••"
+
+
+def _driver_errors() -> tuple[type[BaseException], ...]:
+    import sqlite3
+
+    errors: list[type[BaseException]] = [psycopg.Error, sqlite3.Error]
+    for mod, attr in (
+        ("pymysql", "MySQLError"),
+        ("pymssql", "Error"),
+        ("pymongo.errors", "PyMongoError"),
+    ):
+        with contextlib.suppress(ImportError):  # optional driver not installed
+            errors.append(getattr(__import__(mod, fromlist=[attr]), attr))
+    return tuple(errors)
+
+
+DRIVER_ERRORS = _driver_errors()
+
+
+def classify_query_error(exc: BaseException) -> tuple[int, str, str]:
+    """Any driver's error → (HTTP status, catalogue code, first line of the message)."""
+    message = (str(exc).strip().splitlines() or [type(exc).__name__])[0][:500]
+    low = message.lower()
+    if (
+        isinstance(exc, psycopg.errors.QueryCanceled)
+        or type(exc).__name__ == "ExecutionTimeout"
+        or any(
+            k in low
+            for k in (
+                "statement timeout",
+                "maximum statement execution time",
+                "interrupted",
+                "timeout expired",
+            )
+        )
+    ):
+        return 504, "QUERY_TIMEOUT", f"Query exceeded {TIMEOUT_S} s."
+    if (
+        isinstance(exc, psycopg.errors.ReadOnlySqlTransaction)
+        or "read only" in low
+        or "read-only" in low
+    ):
+        return 400, "QUERY_NOT_READONLY", message
+    return 400, "QUERY_ERROR", message
+
+
+def validate_for(engine: str, statement: str, *, demo: bool = False) -> sqlguard.Verdict:
+    """SQL engines go through the sqlglot guard; MongoDB takes find/aggregate JSON."""
+    if engine == "mongodb":
+        return sqlguard.validate_mongo(statement, demo=demo)
+    return sqlguard.validate(statement, engine, demo=demo)
 
 
 class QueryFailed(Exception):
@@ -67,8 +118,9 @@ def run(db: Any, *, workspace_id: Any, connection_id: Any, statement: str, user_
     with db.pool.connection() as conn:
         engine = conn.execute("SELECT engine::text AS e, is_demo FROM app.connections WHERE id = %s",
                               (connection_id,)).fetchone()  # fmt: skip
-    verdict = sqlguard.validate(statement, engine["e"] if engine else "postgres",
-                                demo=bool(engine and engine["is_demo"]))  # fmt: skip
+    verdict = validate_for(
+        engine["e"] if engine else "postgres", statement, demo=bool(engine and engine["is_demo"])
+    )
     if not verdict.ok:
         run_id = _record(db, workspace_id=workspace_id, connection_id=connection_id, statement=statement,
                          status="rejected", user_id=user_id, saved_query_id=saved_query_id,
@@ -76,35 +128,29 @@ def run(db: Any, *, workspace_id: Any, connection_id: Any, statement: str, user_
         raise QueryFailed(
             422, verdict.code or "QUERY_REJECTED", verdict.message or "Rejected.", run_id
         )
-    exec_text = verdict.statement if verdict.kind == "select" else statement.strip().rstrip(";")
+    exec_text = (
+        verdict.statement
+        if verdict.kind in ("select", "find", "aggregate")
+        else statement.strip().rstrip(";")
+    )
     try:
         _, adapter = load_target(db, connection_id, settings)
         with (
             pools.target_slot(str(connection_id), settings.max_target_sessions, wait_s=5.0),
             adapter.connect() as t,
         ):
-            result = pg_catalog.run_readonly(t, exec_text, wrap=verdict.wrap, max_rows=max_rows, max_bytes=MAX_BYTES,
+            result = adapter.run_readonly(t, exec_text, wrap=verdict.wrap, max_rows=max_rows, max_bytes=MAX_BYTES,
                                              timeout_s=TIMEOUT_S)  # fmt: skip
     except TargetUnavailable as exc:
         raise QueryFailed(409, exc.code, exc.message) from None
     except pools.TargetBusy as exc:
         raise QueryFailed(429, "RATE_LIMITED", str(exc)) from None
-    except psycopg.errors.QueryCanceled:
-        run_id = _record(db, workspace_id=workspace_id, connection_id=connection_id, statement=statement,
-                         status="error", user_id=user_id, saved_query_id=saved_query_id, error_code="QUERY_TIMEOUT",
-                         error_message=f"Query exceeded {TIMEOUT_S} s.")  # fmt: skip
-        raise QueryFailed(504, "QUERY_TIMEOUT", f"Query exceeded {TIMEOUT_S} s.", run_id) from None
-    except psycopg.Error as exc:
-        message = (str(exc).strip().splitlines() or ["Query failed"])[0][:500]
-        code = (
-            "QUERY_NOT_READONLY"
-            if isinstance(exc, psycopg.errors.ReadOnlySqlTransaction)
-            else "QUERY_ERROR"
-        )
+    except DRIVER_ERRORS as exc:
+        status, code, message = classify_query_error(exc)
         run_id = _record(db, workspace_id=workspace_id, connection_id=connection_id, statement=statement,
                          status="error", user_id=user_id, saved_query_id=saved_query_id, error_code=code,
                          error_message=message)  # fmt: skip
-        raise QueryFailed(400, code, message, run_id) from None
+        raise QueryFailed(status, code, message, run_id) from None
 
     with db.pool.connection() as conn:
         pii = pii_columns_for(conn, connection_id, verdict.tables)
@@ -132,10 +178,12 @@ def explain(db: Any, *, connection_id: Any, statement: str, settings=None) -> An
     settings = settings or get_lens_settings()
     with db.pool.connection() as conn:
         row = conn.execute(
-            "SELECT is_demo FROM app.connections WHERE id = %s", (connection_id,)
+            "SELECT is_demo, engine::text AS e FROM app.connections WHERE id = %s", (connection_id,)
         ).fetchone()
-    verdict = sqlguard.validate(statement, demo=bool(row and row["is_demo"]))
-    if not verdict.ok or verdict.kind != "select":
+    verdict = validate_for(
+        row["e"] if row else "postgres", statement, demo=bool(row and row["is_demo"])
+    )
+    if not verdict.ok or verdict.kind not in ("select", "find", "aggregate"):
         raise QueryFailed(
             422,
             verdict.code or "QUERY_NOT_READONLY",
@@ -147,10 +195,10 @@ def explain(db: Any, *, connection_id: Any, statement: str, settings=None) -> An
             pools.target_slot(str(connection_id), settings.max_target_sessions, wait_s=5.0),
             adapter.connect() as t,
         ):
-            return pg_catalog.explain(t, verdict.statement)
+            return adapter.explain(t, verdict.statement)
     except TargetUnavailable as exc:
         raise QueryFailed(409, exc.code, exc.message) from None
-    except psycopg.Error as exc:
+    except DRIVER_ERRORS as exc:
         raise QueryFailed(
             400, "QUERY_ERROR", (str(exc).strip().splitlines() or ["failed"])[0][:500]
         ) from None

@@ -13,7 +13,6 @@ from rideops_api.auth.deps import LensSettingsDep, MetaDbDep
 from rideops_api.errors import ApiError
 from rideops_api.jobs import queue
 from rideops_api.lens import pools
-from rideops_api.lens.adapters import pg_catalog
 from rideops_api.lens.connections.service import TargetUnavailable, load_target
 from rideops_api.lens.profiling.service import PROFILE_DEFAULT_ROWS, PROFILE_MAX_ROWS
 from rideops_api.workspaces.deps import WorkspaceContext, require
@@ -184,7 +183,7 @@ def exact_count(connection_id: UUID, schema: str, table: str, ctx: Editor, reque
             pools.target_slot(str(connection_id), settings.max_target_sessions),
             adapter.connect() as t,
         ):
-            n = pg_catalog.exact_count(t, schema, table)
+            n = adapter.exact_count(t, schema, table)
     except TargetUnavailable as exc:
         raise _unavailable(exc) from None
     with db.tenant_transaction(ctx.workspace_id) as conn:
@@ -281,7 +280,7 @@ def preview(connection_id: UUID, schema: str, table: str, ctx: Editor, request: 
             pools.target_slot(str(connection_id), settings.max_target_sessions),
             adapter.connect() as tc,
         ):
-            columns, rows = pg_catalog.preview(tc, schema, table, 50)
+            columns, rows = adapter.preview(tc, schema, table, 50)
     except TargetUnavailable as exc:
         raise _unavailable(exc) from None
     pii = set(t["pii_columns"])

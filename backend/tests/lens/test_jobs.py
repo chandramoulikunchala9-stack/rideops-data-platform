@@ -207,10 +207,24 @@ def test_health_and_readiness(client, lens_conninfo):
 
 
 def test_migrations_roundtrip(lens_conninfo):
-    migrate.downgrade(lens_conninfo, "base")
-    assert sql(lens_conninfo, "SELECT to_regclass('app.users') IS NULL AS gone")[0]["gone"]
-    migrate.upgrade(lens_conninfo)
-    assert (
-        sql(lens_conninfo, "SELECT version_num FROM app.alembic_version")[0]["version_num"]
-        == migrate.head_revision()
-    )
+    """Full downgrade → upgrade in a throwaway database, so the shared test DB (and the type OIDs its
+    pooled connections have cached) is never touched."""
+    import psycopg
+
+    from rideops.config import PostgresSettings
+
+    base = PostgresSettings()
+    with psycopg.connect(base.conninfo(), autocommit=True) as admin:
+        admin.execute("DROP DATABASE IF EXISTS rideops_lens_migrations WITH (FORCE)")
+        admin.execute("CREATE DATABASE rideops_lens_migrations")
+    conninfo = base.conninfo("rideops_lens_migrations")
+    try:
+        migrate.upgrade(conninfo)
+        migrate.downgrade(conninfo, "base")
+        assert sql(conninfo, "SELECT to_regclass('app.users') IS NULL AS gone")[0]["gone"]
+        migrate.upgrade(conninfo)
+        version = sql(conninfo, "SELECT version_num FROM app.alembic_version")[0]["version_num"]
+        assert version == migrate.head_revision()
+    finally:
+        with psycopg.connect(base.conninfo(), autocommit=True) as admin:
+            admin.execute("DROP DATABASE IF EXISTS rideops_lens_migrations WITH (FORCE)")

@@ -180,3 +180,64 @@ def validate(
         )
     except GuardRejected as rej:
         return Verdict(ok=False, code=rej.code, message=rej.message)
+
+
+# --------------------------------------------------------------------- MongoDB
+MONGO_BLOCKED_KEYS = frozenset({"$out", "$merge", "$function", "$accumulator", "$where", "$eval",
+                                "$currentOp", "$listSessions", "$planCacheStats"})  # fmt: skip
+MONGO_ALLOWED_TOP = frozenset({"collection", "find", "projection", "sort", "limit", "aggregate"})
+
+
+def _walk_keys(value) -> set[str]:
+    keys: set[str] = set()
+    if isinstance(value, dict):
+        for k, v in value.items():
+            keys.add(str(k))
+            keys |= _walk_keys(v)
+    elif isinstance(value, list):
+        for v in value:
+            keys |= _walk_keys(v)
+    return keys
+
+
+def validate_mongo(statement: str, *, demo: bool = False) -> Verdict:
+    """MongoDB console input: JSON with `find` or `aggregate`, never write/code-execution stages."""
+    import json as _json
+
+    try:
+        spec = _json.loads(statement or "")
+    except ValueError:
+        return Verdict(ok=False, code="QUERY_PARSE_ERROR",
+                       message='Use JSON, e.g. {"collection": "orders", "find": {"status": "completed"}}.')  # fmt: skip
+    if (
+        not isinstance(spec, dict)
+        or not isinstance(spec.get("collection"), str)
+        or not spec["collection"]
+    ):
+        return Verdict(ok=False, code="QUERY_PARSE_ERROR", message='Give a "collection" name.')
+    extra = set(spec) - MONGO_ALLOWED_TOP
+    if extra:
+        return Verdict(
+            ok=False,
+            code="QUERY_NOT_READONLY",
+            message=f"Unsupported key(s): {', '.join(sorted(extra))}.",
+        )
+    if ("find" in spec) == ("aggregate" in spec):
+        return Verdict(
+            ok=False, code="QUERY_PARSE_ERROR", message='Use exactly one of "find" or "aggregate".'
+        )
+    if "aggregate" in spec and not isinstance(spec["aggregate"], list):
+        return Verdict(
+            ok=False, code="QUERY_PARSE_ERROR", message='"aggregate" must be a list of stages.'
+        )
+    blocked = _walk_keys(spec) & MONGO_BLOCKED_KEYS
+    if blocked:
+        return Verdict(
+            ok=False, code="QUERY_NOT_READONLY", message=f"{sorted(blocked)[0]} is not allowed."
+        )
+    if spec["collection"].startswith("system."):
+        return Verdict(
+            ok=False, code="QUERY_FORBIDDEN_OBJECT", message="System collections can't be queried."
+        )
+    kind = "aggregate" if "aggregate" in spec else "find"
+    return Verdict(ok=True, kind=kind, tables=[spec["collection"]], statement=statement)

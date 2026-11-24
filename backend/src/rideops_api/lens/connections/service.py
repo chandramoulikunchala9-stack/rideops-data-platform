@@ -66,6 +66,15 @@ def resolve_draft(fields: dict[str, Any], secret: dict[str, Any]) -> Draft:
     """URL and/or form fields → Draft. Form fields are rebuilt into a URL and parsed, so both
     paths go through the same validation (option allowlist, host normalisation)."""
     url = fields.get("url")
+    if not url and fields.get("engine") == "sqlite":
+        try:  # SQLite = an uploaded file; `database` carries the upload id
+            upload_id = str(uuid.UUID(str(fields.get("database") or "")))
+        except ValueError:
+            raise url_parser.UrlError(
+                "URL_INVALID", "Upload the SQLite file first, then use its upload id."
+            ) from None
+        return Draft(engine="sqlite", host="upload", port=0, database=upload_id, username=None, options={},
+                     tls_mode="disable", secret=Secret())  # fmt: skip
     if url:
         parsed = url_parser.parse(url)
     else:
@@ -103,12 +112,44 @@ def _policy_kwargs(workspace_settings: dict[str, Any], settings: LensSettings) -
     }
 
 
-def run_test(draft: Draft, *, workspace_settings: dict[str, Any], settings: LensSettings,
-             connection_id: str | None = None, trusted: bool = False) -> TestResult:  # fmt: skip
+def upload_path(settings: LensSettings, workspace_id: Any, upload_id: Any) -> str:
+    """Server-chosen path of an uploaded SQLite file; ids are UUIDs, so no user text reaches the path."""
+    import os
+
+    return os.path.join(
+        settings.uploads_dir,
+        str(uuid.UUID(str(workspace_id))),
+        f"{uuid.UUID(str(upload_id))}.sqlite",
+    )
+
+
+def guard_target(engine: str, host: str, port: int, options: dict[str, Any], workspace_settings: dict[str, Any],
+                 settings: LensSettings) -> netguard.GuardResult:  # fmt: skip
+    policy = _policy_kwargs(workspace_settings, settings)
+    if engine == "mongodb" and str(options.get("srv", "")).lower() == "true":
+        return netguard.check_srv(host, **policy)
+    return netguard.check(host, port, **policy)
+
+
+def run_test(
+    draft: Draft,
+    *,
+    workspace_settings: dict[str, Any],
+    settings: LensSettings,
+    connection_id: str | None = None,
+    trusted: bool = False,
+    workspace_id: Any = None,
+) -> TestResult:
     """DNS → NETWORK_POLICY (here) → TCP → TLS → AUTH → DB_SELECT → PRIVILEGES → CAPABILITIES (adapter).
     `trusted` skips the Network Guard for the operator-configured demo connection only."""
     adapter_cls = get_adapter_class(draft.engine)  # AdapterUnavailable propagates to the API
     stages: list[StageResult] = []
+    if draft.engine == "sqlite":  # a local, read-only file: no network, TLS or login stages
+        cfg = ConnectionConfig(connection_id=connection_id, engine="sqlite", host=None, port=None,
+                               database=draft.database, username=None,
+                               options={"path": upload_path(settings, workspace_id, draft.database)},
+                               tls_mode="disable", pinned_ip=None, timeout_s=settings.health_timeout_s)  # fmt: skip
+        return adapter_cls(cfg, draft.secret).test()
     if draft.tls_mode == "disable" and not workspace_settings.get(
         "allow_insecure_connections", False
     ):
@@ -119,8 +160,8 @@ def run_test(draft: Draft, *, workspace_settings: dict[str, Any], settings: Lens
     if not trusted:
         sw = Stopwatch()
         try:
-            guard = netguard.check(
-                draft.host, draft.port, **_policy_kwargs(workspace_settings, settings)
+            guard = guard_target(
+                draft.engine, draft.host, draft.port, draft.options, workspace_settings, settings
             )
         except netguard.NetworkPolicyError as err:
             if err.stage == "DNS":
@@ -290,24 +331,43 @@ def load_target(db: Any, connection_id: Any, settings: LensSettings):
         adapter_cls = get_adapter_class(row["engine"])
     except AdapterUnavailable as exc:
         raise TargetUnavailable(exc.code, exc.message) from exc
-    if row["tls_mode"] == "disable" and not row["ws_settings"].get(
-        "allow_insecure_connections", False
-    ):
-        raise TargetUnavailable(
-            "CONN_TLS_REQUIRED", "Insecure connections are disabled for this workspace."
-        )
+    return row, adapter_cls(target_config(row, row["ws_settings"], settings), secret)
+
+
+def target_config(
+    row: dict[str, Any], workspace_settings: dict[str, Any], settings: LensSettings
+) -> ConnectionConfig:
+    """Stored connection row → adapter config, applying TLS policy and the Network Guard.
+    Raises TargetUnavailable with a catalogue code when policy forbids contacting the target."""
+    options = dict(row["options"] or {})
     pinned = None
-    if not row["is_demo"]:
-        try:
-            pinned = netguard.check(
-                row["host"], row["port"], **_policy_kwargs(row["ws_settings"], settings)
-            ).pinned_ip
-        except netguard.NetworkPolicyError as err:
-            raise TargetUnavailable(err.code, err.message) from err
-    cfg = ConnectionConfig(connection_id=str(row["id"]), engine=row["engine"], host=row["host"], port=row["port"],
-                           database=row["database"], username=row["username"], options=row["options"] or {},
-                           tls_mode=row["tls_mode"], pinned_ip=pinned, timeout_s=settings.health_timeout_s)  # fmt: skip
-    return row, adapter_cls(cfg, secret)
+    if row["engine"] == "sqlite":
+        options["path"] = upload_path(settings, row["workspace_id"], row["database"])
+    else:
+        if row["tls_mode"] == "disable" and not workspace_settings.get(
+            "allow_insecure_connections", False
+        ):
+            raise TargetUnavailable(
+                "CONN_TLS_REQUIRED", "Insecure connections are disabled for this workspace."
+            )
+        if not row["is_demo"]:
+            try:
+                pinned = guard_target(row["engine"], row["host"], row["port"], options, workspace_settings,
+                                      settings).pinned_ip or None  # fmt: skip
+            except netguard.NetworkPolicyError as err:
+                raise TargetUnavailable(err.code, err.message) from err
+    return ConnectionConfig(
+        connection_id=str(row["id"]),
+        engine=row["engine"],
+        host=row["host"],
+        port=row["port"],
+        database=row["database"],
+        username=row["username"],
+        options=options,
+        tls_mode=row["tls_mode"],
+        pinned_ip=pinned,
+        timeout_s=settings.health_timeout_s,
+    )
 
 
 def seed_demo_connection(conn: psycopg.Connection, workspace_id: Any, settings: LensSettings,
