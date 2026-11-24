@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from rideops_api.jobs import queue
 from rideops_api.jobs.registry import JobContext, job
 from rideops_api.lens import pools
 from rideops_api.lens.adapters.base import ConnectionConfig, StatusSnapshot, now
@@ -129,6 +130,9 @@ def _persist(
             {"state": state, "at": snap.taken_at, "score": health_score, "version": snap.server_version,
              "id": row["id"]},
         )  # fmt: skip
+        # Every snapshot is followed by an alert evaluation (§14.2).
+        queue.enqueue(conn, "alert_eval", connection_id=row["id"], workspace_id=row["workspace_id"],
+                      idempotency_key=f"alert_eval:snapshot:{out['id']}")  # fmt: skip
     return out
 
 

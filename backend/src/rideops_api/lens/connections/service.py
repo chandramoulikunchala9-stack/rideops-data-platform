@@ -223,6 +223,10 @@ def insert_connection(conn: psycopg.Connection, *, workspace_id: Any, draft: Dra
     ).fetchone()  # fmt: skip
     store_secret(conn, keyring, workspace_id, connection_id, draft.secret)
     set_schedule(conn, connection_id, check_interval_s)
+    if not is_demo:  # FR-40 default rule pack (the shared demo would only add noise)
+        from rideops_api.lens.alerts.engine import default_rules  # local: avoid an import cycle
+
+        default_rules(conn, workspace_id, connection_id, created_by)
     return row
 
 

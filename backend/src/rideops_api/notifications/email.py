@@ -36,5 +36,8 @@ class MemoryEmailSender:
         self.outbox.append(email)
 
 
+_MEMORY = MemoryEmailSender()  # one shared outbox, so tests can read what workers sent
+
+
 def make_sender(backend: str) -> EmailSender:
-    return MemoryEmailSender() if backend == "memory" else ConsoleEmailSender()
+    return _MEMORY if backend == "memory" else ConsoleEmailSender()

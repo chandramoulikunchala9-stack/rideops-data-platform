@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from rideops_api.jobs import queue
 from rideops_api.jobs.registry import JobContext, job
 from rideops_api.lens import pools
 from rideops_api.lens.adapters import pg_catalog
@@ -204,6 +205,11 @@ def sync(
     )  # local: insights reads the catalog we just wrote
 
     insights.refresh(db, connection_id, row)
+    with (
+        db.pool.connection() as conn
+    ):  # freshness / row-drop / schema-change rules see the new data
+        queue.enqueue(conn, "alert_eval", connection_id=connection_id, workspace_id=row["workspace_id"],
+                      idempotency_key=f"alert_eval:sync:{sync_id}")  # fmt: skip
     return {
         "sync_id": sync_id,
         "tables": len(tables) if tables is not None else len(stats),
