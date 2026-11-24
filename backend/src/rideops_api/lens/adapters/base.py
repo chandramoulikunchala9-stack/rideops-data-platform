@@ -9,8 +9,19 @@ Later phases add catalog/profiling/query methods to this same class.
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from typing import Any, ClassVar
+
+try:
+    from enum import StrEnum
+except ImportError:  # Python 3.10 (StrEnum is 3.11+); same behaviour: str(member) is its value
+
+    class StrEnum(str, Enum):  # type: ignore[no-redef]
+        def __str__(self) -> str:
+            return str(self.value)
+
+        def __format__(self, spec: str) -> str:
+            return format(str(self.value), spec)
 
 
 class Engine(StrEnum):

@@ -115,7 +115,7 @@ database. Run all commands from the repository root, where `.env` and the genera
 | SQL | PostgreSQL 17.5: CTEs, window functions, MERGE, generated columns, partial indexes, plpgsql |
 | Databricks | Asset Bundles, Lakeflow Jobs, Lakeflow Declarative Pipelines (DLT), Auto Loader, Unity Catalog, Databricks SQL, system tables |
 | Backend | FastAPI 0.162, Pydantic 2, psycopg 3 + pool, uvicorn |
-| Lens | Alembic 1.20 + SQLAlchemy 2.1 (migrations), argon2-cffi (Argon2id), cryptography (AES-256-GCM), sqlglot (SQL guard), PyMySQL, pymssql, PyMongo |
+| Lens | Alembic 1.20 + SQLAlchemy 2.0 (migrations), argon2-cffi (Argon2id), cryptography (AES-256-GCM), sqlglot (SQL guard), PyMySQL, pymssql, PyMongo |
 | Frontend | React 19, TypeScript 6, Vite 8, React Router 7, Recharts 3, Vitest |
 | Cloud & IaC | AWS S3, IAM, Budgets, CUR 2.0 (boto3); Terraform 1.17 (AWS provider 6.73) |
 | DevOps | Docker / Compose, GitHub Actions, Dependabot, ruff, ESLint, actionlint |
