@@ -29,7 +29,11 @@ class LensSettings(BaseSettings):
     session_cookie_secure: bool = True  # set false only for plain-http local development
     session_idle_hours: int = 12
     session_absolute_days: int = 7
-    email_backend: Literal["console", "memory"] = "console"
+    email_backend: Literal["console", "memory", "smtp", "resend"] = "console"
+    email_from: str = "RideOps Lens <no-reply@localhost>"
+    smtp_url: SecretStr | None = None  # smtps://user:password@host:465 or smtp://…:587 (STARTTLS)
+    resend_api_key: SecretStr | None = None
+    resend_api_url: str | None = None  # tests only; default https://api.resend.com/emails
     internal_token: SecretStr | None = None  # protects /internal/tick; unset = endpoint disabled
 
     login_max_failures: int = 10  # per email within login_failure_window_min

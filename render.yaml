@@ -47,6 +47,10 @@ services:
       - key: SESSION_COOKIE_SECURE
         value: "true"
       - key: EMAIL_BACKEND
-        value: console             # until an email provider is wired: links are logged, not sent
+        value: resend              # or smtp (set SMTP_URL); console only logs the links
+      - key: EMAIL_FROM
+        sync: false                # e.g. "RideOps Lens <no-reply@your-domain>" (verified sender)
+      - key: RESEND_API_KEY
+        sync: false
       - key: UPLOADS_DIR
         value: /tmp/lens-uploads   # free instances have no persistent disk: SQLite uploads are lost on restart

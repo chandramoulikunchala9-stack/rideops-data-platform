@@ -70,7 +70,11 @@ def create_app(
         if lens.lens_enabled:
             app.state.meta_db = meta_db or Database(conninfo=lens.metadata_conninfo())
             app.state.meta_db.open()  # no-op if the same pool is already open
-            app.state.email_sender = email_sender or make_sender(lens.email_backend)
+            app.state.email_sender = email_sender or make_sender(lens.email_backend, lens)
+            if lens.email_backend == "console" and get_settings().env == "prod":
+                logger.warning(
+                    "EMAIL_BACKEND=console in prod: verification/reset links are only logged"
+                )
             if lens.lens_role == "all":
                 background = Background(app.state.meta_db, lens, worker=True, scheduler=True)
                 background.start()

@@ -24,7 +24,7 @@ from rideops_api.auth.schemas import (
 from rideops_api.auth.tokens import digest, new_secret
 from rideops_api.errors import ApiError
 from rideops_api.lens.connections.service import seed_demo_safely as seed_demo
-from rideops_api.notifications.email import Email
+from rideops_api.notifications.email import Email, send_safely
 from rideops_api.workspaces import rbac, service
 from rideops_api.workspaces.deps import WorkspaceContext, require
 
@@ -151,7 +151,7 @@ def invite(body: InvitationIn, ctx: MembersManage, request: Request, db: MetaDbD
                      actor_user_id=ctx.user_id, target_type="invitation", target_id=inv["id"],
                      metadata={"email": body.email, "role": body.role})  # fmt: skip
     link = f"{settings.public_app_url.rstrip('/')}/app/invite?token={raw}"
-    request.app.state.email_sender.send(Email(
+    send_safely(request.app.state.email_sender, Email(
         to=body.email, subject=f"You're invited to {ctx.workspace['name']} on RideOps Lens",
         body=f"{ctx.session.display_name} invited you as {body.role}:\n{link}\n"))  # fmt: skip
     return InvitationOut(**inv)

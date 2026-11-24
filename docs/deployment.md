@@ -112,9 +112,15 @@ Lens runs inside the same API service. **Status: prepared and verified locally (
 7. **Monitoring.** Scrape `GET /metrics` with `Authorization: Bearer $INTERNAL_TOKEN`. Runbooks:
    `monitoring/runbooks/lens-*.md`.
 
+**Email** (verification, password reset, invitations, alert emails): `EMAIL_BACKEND=resend` with
+`RESEND_API_KEY` (Resend's free tier), or `EMAIL_BACKEND=smtp` with
+`SMTP_URL=smtps://user:password@host:465` (or `smtp://…:587`, STARTTLS is enforced). Set `EMAIL_FROM` to a
+sender address your provider has verified. If delivery fails, the request still succeeds and the error is
+logged; users can ask for another link.
+
 Known free-tier limits: no persistent disk (SQLite uploads are lost on restart; set `UPLOADS_DIR`
 to a mounted disk or disable uploads), no static egress IPs (firewalled databases can't allowlist
-Lens), emails are logged rather than sent until an email provider is configured.
+Lens).
 
 ## Environment variables
 

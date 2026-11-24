@@ -141,7 +141,7 @@ def deliver(kind: str, config: dict[str, Any], payload: dict[str, Any], *, works
         post_json(config["url"], {"text": f"{icon} *{verb}* {payload.get('summary', '')}\n{payload.get('link', '')}"},
                   guard, {})  # fmt: skip
     elif kind == "email":
-        sender = make_sender(settings.email_backend)
+        sender = make_sender(settings.email_backend, settings)
         subject = f"[Lens {payload.get('severity', 'info').upper()}] {payload.get('summary', payload['event'])}"[
             :200
         ]

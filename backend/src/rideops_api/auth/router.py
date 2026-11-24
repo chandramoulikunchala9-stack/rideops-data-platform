@@ -20,7 +20,7 @@ from rideops_api.auth.schemas import (
 from rideops_api.auth.tokens import digest
 from rideops_api.errors import ApiError
 from rideops_api.lens.connections.service import seed_demo_safely as seed_demo
-from rideops_api.notifications.email import Email
+from rideops_api.notifications.email import Email, send_safely
 from rideops_api.settings import LensSettings
 from rideops_api.workspaces import service as workspaces
 
@@ -45,7 +45,9 @@ def _send(
     request: Request, to: str, subject: str, path: str, token: str, settings: LensSettings
 ) -> None:
     link = f"{settings.public_app_url.rstrip('/')}{path}?token={token}"
-    request.app.state.email_sender.send(Email(to=to, subject=subject, body=f"{subject}:\n{link}\n"))
+    send_safely(
+        request.app.state.email_sender, Email(to=to, subject=subject, body=f"{subject}:\n{link}\n")
+    )
 
 
 def _me(conn, session_user_id, csrf: str) -> MeOut:
