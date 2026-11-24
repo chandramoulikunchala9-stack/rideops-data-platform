@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { api, ApiError } from "../../api/client";
@@ -10,6 +10,7 @@ import { ChartCard, ChartTooltip } from "../../components/ChartCard";
 import { axisProps, gridProps } from "../../lib/charts";
 import { formatDateTime, formatDuration } from "../../lib/format";
 import { useLens } from "../LensContext";
+import { ConnectionTabs } from "../components/ConnectionTabs";
 import { StateBadge } from "../components/StateBadge";
 import { UptimeBars } from "../components/UptimeBars";
 import { ENGINE_LABEL, ENV_LABEL, formatBytes, timeAgo } from "../status";
@@ -59,12 +60,12 @@ export function ConnectionPage() {
         const unavailable = latest?.unavailable ?? {};
         return (
           <>
+            <ConnectionTabs />
             {c.environment === "prod" && (
               <div className="banner" data-tone="warning" role="note">Production database: Lens has read-only access.</div>
             )}
             <header className="page-header">
               <div>
-                <p className="breadcrumb"><Link to="/lens">Databases</Link> /</p>
                 <h1 className="title-row">{c.name} <StateBadge state={c.current_state} />
                   {c.health_score != null && <span className="score">Score {c.health_score}</span>}</h1>
                 <p>

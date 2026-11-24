@@ -162,7 +162,64 @@ table.clickable tbody tr:hover { background: var(--row-hover); }
 .uptime-bar[data-tone="critical"] { background: var(--status-critical); }
 .long-queries { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; font-size: 13px; }
 
+/* ---- analytics (Phase 13) ------------------------------------------------------- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.conn-tabs-wrap { margin-bottom: 16px; }
+.conn-tabs-title { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 14px; }
+.conn-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border); }
+.conn-tabs a {
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.conn-tabs a.active { color: var(--text-primary); border-bottom-color: var(--text-primary); font-weight: 600; }
+.segmented.tabs { margin-bottom: 16px; }
+.plain-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.plain-list li[data-stale="true"] { color: var(--status-warning-text); }
+.kv.compact { font-size: 13px; row-gap: 2px; }
+.data-grid { font-size: 13px; }
+.data-grid td { white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+.result-grid { max-height: 480px; overflow: auto; }
+.profile-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.profile-card h3 { margin: 0; font-size: 15px; display: flex; gap: 6px; align-items: center; }
+.mini-bars { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: 12px; }
+.mini-bars li { display: grid; grid-template-columns: minmax(0, 120px) 1fr auto; gap: 8px; align-items: center; }
+.mini-bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-bar-track { height: 10px; background: var(--surface-2); }
+.mini-bar-fill { display: block; height: 100%; background: var(--series-1); }
+.histogram {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 90px;
+  margin: 8px 0 18px;
+  border-bottom: 1px solid var(--axis);
+}
+.histogram-bar { flex: 1; background: var(--series-1); min-width: 2px; }
+.histogram-axis { position: absolute; bottom: -18px; left: 0; font-size: 11px; color: var(--text-muted); }
+.histogram-axis.right { left: auto; right: 0; }
+.query-layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 280px; }
+.sql-editor {
+  width: 100%;
+  min-height: 160px;
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.toolbar.wrap { flex-wrap: wrap; align-items: center; }
+.plan { max-height: 360px; overflow: auto; font-size: 12px; background: var(--surface-2); padding: 10px; }
+.link-button { background: none; border: 0; padding: 0; color: var(--text-primary); text-decoration: underline; cursor: pointer; font: inherit; text-align: left; }
+.input-row.narrow { max-width: 480px; margin-bottom: 16px; }
+
 @media (max-width: 900px) {
+  .query-layout { grid-template-columns: 1fr; }
   .grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {

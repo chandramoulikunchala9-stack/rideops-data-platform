@@ -102,7 +102,7 @@ def _rate_limit(conn, ws: UUID) -> None:
 def validate(connection_id: UUID, body: StatementIn, ctx: Editor, db: MetaDbDep) -> dict:
     with db.tenant_transaction(ctx.workspace_id) as conn:
         row = _connection(conn, ctx.workspace_id, connection_id)
-    v = sqlguard.validate(body.statement, row["engine"])
+    v = sqlguard.validate(body.statement, row["engine"], demo=row["is_demo"])
     return {"ok": v.ok, "kind": v.kind, "code": v.code, "message": v.message, "tables": v.tables}
 
 

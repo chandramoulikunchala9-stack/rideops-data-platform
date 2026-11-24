@@ -11,6 +11,7 @@ from rideops_api.lens import pools
 from rideops_api.lens.adapters import pg_catalog
 from rideops_api.lens.catalog import detect
 from rideops_api.lens.connections.service import TargetUnavailable, load_target
+from rideops_api.lens.queries import sqlguard
 from rideops_api.settings import get_lens_settings
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,14 @@ def sync(
         ):
             tables = pg_catalog.list_tables(t) if include_schema else None
             stats = pg_catalog.table_stats(t)
+            if row["is_demo"]:  # never expose Lens's own metadata through the shared demo database
+                hidden = sqlguard.DEMO_FORBIDDEN_SCHEMAS
+                tables = (
+                    [tb for tb in tables if tb["schema"] not in hidden]
+                    if tables is not None
+                    else None
+                )
+                stats = [s for s in stats if s["schema"] not in hidden]
             if tables is None:
                 with db.pool.connection() as conn:
                     known = conn.execute(

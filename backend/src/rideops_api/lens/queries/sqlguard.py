@@ -121,7 +121,15 @@ def _check_tree(tree: exp.Expression) -> None:
                 raise GuardRejected("QUERY_FORBIDDEN_FUNCTION", f"Function {name} is blocked.")
 
 
-def validate(statement: str, engine: str = "postgres", *, max_length: int = 100_000) -> Verdict:
+# Objects a demo connection must never expose: Lens's own metadata schema (users, sessions,
+# encrypted secrets) when it shares the RideOps database, and PostgreSQL role password tables.
+DEMO_FORBIDDEN_SCHEMAS = frozenset({"app"})
+DEMO_FORBIDDEN_TABLES = frozenset({"pg_authid", "pg_shadow", "pg_user_mapping", "pg_user_mappings"})
+
+
+def validate(
+    statement: str, engine: str = "postgres", *, max_length: int = 100_000, demo: bool = False
+) -> Verdict:
     text = (statement or "").strip()
     try:
         if not text:
@@ -157,9 +165,16 @@ def validate(statement: str, engine: str = "postgres", *, max_length: int = 100_
         if not isinstance(tree, (exp.Select, exp.Union, exp.Intersect, exp.Except, exp.Subquery)):
             raise GuardRejected("QUERY_NOT_READONLY", "Only SELECT/WITH/EXPLAIN/SHOW are allowed.")
         _check_tree(tree)
-        tables = sorted(
-            {".".join(p for p in (t.db, t.name) if p) for t in tree.find_all(exp.Table) if t.name}
-        )
+        refs = [t for t in tree.find_all(exp.Table) if t.name]
+        if demo:
+            for t in refs:
+                if (
+                    t.db or ""
+                ).lower() in DEMO_FORBIDDEN_SCHEMAS or t.name.lower() in DEMO_FORBIDDEN_TABLES:
+                    raise GuardRejected(
+                        "QUERY_FORBIDDEN_OBJECT", "The demo connection can't read that object."
+                    )
+        tables = sorted({".".join(p for p in (t.db, t.name) if p) for t in refs})
         return Verdict(
             ok=True, kind=kind, tables=tables, statement=body.strip().rstrip(";").strip()
         )

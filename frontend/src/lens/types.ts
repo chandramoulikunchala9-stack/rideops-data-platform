@@ -148,3 +148,159 @@ export interface EngineInfo {
   available: boolean;
   capabilities: string[];
 }
+
+// ---- Phase 13: analytics ---------------------------------------------------
+
+export interface CatalogTable {
+  schema_name: string;
+  table_name: string;
+  kind: string;
+  comment: string | null;
+  primary_key: string[] | null;
+  freshness_column: string | null;
+  pii_columns: string[];
+  is_pinned: boolean;
+  column_count: number;
+  row_estimate: number | null;
+  total_bytes: number | null;
+  freshness_max: string | null;
+  matching_columns: string[];
+}
+
+export interface Catalog {
+  last_sync: { started_at: string; finished_at: string | null; ok: boolean | null; error: string | null } | null;
+  schemas: string[];
+  tables: CatalogTable[];
+  total_bytes: number;
+}
+
+export interface ColumnInfo {
+  name: string;
+  data_type: string;
+  nullable: boolean;
+  ordinal: number;
+  default: string | null;
+  comment: string | null;
+  is_pk: boolean;
+  pii: boolean;
+}
+
+export interface TableDetail {
+  table: {
+    schema_name: string; table_name: string; kind: string; comment: string | null; columns: ColumnInfo[];
+    indexes: { name: string; columns: string[]; unique: boolean; primary: boolean; bytes: number; scans: number }[];
+    foreign_keys: { name: string; columns: string[]; ref_table: string; ref_columns: string[] }[];
+    primary_key: string[] | null; freshness_column: string | null; pii_columns: string[]; is_pinned: boolean;
+  };
+  stats: {
+    taken_at: string; row_estimate: number | null; row_exact: number | null; total_bytes: number | null;
+    table_bytes: number | null; index_bytes: number | null; dead_rows: number | null; seq_scans: number | null;
+    idx_scans: number | null; last_vacuum: string | null; last_analyze: string | null; freshness_max: string | null;
+  } | null;
+  changes: SchemaChange[];
+  referenced_by: { schema_name: string; table_name: string; fk: { columns: string[] } }[];
+}
+
+export interface SchemaChange {
+  id?: number;
+  detected_at: string;
+  change_type: string;
+  object_ref: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+}
+
+export interface ColumnProfile {
+  column: string;
+  data_type: string;
+  kind: string;
+  sample_size: number;
+  null_pct: number | null;
+  distinct_est: number | null;
+  pii: boolean;
+  min?: unknown;
+  max?: unknown;
+  mean?: number;
+  stddev?: number;
+  quantiles?: Record<string, number>;
+  top_k?: [unknown, number][];
+  length?: { min: number; max: number; mean: number };
+  patterns?: Record<string, number>;
+}
+
+export interface ChartSpec {
+  column: string;
+  type: "bar" | "histogram" | "timeseries" | "patterns" | "stats";
+  title: string;
+  bars?: [unknown, number][];
+  bins?: [number, number, number][];
+  points?: [string, number][];
+  patterns?: Record<string, number>;
+  note?: string;
+}
+
+export interface ProfileResponse {
+  profile: { profiled_at: string; sample_rows: number; method: string; elapsed_ms: number | null;
+             profiles: ColumnProfile[]; charts: ChartSpec[] } | null;
+  pending: boolean;
+}
+
+export interface Insight {
+  id: number;
+  code: string;
+  severity: "info" | "warning" | "critical";
+  object_ref: string;
+  title: string;
+  detail: Record<string, unknown>;
+  recommendation: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+export interface QueryResult {
+  run_id: string;
+  kind: string;
+  columns: { name: string; type: string }[];
+  rows: unknown[][];
+  row_count: number;
+  truncated: boolean;
+  elapsed_ms: number;
+  masked_columns: string[];
+}
+
+export interface SavedQuery {
+  id: string;
+  connection_id: string;
+  connection_name?: string;
+  name: string;
+  description: string | null;
+  statement: string;
+  tags: string[];
+  updated_at: string;
+}
+
+export interface Widget {
+  id: string;
+  kind: "kpi" | "line" | "bar" | "table" | "text";
+  title: string;
+  position: number;
+  source: { type: string; id?: string };
+  options: { x?: string; y?: string; text?: string; format?: string };
+  query_name: string | null;
+  result_cache: { columns: { name: string }[]; rows: unknown[][]; row_count: number; truncated: boolean } | null;
+  refreshed_at: string | null;
+  last_status: string | null;
+  last_error: string | null;
+  stale: boolean;
+}
+
+export interface Dashboard {
+  id: string;
+  name: string;
+  description: string | null;
+  refresh_interval_s: number | null;
+  last_refreshed_at: string | null;
+  created_at: string;
+  widget_count?: number;
+  widgets?: Widget[];
+}

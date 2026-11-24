@@ -65,9 +65,10 @@ def run(db: Any, *, workspace_id: Any, connection_id: Any, statement: str, user_
     settings = settings or get_lens_settings()
     max_rows = max(1, min(int(max_rows), MAX_ROWS))
     with db.pool.connection() as conn:
-        engine = conn.execute("SELECT engine::text AS e FROM app.connections WHERE id = %s",
+        engine = conn.execute("SELECT engine::text AS e, is_demo FROM app.connections WHERE id = %s",
                               (connection_id,)).fetchone()  # fmt: skip
-    verdict = sqlguard.validate(statement, engine["e"] if engine else "postgres")
+    verdict = sqlguard.validate(statement, engine["e"] if engine else "postgres",
+                                demo=bool(engine and engine["is_demo"]))  # fmt: skip
     if not verdict.ok:
         run_id = _record(db, workspace_id=workspace_id, connection_id=connection_id, statement=statement,
                          status="rejected", user_id=user_id, saved_query_id=saved_query_id,
@@ -129,7 +130,11 @@ def run(db: Any, *, workspace_id: Any, connection_id: Any, statement: str, user_
 
 def explain(db: Any, *, connection_id: Any, statement: str, settings=None) -> Any:
     settings = settings or get_lens_settings()
-    verdict = sqlguard.validate(statement)
+    with db.pool.connection() as conn:
+        row = conn.execute(
+            "SELECT is_demo FROM app.connections WHERE id = %s", (connection_id,)
+        ).fetchone()
+    verdict = sqlguard.validate(statement, demo=bool(row and row["is_demo"]))
     if not verdict.ok or verdict.kind != "select":
         raise QueryFailed(
             422,

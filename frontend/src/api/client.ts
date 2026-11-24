@@ -57,6 +57,9 @@ async function request<T>(method: Method, path: string, body?: unknown, signal?:
   return payload as T;
 }
 
+/** Absolute URL for links the browser opens directly (downloads), using the same API base. */
+export const apiUrl = (path: string) => `${BASE_URL}${path}`;
+
 export const api = {
   get: <T>(path: string, signal?: AbortSignal) => request<T>("GET", path, undefined, signal),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),

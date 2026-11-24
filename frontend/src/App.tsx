@@ -28,6 +28,15 @@ const AddConnectionPage = lazy(() =>
   import("./lens/pages/AddConnectionPage").then((m) => ({ default: m.AddConnectionPage })),
 );
 const ConnectionPage = lazy(() => import("./lens/pages/ConnectionPage").then((m) => ({ default: m.ConnectionPage })));
+const SchemaPage = lazy(() => import("./lens/pages/SchemaPage").then((m) => ({ default: m.SchemaPage })));
+const TablePage = lazy(() => import("./lens/pages/TablePage").then((m) => ({ default: m.TablePage })));
+const InsightsPage = lazy(() => import("./lens/pages/InsightsPage").then((m) => ({ default: m.InsightsPage })));
+const QueryPage = lazy(() => import("./lens/pages/QueryPage").then((m) => ({ default: m.QueryPage })));
+const DashboardsPage = lazy(() => import("./lens/pages/DashboardsPage").then((m) => ({ default: m.DashboardsPage })));
+const DashboardPage = lazy(() => import("./lens/pages/DashboardsPage").then((m) => ({ default: m.DashboardPage })));
+const AutoDashboardPage = lazy(() =>
+  import("./lens/pages/DashboardsPage").then((m) => ({ default: m.AutoDashboardPage })),
+);
 
 const loading = (
   <div role="status" aria-live="polite" className="state">
@@ -51,6 +60,13 @@ export function AppRoutes() {
         <Route path="lens" element={<RequireLens><FleetPage /></RequireLens>} />
         <Route path="lens/connections/new" element={<RequireLens><AddConnectionPage /></RequireLens>} />
         <Route path="lens/connections/:id" element={<RequireLens><ConnectionPage /></RequireLens>} />
+        <Route path="lens/connections/:id/schema" element={<RequireLens><SchemaPage /></RequireLens>} />
+        <Route path="lens/connections/:id/tables/:schema/:table" element={<RequireLens><TablePage /></RequireLens>} />
+        <Route path="lens/connections/:id/insights" element={<RequireLens><InsightsPage /></RequireLens>} />
+        <Route path="lens/connections/:id/query" element={<RequireLens><QueryPage /></RequireLens>} />
+        <Route path="lens/connections/:id/dashboard" element={<RequireLens><AutoDashboardPage /></RequireLens>} />
+        <Route path="lens/dashboards" element={<RequireLens><DashboardsPage /></RequireLens>} />
+        <Route path="lens/dashboards/:dashboardId" element={<RequireLens><DashboardPage /></RequireLens>} />
         <Route index element={<OverviewPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="sources" element={<SourcesPage />} />

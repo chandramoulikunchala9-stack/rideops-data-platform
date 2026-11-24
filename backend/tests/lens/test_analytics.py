@@ -381,3 +381,37 @@ def test_saved_queries_and_dashboards(client, ready, new_client, meta_db):
     assert stranger.get(f"/api/v1/workspaces/{ws}/saved-queries/{qid}").status_code == 404
     assert client.delete(f"/api/v1/workspaces/{ws}/saved-queries/{qid}").status_code == 200
     assert client.get(f"/api/v1/workspaces/{ws}/dashboards/{d['id']}").json()["widgets"] == []
+
+
+def test_demo_connection_never_exposes_lens_metadata(meta_db, outbox, lens_settings, shop):
+    """The demo points at the database that also holds Lens's `app` schema (users, sessions, secrets)."""
+    from fastapi.testclient import TestClient
+    from pydantic import SecretStr
+
+    from rideops_api.main import create_app
+    from tests.lens.conftest import signup
+
+    demo_url = f"postgresql://{PG.user}:{PG.password.get_secret_value()}@localhost:{PG.port}/{TEST_DB}?sslmode=require"
+    settings = lens_settings.model_copy(update={"rideops_demo_url": SecretStr(demo_url)})
+    app = create_app(db=meta_db, meta_db=meta_db, lens_settings=settings, email_sender=outbox)
+    with TestClient(app, base_url="https://testserver") as c:
+        me = signup(c)
+        ws = me["current_workspace_id"]
+        demo = c.get(f"/api/v1/workspaces/{ws}/connections").json()[0]
+        Worker(meta_db, settings=settings).drain(100)
+        b = f"/api/v1/workspaces/{ws}/connections/{demo['id']}"
+        schemas = c.get(f"{b}/catalog").json()["schemas"]
+        assert "shop" in schemas and "app" not in schemas
+        assert c.get(f"{b}/tables/app/users").status_code == 404
+        for stmt in ("select * from app.users", "select rolpassword from pg_authid",
+                     "with s as (select * from app.sessions) select count(*) from s"):  # fmt: skip
+            r = c.post(f"{b}/queries/run", json={"statement": stmt})
+            assert r.status_code == 422 and r.json()["error"]["code"] == "QUERY_FORBIDDEN_OBJECT", (
+                stmt
+            )
+        assert (
+            c.post(
+                f"{b}/queries/run", json={"statement": "select count(*) from shop.orders"}
+            ).status_code
+            == 200
+        )

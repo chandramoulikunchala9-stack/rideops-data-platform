@@ -98,6 +98,12 @@ export function Layout() {
                 <Icon name="sources" />
                 Databases
               </NavLink>
+              {lens.status === "signed_in" && (
+                <NavLink to="/lens/dashboards">
+                  <Icon name="analytics" />
+                  Dashboards
+                </NavLink>
+              )}
               {lens.status === "signed_in" && lens.can("editor") && (
                 <NavLink to="/lens/connections/new">
                   <Icon name="layers" />
