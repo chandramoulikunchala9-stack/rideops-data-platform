@@ -59,7 +59,9 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "worker":
         from rideops_api.jobs.worker import Worker
 
-        _run_loop(lambda db, stop, s: Worker(db).run_forever(stop, s.worker_poll_interval_s))
+        _run_loop(
+            lambda db, stop, s: Worker(db, settings=s).run_forever(stop, s.worker_poll_interval_s)
+        )
     elif args.command == "scheduler":
         from rideops_api.jobs import scheduler
 

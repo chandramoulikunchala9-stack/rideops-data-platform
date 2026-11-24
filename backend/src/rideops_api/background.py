@@ -18,7 +18,10 @@ class Background:
             args = (self.stop, settings.worker_poll_interval_s)
             self.threads.append(
                 threading.Thread(
-                    target=Worker(db).run_forever, args=args, name="lens-worker", daemon=True
+                    target=Worker(db, settings=settings).run_forever,
+                    args=args,
+                    name="lens-worker",
+                    daemon=True,
                 )
             )
         if scheduler:

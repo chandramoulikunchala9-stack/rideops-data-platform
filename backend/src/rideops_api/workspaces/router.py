@@ -23,6 +23,7 @@ from rideops_api.auth.schemas import (
 )
 from rideops_api.auth.tokens import digest, new_secret
 from rideops_api.errors import ApiError
+from rideops_api.lens.connections.service import seed_demo_safely as seed_demo
 from rideops_api.notifications.email import Email
 from rideops_api.workspaces import rbac, service
 from rideops_api.workspaces.deps import WorkspaceContext, require
@@ -52,10 +53,15 @@ def list_workspaces(session: SessionDep, db: MetaDbDep) -> list[WorkspaceOut]:
 
 @router.post("/workspaces", response_model=WorkspaceOut, status_code=status.HTTP_201_CREATED)
 def create_workspace(
-    body: WorkspaceIn, session: SessionDep, request: Request, db: MetaDbDep
+    body: WorkspaceIn,
+    session: SessionDep,
+    request: Request,
+    db: MetaDbDep,
+    settings: LensSettingsDep,
 ) -> WorkspaceOut:
     with db.transaction() as conn:
         ws = service.create(conn, session.user_id, body.name.strip())
+        seed_demo(conn, ws["id"], settings, session.user_id)
         audit.record(conn, "workspace.create", request=request, workspace_id=ws["id"],
                      actor_user_id=session.user_id, target_type="workspace", target_id=ws["id"])  # fmt: skip
     return _out(ws)

@@ -19,8 +19,9 @@ def new_worker_id() -> str:
 
 class Worker:
     def __init__(self, db: Database, *, worker_id: str | None = None, job_types: list[str] | None = None,
-                 heartbeat_s: float = HEARTBEAT_S) -> None:  # fmt: skip
+                 heartbeat_s: float = HEARTBEAT_S, settings=None) -> None:  # fmt: skip
         self.db = db
+        self.settings = settings
         self.worker_id = worker_id or new_worker_id()
         self.job_types = job_types
         self.heartbeat_s = heartbeat_s
@@ -38,7 +39,7 @@ class Worker:
         try:
             if spec is None:
                 raise LookupError(f"No handler registered for job type {job['job_type']!r}")
-            spec.handler(registry.JobContext(job=job, db=self.db))
+            spec.handler(registry.JobContext(job=job, db=self.db, settings=self.settings))
         except Exception as exc:  # noqa: BLE001 - any handler failure is recorded on the job
             stop.set()
             with self.db.pool.connection() as conn:

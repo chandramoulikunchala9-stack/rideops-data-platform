@@ -9,6 +9,8 @@ from rideops_api.auth.tokens import same
 from rideops_api.errors import ApiError
 from rideops_api.jobs import scheduler
 from rideops_api.jobs.worker import Worker
+from rideops_api.lens.connections.service import keyring_for
+from rideops_api.lens.security.crypto import KeyRingError
 
 router = APIRouter(tags=["system"])
 TICK_MAX_JOBS = 20
@@ -21,8 +23,8 @@ def healthz() -> dict:
 
 
 @router.get("/readyz")
-def readyz(db: MetaDbDep) -> JSONResponse:
-    """Readiness: metadata DB reachable and migrated to head (key ring check arrives in Phase 12)."""
+def readyz(db: MetaDbDep, settings: LensSettingsDep) -> JSONResponse:
+    """Readiness: metadata DB reachable, migrated to head, and the encryption key ring loaded."""
     checks: dict[str, str] = {}
     try:
         with db.pool.connection() as conn:
@@ -33,6 +35,11 @@ def readyz(db: MetaDbDep) -> JSONResponse:
     except Exception:  # noqa: BLE001 - any failure means not ready
         checks["database"] = "unavailable"
         checks["migrations"] = "unknown"
+    try:
+        keyring_for(settings)
+        checks["keys"] = "ok"
+    except KeyRingError as exc:
+        checks["keys"] = str(exc)
     ready = all(v == "ok" for v in checks.values())
     return JSONResponse({"status": "ready" if ready else "not_ready", "checks": checks},
                         status_code=200 if ready else 503)  # fmt: skip
@@ -49,7 +56,7 @@ def internal_tick(request: Request, db: MetaDbDep, settings: LensSettingsDep) ->
     if not given or not same(given, token):
         raise ApiError(403, "FORBIDDEN", "Invalid internal token.")
     result = scheduler.tick(db)
-    ran = Worker(db).drain(TICK_MAX_JOBS)
+    ran = Worker(db, settings=settings).drain(TICK_MAX_JOBS)
     return {
         "leader": result.leader,
         "enqueued": result.enqueued,

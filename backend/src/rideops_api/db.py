@@ -56,6 +56,14 @@ class Database:
         with self.pool.connection() as conn, conn.transaction():
             yield conn
 
+    @contextmanager
+    def tenant_transaction(self, workspace_id: Any) -> Iterator[psycopg.Connection]:
+        """A transaction scoped to one workspace: Row-Level Security policies (migration 0002)
+        then only expose that workspace's rows, even if a query forgets its WHERE clause."""
+        with self.transaction() as conn:
+            conn.execute("SELECT set_config('app.workspace_id', %s, true)", (str(workspace_id),))
+            yield conn
+
     def scalar(self, sql: str, params: dict | tuple | None = None) -> Any:
         row = self.fetch_one(sql, params)
         return next(iter(row.values())) if row else None

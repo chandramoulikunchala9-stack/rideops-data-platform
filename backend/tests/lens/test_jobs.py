@@ -6,7 +6,7 @@ import pytest
 from rideops_api import migrate
 from rideops_api.jobs import queue, registry, scheduler
 from rideops_api.jobs.worker import Worker
-from tests.lens.conftest import sql
+from tests.lens.conftest import make_connection, sql
 
 if "test_record" not in registry.REGISTRY:
 
@@ -133,21 +133,32 @@ def test_reaper_requeues_lost_jobs(meta_db, lens_conninfo):
 
 
 def test_scheduler_enqueues_due_schedules_once(meta_db, lens_conninfo):
+    due, later, paused = (
+        make_connection(lens_conninfo),
+        make_connection(lens_conninfo),
+        make_connection(lens_conninfo, paused=True),
+    )
     sql(
         lens_conninfo,
         """INSERT INTO app.schedules (connection_id, job_type, interval_s, next_run_at)
-                          VALUES (gen_random_uuid(), 'noop', 300, now() - interval '1 second'),
-                                 (gen_random_uuid(), 'noop', 300, now() + interval '1 hour') RETURNING 1""",
+           VALUES (%s, 'noop', 300, now() - interval '1 second'),
+                  (%s, 'noop', 300, now() + interval '1 hour'),
+                  (%s, 'noop', 300, now() - interval '1 second')""",
+        due,
+        later,
+        paused,
     )
     first = scheduler.tick(meta_db)
-    assert first.leader and first.enqueued == 2  # one due schedule + the hourly retention job
+    # one due schedule + the hourly retention job; the paused connection's schedule is skipped (FR-19)
+    assert first.leader and first.enqueued == 2
     second = scheduler.tick(meta_db)
     assert second.enqueued == 0  # schedule advanced; retention bucket already queued
     jobs = sql(
         lens_conninfo, "SELECT job_type, count(*) AS n FROM app.jobs GROUP BY job_type ORDER BY 1"
     )
     assert jobs == [{"job_type": "noop", "n": 1}, {"job_type": "retention", "n": 1}]
-    nxt = sql(lens_conninfo, "SELECT min(next_run_at) > now() AS future FROM app.schedules")[0]
+    nxt = sql(lens_conninfo, "SELECT next_run_at > now() AS future FROM app.schedules WHERE connection_id = %s",
+              due)[0]  # fmt: skip
     assert nxt["future"]
 
 
@@ -185,7 +196,11 @@ def test_internal_tick_endpoint(client, lens_conninfo):
 def test_health_and_readiness(client, lens_conninfo):
     assert client.get("/healthz").json() == {"status": "ok"}
     r = client.get("/readyz")
-    assert r.status_code == 200 and r.json()["checks"] == {"database": "ok", "migrations": "ok"}
+    assert r.status_code == 200 and r.json()["checks"] == {
+        "database": "ok",
+        "migrations": "ok",
+        "keys": "ok",
+    }
 
 
 def test_migrations_roundtrip(lens_conninfo):

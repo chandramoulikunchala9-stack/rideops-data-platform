@@ -17,6 +17,13 @@ from rideops_api.settings import LensSettings
 
 TEST_DB = "rideops_lens_test"
 PASSWORD = "correct-horse-battery-1"
+# Two fixed test-only KEKs (version 2 active) so rotation paths are exercised.
+TEST_KEYS = (
+    "1:"
+    + "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+    + ",2:"
+    + "ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA="
+)
 
 
 def pytest_collection_modifyitems(items):
@@ -57,7 +64,7 @@ def outbox() -> MemoryEmailSender:
 def lens_settings() -> LensSettings:
     return LensSettings(lens_enabled=True, lens_role="api", session_cookie_secure=True,
                         email_backend="memory", internal_token="tick-secret",
-                        public_app_url="https://lens.test")  # fmt: skip
+                        public_app_url="https://lens.test", lens_master_keys=TEST_KEYS)  # fmt: skip
 
 
 @pytest.fixture(scope="session")
@@ -107,3 +114,21 @@ def sql(conninfo: str, query: str, *params):
     with psycopg.connect(conninfo, autocommit=True, row_factory=dict_row) as conn:
         cur = conn.execute(query, params or None)
         return cur.fetchall() if cur.description else []
+
+
+def make_connection(conninfo: str, *, paused: bool = False, deleted: bool = False) -> str:
+    """Insert a bare workspace + connection row (no secret) for job/scheduler tests."""
+    ws = sql(conninfo, "INSERT INTO app.workspaces (name, slug) VALUES ('jobs', %s) RETURNING id",
+             f"jobs-{uuid.uuid4().hex[:8]}")[0]["id"]  # fmt: skip
+    return str(
+        sql(
+            conninfo,
+            """INSERT INTO app.connections (workspace_id, name, engine, host, port, display_url, is_paused, deleted_at)
+           VALUES (%s, %s, 'postgres', 'db.example.com', 5432, 'postgresql://db.example.com:5432', %s,
+                   CASE WHEN %s THEN now() END) RETURNING id""",
+            ws,
+            f"c-{uuid.uuid4().hex[:8]}",
+            paused,
+            deleted,
+        )[0]["id"]
+    )

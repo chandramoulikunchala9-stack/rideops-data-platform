@@ -20,6 +20,7 @@ class JobSpec:
 class JobContext:
     job: dict[str, Any]
     db: Any  # rideops_api.db.Database (metadata DB)
+    settings: Any = None  # rideops_api.settings.LensSettings; None = read from the environment
 
     @property
     def payload(self) -> dict[str, Any]:

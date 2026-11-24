@@ -19,6 +19,7 @@ from rideops_api.auth.schemas import (
 )
 from rideops_api.auth.tokens import digest
 from rideops_api.errors import ApiError
+from rideops_api.lens.connections.service import seed_demo_safely as seed_demo
 from rideops_api.notifications.email import Email
 from rideops_api.settings import LensSettings
 from rideops_api.workspaces import service as workspaces
@@ -86,6 +87,7 @@ def signup(body: SignupIn, request: Request, response: Response, db: MetaDbDep,
         ws = workspaces.create(
             conn, user["id"], body.display_name.strip() + workspaces.PERSONAL_SUFFIX
         )
+        seed_demo(conn, ws["id"], settings, user["id"])
         token = sessions.issue_user_token(conn, user["id"], "verify_email")
         raw, csrf = sessions.create(conn, user["id"], request=request,
                                     absolute_days=settings.session_absolute_days)  # fmt: skip

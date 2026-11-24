@@ -36,6 +36,17 @@ class LensSettings(BaseSettings):
     login_failure_window_min: int = 15
     login_max_per_ip_per_min: int = 10
 
+    # Connections (Phase 12)
+    lens_master_keys: SecretStr | None = None  # "1:<base64 32 bytes>,2:<...>"; see docs (KEK ring)
+    lens_active_key_version: int | None = None  # default: highest version in the ring
+    allow_private_networks: bool = False  # true only when self-hosted next to private databases
+    allowed_ports: str = "443,1433,1521,3306,5432,6432,27017"
+    egress_ips: str = ""  # shown in the UI so users can allowlist Lens
+    health_timeout_s: int = 10
+    max_target_sessions: int = 2
+    rideops_demo_url: SecretStr | None = None  # read-only URL to the RideOps DB → demo connection
+    connection_test_max_age_min: int = 10
+
     worker_poll_interval_s: float = 1.0
     scheduler_interval_s: float = 15.0
 
@@ -51,3 +62,7 @@ class LensSettings(BaseSettings):
 @lru_cache
 def get_lens_settings() -> LensSettings:
     return LensSettings()
+
+
+def allowed_port_set(settings: LensSettings) -> set[int]:
+    return {int(p) for p in settings.allowed_ports.split(",") if p.strip().isdigit()}

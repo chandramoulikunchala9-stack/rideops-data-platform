@@ -36,10 +36,12 @@ def tick(db: Database) -> TickResult:
         result = TickResult(leader=True, reaped=queue.reap_stale(conn))
 
         due = conn.execute(
-            """SELECT connection_id, job_type, interval_s,
-                      floor(extract(epoch FROM next_run_at))::bigint AS bucket
-                 FROM app.schedules WHERE next_run_at <= now()
-                 ORDER BY next_run_at LIMIT 500 FOR UPDATE SKIP LOCKED"""
+            """SELECT s.connection_id, s.job_type, s.interval_s, c.workspace_id,
+                      floor(extract(epoch FROM s.next_run_at))::bigint AS bucket
+                 FROM app.schedules s
+                 JOIN app.connections c ON c.id = s.connection_id
+                WHERE s.next_run_at <= now() AND NOT c.is_paused AND c.deleted_at IS NULL
+                ORDER BY s.next_run_at LIMIT 500 FOR UPDATE OF s SKIP LOCKED"""
         ).fetchall()
         for row in due:
             if registry.get(row["job_type"]) is None:
@@ -47,7 +49,11 @@ def tick(db: Database) -> TickResult:
                 continue
             key = f"{row['job_type']}:{row['connection_id']}:{row['bucket']}"
             if queue.enqueue(
-                conn, row["job_type"], connection_id=row["connection_id"], idempotency_key=key
+                conn,
+                row["job_type"],
+                connection_id=row["connection_id"],
+                workspace_id=row["workspace_id"],
+                idempotency_key=key,
             ):
                 result.enqueued += 1
             conn.execute(

@@ -22,6 +22,7 @@ from rideops_api.background import Background
 from rideops_api.db import Database
 from rideops_api.errors import register_error_handlers
 from rideops_api.jobs import tasks as _job_tasks  # noqa: F401 - registers job handlers
+from rideops_api.lens.connections import router as connections_router
 from rideops_api.notifications.email import EmailSender, make_sender
 from rideops_api.routers import (
     analytics,
@@ -117,6 +118,8 @@ def create_app(
     if lens.lens_enabled:
         app.include_router(auth_router.router, prefix=API_PREFIX)
         app.include_router(workspaces_router.router, prefix=API_PREFIX)
+        app.include_router(connections_router.router, prefix=API_PREFIX)
+        app.include_router(connections_router.meta_router, prefix=API_PREFIX)
         app.include_router(lens_system.router)  # /healthz, /readyz, /internal/tick at the root
     return app
 
