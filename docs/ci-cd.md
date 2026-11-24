@@ -7,10 +7,11 @@
 
 | Workflow | Trigger (path-filtered) | Jobs | Local equivalent |
 |---|---|---|---|
-| `python.yml` | `pipelines/`, `backend/`, `databricks/`, `monitoring/`, `scripts/`, `ruff.toml` | **lint** (ruff over all Python) → **pipelines-unit** (Python 3.10 + 3.12 matrix) → **pipelines-integration** (PostgreSQL 17.5 service: migrations, load, SQL ELT, *every named analytics query*, DQ checks, CLI smoke test) and **backend** (PostgreSQL: all API tests, then builds the API image) | `ruff check pipelines backend scripts && pytest pipelines -m "not spark" && pytest backend` |
+| `python.yml` | `pipelines/`, `backend/`, `databricks/`, `monitoring/`, `scripts/`, `ruff.toml` | **lint** (ruff over all Python) → **pipelines-unit** (Python 3.10 + 3.12 matrix) → **pipelines-integration** (PostgreSQL 17.5 service: migrations, load, SQL ELT, *every named analytics query*, DQ checks, CLI smoke test) and **backend** (PostgreSQL + MySQL 8.4 + MongoDB 8.0 services: all API tests including Lens and the adapter contract suite, then builds the API image) | `ruff check pipelines backend scripts && pytest pipelines -m "not spark" && pytest backend` |
 | `spark.yml` | `pipelines/src/rideops/spark/`, `pipelines/tests/spark/` | PySpark 4.2 + Delta 4.4 tests on Java 17, Ivy JAR cache | `docker compose --profile spark run --rm spark pytest pipelines/tests/spark` |
 | `frontend.yml` | `frontend/` | `npm ci` → ESLint → `tsc` → Vitest → `vite build` (artifact uploaded) | `cd frontend && npm run lint && npm run typecheck && npm test && npm run build` |
 | `infra.yml` | `infra/`, `databricks/` | `terraform fmt -check`, `init -backend=false`, `validate`; Databricks bundle static checks | see `docs/aws-setup.md` |
+| `lens-tick.yml` | every 10 minutes (cron) and manual | `POST /internal/tick` on the hosted API, so free-tier instances wake up and run due Lens checks. Does nothing until the `LENS_API_URL` and `LENS_INTERNAL_TOKEN` repository secrets are set | `curl -X POST -H "X-Internal-Token: $INTERNAL_TOKEN" http://localhost:8000/internal/tick` |
 | `dependabot.yml` | weekly / monthly | Dependency update PRs for pip, npm, Actions, Terraform | – |
 
 Design choices:
@@ -19,8 +20,11 @@ Design choices:
 * **Pinned tool versions** (Python deps, Node lockfile, Terraform 1.17.2, PostgreSQL 17.5), so CI equals local.
 * **SQL validation** means running the SQL against a real PostgreSQL in CI, not just a syntax lint.
   `test_every_named_analytics_query_executes` runs all 45 analytics queries.
+* **Real databases for Lens.** The backend job's MySQL and MongoDB service containers start empty; tests seed
+  what they read. SQL Server is skipped in CI (2 GB image) and runs locally.
 * **No deployment from CI by default.** Nothing here applies Terraform, deploys the Databricks bundle,
-  or calls a hosting provider. That needs credentials and an explicit decision.
+  or calls a hosting provider. That needs credentials and an explicit decision. (`lens-tick` only calls an
+  already-deployed API.)
 
 ## Branching and pull requests
 

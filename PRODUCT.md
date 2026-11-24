@@ -13,6 +13,11 @@ from the company's different applications (the rider app, the driver app, the pa
 telemetry, and cloud billing) and use RideOps to see users, revenue and every related figure for their
 products, and to know whether the pipelines feeding those figures are healthy.
 
+With **RideOps Lens** enabled, a second group of users signs up on their own: developers, data engineers
+and small teams who want to watch the health of *their* databases (PostgreSQL, MySQL, SQL Server,
+MongoDB, SQLite), explore schemas, run safe read-only queries and get alerts, without installing
+an agent. They work in workspaces with owner / admin / editor / viewer roles.
+
 RideOps is also the owner's data-engineering portfolio project, so people evaluating that work
 (interviewers, reviewers) are a real secondary audience who click through it in a few minutes.
 
@@ -48,6 +53,12 @@ separate tools.
 - Dashboard pages: Overview, Business analytics, Pipelines and run detail, Data quality, Alerts and
   incidents, Cloud costs, Settings and access.
 - Retrying a pipeline from the UI is limited to whitelisted local jobs and disabled by default.
+- Lens (opt-in, `LENS_ENABLED=true`) adds pages under `/app/lens`: fleet overview, add connection, connection
+  status, schema explorer, table detail with profile, insights, query console, dashboards, alerts and
+  rules, incidents, notification channels, notifications; plus sign-up, login, password reset, email
+  verification and invitations at `/app/login` etc.
+- Lens only ever reads users' databases (read-only sessions, guarded queries) and stores metadata, not
+  their data. Credentials are encrypted. The RideOps warehouse is the read-only demo connection.
 - Terminology: bookings, completed rides, cancellations, no driver found, quarantine, data-quality
   check (PASS / WARN / FAIL), pipeline run, layer (bronze, silver, gold, serving), incident, alert,
   simulated cost.
@@ -67,7 +78,10 @@ separate tools.
 - Cloud costs are simulated and must always be labelled simulated.
 - Real measured results: SQL vs Spark reconciliation 0 of 540; 35 data-quality checks; 14 pipelines;
   4 documented incidents with postmortems (`monitoring/incidents/`); 8 runbooks
-  (`monitoring/runbooks/`); 153 automated tests.
+  (`monitoring/runbooks/`, plus 5 Lens runbooks); 343 automated tests (90 pipelines, 195 API incl.
+  Lens, 15 Spark, 43 frontend).
+- Lens: 5 database engines behind one adapter contract (25/25 contract tests), SSRF test corpus 100 %
+  blocked, 0 axe-core accessibility violations on 14 pages.
 - There are no customers, testimonials, partners or production users. Never invent them.
 
 ## Product Principles

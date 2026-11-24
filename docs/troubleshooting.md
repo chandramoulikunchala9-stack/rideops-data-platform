@@ -23,12 +23,28 @@ problems, all of them seen while building this project.
 | `typescript-eslint` peer dependency conflict | It supports TypeScript below 6.1 | TypeScript pinned to 6.0.3 |
 | `terraform` not installed | Not needed: run it in Docker | `docker run --rm -v "$PWD/infra/terraform:/tf" -w /tf hashicorp/terraform:1.17.2 validate` |
 
+### Lens
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Lens pages show "Lens is not enabled", or `/api/v1/auth/*` returns 404 | `LENS_ENABLED` is not `true` | Set it in `.env` and restart the API |
+| API errors mention `relation "app.…" does not exist` | Lens migrations not applied | `python -m rideops_api migrate` (the Docker image does it at start-up) |
+| `/readyz` returns 503 | Database down, migrations behind, or `LENS_MASTER_KEYS` invalid | Read the `checks` object in the response |
+| Every POST returns 403 `CSRF_FAILED` | The client didn't send `X-CSRF-Token` | Send the `lens_csrf` cookie value in that header (the dashboard does this) |
+| Signed out right after signing in on a hosted site | Dashboard and API on different sites (`pages.dev` vs `onrender.com`): the `SameSite=Lax` cookie isn't sent | Leave `VITE_API_BASE_URL` empty and set `API_ORIGIN` so the Pages Function proxies `/api` |
+| Connection test fails at `NETWORK_POLICY` | Private or metadata address, or port not allowed | Expected for SSRF protection; allowlist the host or port in workspace settings, or `ALLOW_PRIVATE_NETWORKS=true` for self-hosting ([runbook](../monitoring/runbooks/lens-ssrf-block.md)) |
+| Connection test fails at `TLS` | The server has no TLS but the URL requires it, or the URL disables TLS without the owner's opt-in | Enable TLS on the server, or let a workspace owner allow insecure connections |
+| Checks stop running on Render | The free instance is asleep | Set the `lens-tick` secrets ([runbook](../monitoring/runbooks/lens-worker-backlog.md)) |
+| `Cannot decrypt secret for connection …` in the logs | `LENS_MASTER_KEYS` no longer contains the key that encrypted it | Restore the old key next to the new one, then run `rotate-keys` ([runbook](../monitoring/runbooks/lens-key-rotation.md)) |
+| No emails arrive | `EMAIL_BACKEND=console`, or the provider rejected the sender | Set `EMAIL_BACKEND`, `EMAIL_FROM` and the provider key; failures are logged as `Could not send email` |
+
 Useful diagnostics:
 
 ```bash
 docker compose ps                                    # containers and health
 docker exec -it rideops-postgres psql -U rideops -d rideops
 curl localhost:8000/api/v1/health                   # 200 = DB reachable, 503 = not
+curl localhost:8000/readyz                           # Lens: database, migrations, keys
 python -m rideops.db quality                         # all data-quality checks with status
 python -m rideops.monitoring alerts                  # evaluate alert rules now
 ```

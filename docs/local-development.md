@@ -17,7 +17,7 @@ New here? [How to run](how-to-run.md) is the short, step-by-step version for the
 
 ```bash
 py -3 -m venv .venv && .venv\Scripts\activate        # macOS/Linux: source .venv/bin/activate
-pip install -e "./pipelines[dev,aws]" -e "./backend[dev]"
+pip install -e "./pipelines[dev,aws]" -e "./backend[dev,engines]"   # engines = MySQL, SQL Server, MongoDB drivers for Lens
 copy .env.example .env                               # set POSTGRES_PASSWORD (any random string)
 docker compose up -d postgres
 cd frontend && npm ci && cd ..
@@ -50,11 +50,36 @@ docker compose --profile spark run --rm spark python -m rideops.spark stream --l
 | Python lint + format | `ruff check pipelines backend scripts && ruff format --check pipelines backend scripts` |
 | Fast pipeline unit tests | `pytest pipelines -m "not slow and not postgres and not spark"` |
 | Pipelines incl. PostgreSQL | `pytest pipelines -m "not spark"` |
-| Backend API | `pytest backend` (needs PostgreSQL) |
+| Backend API incl. Lens | `pytest backend` (needs PostgreSQL) |
+| Lens only | `pytest backend/tests/lens` |
 | Spark | `docker compose --profile spark run --rm spark pytest pipelines/tests/spark` |
 | Frontend | `cd frontend && npm run lint && npm run typecheck && npm test && npm run build` |
 | Terraform | see `docs/aws-setup.md` (runs in Docker) |
 | Workflows | `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12` |
+
+## Working on Lens
+
+Enable it as described in [how to run § Lens](how-to-run.md#lens) (`LENS_ENABLED=true`, a `LENS_MASTER_KEYS`
+key, `python -m rideops_api migrate`). Useful pieces:
+
+* **Schema changes** go in a new Alembic revision under `backend/src/rideops_api/migrations/versions/`
+  (`0006_…py`); `pytest backend/tests/lens/test_jobs.py` checks that the chain upgrades and downgrades.
+* **Tests** create a throwaway database `rideops_lens_test` and migrate it to head. Tests that connect Lens to a
+  database use the same server, with `sslmode` matching whether it has TLS on.
+* **Other engines**: the adapter contract suite runs against any of these that is reachable (CI starts MySQL and
+  MongoDB; SQL Server is local only):
+
+  ```bash
+  docker run -d --name lens-mysql -e MYSQL_ROOT_PASSWORD=RootPass-123 -e MYSQL_DATABASE=shop -p 3307:3306 mysql:8.4
+  docker run -d --name lens-mongo -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=RootPass-123 -p 27018:27017 mongo:8.0
+  docker run -d --name lens-mssql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=SaPass-12345!" -p 1434:1433 mcr.microsoft.com/mssql/server:2022-latest
+  ```
+
+* **Emails** print to the API log with `EMAIL_BACKEND=console`.
+* **Background work**: with `LENS_ROLE=all` the API process runs the worker and scheduler threads. To debug
+  one job type, run `python -m rideops_api serve --role api` and `python -m rideops_api worker` in two terminals.
+* **New engine**: implement the adapter interface in `lens/adapters/base.py`, register it in
+  `lens/adapters/registry.py` and add it to the contract suite in `backend/tests/lens/test_adapter_contract.py`.
 
 ## Practise an incident
 
