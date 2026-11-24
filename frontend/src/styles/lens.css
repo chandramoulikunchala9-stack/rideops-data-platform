@@ -218,6 +218,23 @@ table.clickable tbody tr:hover { background: var(--row-hover); }
 .link-button { background: none; border: 0; padding: 0; color: var(--text-primary); text-decoration: underline; cursor: pointer; font: inherit; text-align: left; }
 .input-row.narrow { max-width: 480px; margin-bottom: 16px; }
 
+/* ---- alerts (Phase 14) ---------------------------------------------------------- */
+.count-badge {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 6px;
+  background: var(--status-critical);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.timeline { list-style: none; margin: 0 0 16px; padding: 0 0 0 14px; border-left: 2px solid var(--border); display: grid; gap: 10px; }
+.timeline li p { margin: 2px 0 0; }
+.timeline li[data-kind="event"] p { color: var(--text-secondary); font-style: italic; }
+.notifications li { padding: 8px 10px; border: 1px solid var(--border); }
+.notifications li[data-unread="true"] { border-left: 3px solid var(--status-critical); background: var(--surface-2); }
+
 @media (max-width: 900px) {
   .query-layout { grid-template-columns: 1fr; }
   .grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }

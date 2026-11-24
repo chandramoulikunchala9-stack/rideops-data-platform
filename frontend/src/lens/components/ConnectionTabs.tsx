@@ -15,6 +15,7 @@ export function ConnectionTabs() {
     { to: `/lens/connections/${id}/schema`, label: "Schema" },
     { to: `/lens/connections/${id}/insights`, label: "Insights" },
     { to: `/lens/connections/${id}/dashboard`, label: "Dashboard" },
+    { to: `/lens/connections/${id}/alerts`, label: "Alerts" },
     ...(can("editor") ? [{ to: `/lens/connections/${id}/query`, label: "Query" }] : []),
   ];
   return (

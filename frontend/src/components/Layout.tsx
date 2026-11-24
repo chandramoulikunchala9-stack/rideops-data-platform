@@ -54,6 +54,14 @@ export function Layout() {
   const [theme, setTheme] = useState<Theme>(readTheme);
   const health = useApi<Health>("/health");
   const lens = useLens();
+  const notifications = useApi<{ unread: number }>(lens.status === "signed_in" ? "/notifications?unread=true" : null);
+  const unread = notifications.data?.unread ?? 0;
+  const { reload: reloadNotifications } = notifications;
+  useEffect(() => {
+    if (lens.status !== "signed_in") return;
+    const t = window.setInterval(reloadNotifications, 60_000);
+    return () => window.clearInterval(t);
+  }, [lens.status, reloadNotifications]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -98,6 +106,19 @@ export function Layout() {
                 <Icon name="sources" />
                 Databases
               </NavLink>
+              {lens.status === "signed_in" && (
+                <>
+                  <NavLink to="/lens/alerts">
+                    <Icon name="alerts" />
+                    Alerts
+                  </NavLink>
+                  <NavLink to="/lens/notifications">
+                    <Icon name="activity" />
+                    Notifications
+                    {unread > 0 && <span className="count-badge" aria-label={`${unread} unread`}>{unread}</span>}
+                  </NavLink>
+                </>
+              )}
               {lens.status === "signed_in" && (
                 <NavLink to="/lens/dashboards">
                   <Icon name="analytics" />

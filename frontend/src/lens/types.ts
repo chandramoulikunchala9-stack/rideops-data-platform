@@ -304,3 +304,67 @@ export interface Dashboard {
   widget_count?: number;
   widgets?: Widget[];
 }
+
+// ---- Phase 14: alerts --------------------------------------------------------
+
+export type Severity = "info" | "warning" | "critical";
+
+export interface AlertEvent {
+  id: number;
+  status: "firing" | "acknowledged" | "resolved" | "muted";
+  severity: Severity;
+  summary: string;
+  opened_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  muted_until: string | null;
+  connection_id: string | null;
+  connection_name: string | null;
+  incident_id: string | null;
+  rule_name: string;
+  runbook_url: string | null;
+}
+
+export interface AlertRule {
+  id: string;
+  connection_id: string | null;
+  name: string;
+  rule_type: "status" | "metric" | "freshness" | "row_drop" | "schema_change" | "privilege";
+  condition: Record<string, unknown>;
+  severity: Severity;
+  channels: string[];
+  runbook_url: string | null;
+  is_enabled: boolean;
+  is_default: boolean;
+}
+
+export interface Channel {
+  id: string;
+  kind: "email" | "webhook" | "slack" | "inapp";
+  name: string;
+  summary: string | null;
+  is_verified: boolean;
+  created_at: string;
+  signing_secret?: string;
+}
+
+export interface Incident {
+  id: string;
+  title: string;
+  severity: Severity;
+  status: "open" | "acknowledged" | "resolved";
+  connection_id: string | null;
+  connection_name?: string | null;
+  runbook_url: string | null;
+  opened_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  alert_count?: number;
+  notes?: { id: number; kind: "note" | "event"; body: string; created_at: string; author: string | null }[];
+  alerts?: { id: number; status: string; severity: Severity; summary: string; opened_at: string }[];
+}
+
+export interface NotificationList {
+  unread: number;
+  items: { id: number; kind: string; title: string; body: string | null; link: string | null; read_at: string | null; created_at: string }[];
+}

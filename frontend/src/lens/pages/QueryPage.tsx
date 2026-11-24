@@ -18,7 +18,11 @@ export function QueryPage() {
   const ws = workspace?.workspace_id ?? "";
   const base = `/workspaces/${ws}/connections/${id}`;
   const saved = useApi<SavedQuery[]>(ws ? `/workspaces/${ws}/saved-queries?connection_id=${id}` : null);
-  const [sqlText, setSql] = useState("SELECT now();");
+  const conn = useApi<{ engine: string }>(ws ? base : null);
+  const isMongo = conn.data?.engine === "mongodb";
+  const [sqlText, setSql] = useState("SELECT 1;");
+  const [touched, setTouched] = useState(false);
+  const shown = !touched && isMongo ? '{"collection": "orders", "find": {}, "limit": 50}' : sqlText;
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [result, setResult] = useState<QueryResult | null>(null);
   const [plan, setPlan] = useState<unknown>(null);
@@ -30,16 +34,16 @@ export function QueryPage() {
 
   useEffect(() => { // debounce the guard check while typing
     const t = window.setTimeout(() => {
-      if (!sqlText.trim() || !ws) return;
-      api.post<Verdict>(`${base}/queries/validate`, { statement: sqlText }).then(setVerdict).catch(() => setVerdict(null));
+      if (!shown.trim() || !ws) return;
+      api.post<Verdict>(`${base}/queries/validate`, { statement: shown }).then(setVerdict).catch(() => setVerdict(null));
     }, 400);
     return () => window.clearTimeout(t);
-  }, [sqlText, base, ws]);
+  }, [shown, base, ws]);
 
   async function run() {
     setBusy(true); setError(null); setPlan(null);
     try {
-      setResult(await api.post<QueryResult>(`${base}/queries/run`, { statement: sqlText, max_rows: maxRows, reveal }));
+      setResult(await api.post<QueryResult>(`${base}/queries/run`, { statement: shown, max_rows: maxRows, reveal }));
     } catch (err) {
       setResult(null); setError((err as ApiError).message);
     } finally { setBusy(false); }
@@ -47,12 +51,12 @@ export function QueryPage() {
   async function explain() {
     setBusy(true); setError(null);
     try {
-      setPlan((await api.post<{ plan: unknown }>(`${base}/queries/explain`, { statement: sqlText })).plan);
+      setPlan((await api.post<{ plan: unknown }>(`${base}/queries/explain`, { statement: shown })).plan);
     } catch (err) { setError((err as ApiError).message); } finally { setBusy(false); }
   }
   async function save() {
     try {
-      await api.post(`/workspaces/${ws}/saved-queries`, { connection_id: id, name: saveName.trim(), statement: sqlText });
+      await api.post(`/workspaces/${ws}/saved-queries`, { connection_id: id, name: saveName.trim(), statement: shown });
       setSaveName(""); saved.reload();
     } catch (err) { setError((err as ApiError).message); }
   }
@@ -60,12 +64,12 @@ export function QueryPage() {
   return (
     <>
       <ConnectionTabs />
-      <header className="page-header"><div><h1>Query</h1><p>One read-only statement at a time: SELECT, WITH, EXPLAIN or SHOW. Results are capped and never stored.</p></div></header>
+      <header className="page-header"><div><h1>Query</h1><p>{isMongo ? "MongoDB: JSON with find or aggregate. $out, $merge and $where are blocked." : "One read-only statement at a time: SELECT, WITH, EXPLAIN or SHOW."} Results are capped and never stored.</p></div></header>
       <div className="query-layout">
         <div className="stack">
           <Card>
             <label htmlFor="sql" className="sr-only">SQL</label>
-            <textarea id="sql" className="sql-editor mono" rows={8} spellCheck={false} value={sqlText} onChange={(e) => setSql(e.target.value)}
+            <textarea id="sql" className="sql-editor mono" rows={8} spellCheck={false} value={shown} onChange={(e) => { setTouched(true); setSql(e.target.value); }}
                       onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); void run(); } }}
                       aria-describedby="sql-verdict" />
             <p id="sql-verdict" className={verdict && !verdict.ok ? "form-error" : "hint"} role="status">
@@ -73,7 +77,7 @@ export function QueryPage() {
             </p>
             <div className="toolbar wrap">
               <button className="btn primary" type="button" onClick={run} disabled={busy || verdict?.ok === false}>{busy ? "Running…" : "▶ Run"}</button>
-              <button className="btn" type="button" onClick={explain} disabled={busy || verdict?.kind !== "select"}>Explain</button>
+              <button className="btn" type="button" onClick={explain} disabled={busy || !["select", "find", "aggregate"].includes(verdict?.kind ?? "")}>Explain</button>
               <label className="radio-row">Max rows
                 <select value={maxRows} onChange={(e) => setMaxRows(Number(e.target.value))}>
                   {[100, 1000, 5000, 10000].map((n) => <option key={n} value={n}>{formatInt(n)}</option>)}
@@ -105,7 +109,7 @@ export function QueryPage() {
           <Card title="Saved queries">
             <ul className="plain-list">
               {(saved.data ?? []).map((q) => (
-                <li key={q.id}><button className="link-button" type="button" onClick={() => setSql(q.statement)}>{q.name}</button></li>
+                <li key={q.id}><button className="link-button" type="button" onClick={() => { setTouched(true); setSql(q.statement); }}>{q.name}</button></li>
               ))}
               {saved.data?.length === 0 && <li className="muted">None yet.</li>}
             </ul>

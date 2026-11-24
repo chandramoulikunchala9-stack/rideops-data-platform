@@ -57,6 +57,20 @@ async function request<T>(method: Method, path: string, body?: unknown, signal?:
   return payload as T;
 }
 
+/** Upload a file as the raw request body (SQLite uploads). */
+export async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/octet-stream", "X-Filename": file.name };
+  const csrf = csrfToken();
+  if (csrf) headers["X-CSRF-Token"] = csrf;
+  const response = await fetch(`${BASE_URL}${path}`, { method: "POST", credentials: "include", headers, body: file });
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const err = (payload as { error?: { code?: string; message?: string } } | null)?.error;
+    throw new ApiError(response.status, err?.code ?? "http_error", err?.message ?? `Upload failed (${response.status})`);
+  }
+  return payload as T;
+}
+
 /** Absolute URL for links the browser opens directly (downloads), using the same API base. */
 export const apiUrl = (path: string) => `${BASE_URL}${path}`;
 

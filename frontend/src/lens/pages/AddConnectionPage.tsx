@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { api, ApiError } from "../../api/client";
+import { api, ApiError, uploadFile } from "../../api/client";
 import { useApi } from "../../api/useApi";
 import { Card } from "../../components/Card";
 import { useLens } from "../LensContext";
@@ -58,6 +58,7 @@ function Stepper({ step }: { step: Step }) {
 }
 
 function draftBody(f: Form) {
+  if (f.engine === "sqlite") return { engine: "sqlite", database: f.database };
   return {
     engine: f.engine,
     host: f.host.trim(),
@@ -175,8 +176,24 @@ export function AddConnectionPage() {
   if (!can("editor")) {
     return <div className="state">Your role ({workspace?.role}) can view connections but not add them.</div>;
   }
-  const insecureAllowed = settings.data?.settings.allow_insecure_connections ?? false;
-  const detailsValid = form.engine && form.host.trim() && form.name.trim() && form.username.trim();
+  const insecureAllowed = settings.data?.settings?.allow_insecure_connections ?? false;
+  const isFile = form.engine === "sqlite";
+  const detailsValid = isFile ? Boolean(form.name.trim() && form.database)
+    : form.engine && form.host.trim() && form.name.trim() && form.username.trim();
+
+  async function upload(file: File) {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await uploadFile<{ upload_id: string; filename: string; bytes: number }>(`/workspaces/${ws}/uploads/sqlite`, file);
+      setForm((f) => ({ ...f, database: r.upload_id, host: "upload", name: f.name || r.filename.replace(/\.(sqlite3?|db)$/i, "") }));
+      setTest(null);
+    } catch (err) {
+      setError((err as ApiError).message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <>
@@ -218,6 +235,21 @@ export function AddConnectionPage() {
 
       {step === 2 && (
         <Card title="Connection details" subtitle={`Engine: ${form.engine}`}>
+          {isFile ? (
+            <form className="form-grid" onSubmit={(e) => { e.preventDefault(); setStep(4); }}>
+              <div className="field span-2">
+                <label htmlFor="sqlite-file">SQLite file (.sqlite, .db, up to 200 MB)</label>
+                <input id="sqlite-file" type="file" accept=".sqlite,.sqlite3,.db" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
+                <p className="hint">{busy ? "Uploading…" : form.database ? "Uploaded. Lens opens it read-only." : "The file is stored for this workspace only."}</p>
+              </div>
+              <div className="field span-2"><label htmlFor="name">Display name *</label>
+                <input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} required maxLength={80} /></div>
+              <div className="toolbar span-2">
+                <button type="button" className="btn" onClick={() => setStep(1)}>← Back</button>
+                <button type="submit" className="btn primary" disabled={!detailsValid || busy}>Next →</button>
+              </div>
+            </form>
+          ) : (
           <form className="form-grid" onSubmit={(e) => { e.preventDefault(); setStep(3); }}>
             <div className="field span-2">
               <label htmlFor="name">Display name *</label>
@@ -258,6 +290,7 @@ export function AddConnectionPage() {
               <button type="submit" className="btn primary" disabled={!detailsValid}>Next →</button>
             </div>
           </form>
+          )}
         </Card>
       )}
 
@@ -301,7 +334,7 @@ export function AddConnectionPage() {
       )}
 
       {step === 4 && (
-        <Card title="Test & save" subtitle={`${form.name} · ${form.host}${form.port ? `:${form.port}` : ""}${form.database ? `/${form.database}` : ""}`}>
+        <Card title="Test & save" subtitle={isFile ? `${form.name} · uploaded SQLite file` : `${form.name} · ${form.host}${form.port ? `:${form.port}` : ""}${form.database ? `/${form.database}` : ""}`}>
           <div className="stack">
             <div><button type="button" className="btn primary" onClick={runTest} disabled={busy}>
               {busy && !test ? "Testing…" : test ? "Re-run test" : "▶ Test connection"}</button></div>
@@ -325,7 +358,7 @@ export function AddConnectionPage() {
               </p>
             )}
             <div className="toolbar">
-              <button type="button" className="btn" onClick={() => setStep(3)}>← Back</button>
+              <button type="button" className="btn" onClick={() => setStep(isFile ? 2 : 3)}>← Back</button>
               <button type="button" className="btn primary" onClick={save}
                       disabled={busy || !test || (!test.ok && !(can("admin") && forceReason.trim()))}>Save connection</button>
             </div>
