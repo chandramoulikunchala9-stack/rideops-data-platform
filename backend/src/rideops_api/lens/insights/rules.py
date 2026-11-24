@@ -51,7 +51,7 @@ def stale_tables(ctx: Context) -> Iterator[Insight]:
             continue
         last = s["freshness_max"]
         if isinstance(last, str):
-            last = datetime.fromisoformat(last)
+            last = datetime.fromisoformat(last.replace("Z", "+00:00"))  # "Z" parses only on 3.11+
         if last.tzinfo is None:
             last = last.replace(tzinfo=timezone.utc)
         lag = ctx.now - last

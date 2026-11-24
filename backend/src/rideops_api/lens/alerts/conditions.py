@@ -77,7 +77,7 @@ def _as_dt(v: Any) -> datetime | None:
     if v is None:
         return None
     if isinstance(v, str):
-        v = datetime.fromisoformat(v)
+        v = datetime.fromisoformat(v.replace("Z", "+00:00"))  # "Z" parses only on 3.11+
     return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
 
 

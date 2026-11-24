@@ -7,7 +7,7 @@
 
 | Workflow | Trigger (path-filtered) | Jobs | Local equivalent |
 |---|---|---|---|
-| `python.yml` | `pipelines/`, `backend/`, `databricks/`, `monitoring/`, `scripts/`, `ruff.toml` | **lint** (ruff over all Python) → **pipelines-unit** (Python 3.10 + 3.12 matrix) → **pipelines-integration** (PostgreSQL 17.5 service: migrations, load, SQL ELT, *every named analytics query*, DQ checks, CLI smoke test) and **backend** (PostgreSQL + MySQL 8.4 + MongoDB 8.0 services: all API tests including Lens and the adapter contract suite, then builds the API image) | `ruff check pipelines backend scripts && pytest pipelines -m "not spark" && pytest backend` |
+| `python.yml` | `pipelines/`, `backend/`, `databricks/`, `monitoring/`, `scripts/`, `ruff.toml` | **lint** (ruff over all Python) → **pipelines-unit** (Python 3.10 + 3.12 matrix) → **pipelines-integration** (PostgreSQL 17.5 service: migrations, load, SQL ELT, *every named analytics query*, DQ checks, CLI smoke test) and **backend** (Python 3.10 + 3.12 matrix; PostgreSQL + MySQL 8.4 + MongoDB 8.0 services: all API tests including Lens and the adapter contract suite; the 3.12 leg then builds the API image) | `ruff check pipelines backend scripts && pytest pipelines -m "not spark" && pytest backend` |
 | `spark.yml` | `pipelines/src/rideops/spark/`, `pipelines/tests/spark/` | PySpark 4.2 + Delta 4.4 tests on Java 17, Ivy JAR cache | `docker compose --profile spark run --rm spark pytest pipelines/tests/spark` |
 | `frontend.yml` | `frontend/` | `npm ci` → ESLint → `tsc` → Vitest → `vite build` (artifact uploaded) | `cd frontend && npm run lint && npm run typecheck && npm test && npm run build` |
 | `infra.yml` | `infra/`, `databricks/` | `terraform fmt -check`, `init -backend=false`, `validate`; Databricks bundle static checks | see `docs/aws-setup.md` |
@@ -31,7 +31,7 @@ Design choices:
 1. Branch from `main`: `feat/...`, `fix/...`, `docs/...` (see `CONTRIBUTING.md`).
 2. Open a PR. The template asks how the change was verified and whether simulated data is labelled.
 3. Protect `main` (GitHub → Settings → Branches): require the `Lint (ruff)`, `Pipelines unit tests`,
-   `Pipelines + SQL integration`, `Backend API tests`, `Lint, typecheck, test, build`, and `Terraform fmt + validate`
+   `Pipelines + SQL integration`, `Backend API tests` (both Python versions), `Lint, typecheck, test, build`, and `Terraform fmt + validate`
    checks, and at least one review.
 4. Squash-merge with a Conventional Commit title.
 
