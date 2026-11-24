@@ -95,8 +95,8 @@ Lens runs inside the same API service. **Status: prepared and verified locally (
    ```
    and set `RIDEOPS_DEMO_URL=postgresql://rideops_demo_ro:<password>@<host>/<db>?sslmode=require`.
 3. **Render.** The blueprint (`render.yaml`) already lists the Lens variables. Fill the secret ones:
-   `LENS_MASTER_KEYS` (generate with
-   `python -c "import os,base64;print(base64.b64encode(os.urandom(32)).decode())"` and keep a copy in
+   `LENS_MASTER_KEYS` in the form `1:<key>` (generate it with
+   `python -c "import os,base64;print('1:'+base64.b64encode(os.urandom(32)).decode())"` and keep a copy in
    your password manager — losing it means re-entering every connection password),
    `INTERNAL_TOKEN` (random), `PUBLIC_APP_URL` (your Pages URL), `DATABASE_URL` if separate.
 4. **Cloudflare Pages.** Leave `VITE_API_BASE_URL` **empty** and set `API_ORIGIN` to the Render URL.
@@ -134,6 +134,14 @@ Lens).
 | `ALERT_WEBHOOK_URL` | alerts | Optional Slack/Teams incoming webhook (secret) |
 | `VITE_API_BASE_URL` | frontend build | Absolute API URL when the frontend is hosted separately |
 | `RIDEOPS_DATA_DIR`, `RIDEOPS_SCALE`, `RIDEOPS_SEED` | CLIs | Data generation and loading |
+| `LENS_ENABLED` | API | `true` turns on Lens (runs migrations at start-up) |
+| `DATABASE_URL` | API | Lens metadata DB; empty = the `POSTGRES_*` database |
+| `LENS_MASTER_KEYS` | API | `1:<base64 32 bytes>` (secret; add `2:…` and run `rotate-keys` to rotate) |
+| `INTERNAL_TOKEN` | API, `lens-tick` | Protects `/internal/tick` and `/metrics` (secret) |
+| `PUBLIC_APP_URL` | API | Base URL put in emailed links |
+| `RIDEOPS_DEMO_URL` | API | Read-only demo connection added to new workspaces (secret) |
+| `EMAIL_BACKEND`, `EMAIL_FROM`, `SMTP_URL`, `RESEND_API_KEY` | API | Email delivery (see Lens section) |
+| `API_ORIGIN` | Cloudflare Pages | Render URL the `/api/*` proxy forwards to |
 
 ## Health checks
 
