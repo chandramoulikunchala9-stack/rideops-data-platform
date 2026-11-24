@@ -23,7 +23,9 @@ class ConsoleEmailSender:
     """Logs emails instead of sending them. Development only: bodies contain one-time links."""
 
     def send(self, email: Email) -> None:
-        logger.warning("DEV EMAIL (not sent) to=%s subject=%s\n%s", email.to, email.subject, email.body)
+        logger.warning(
+            "DEV EMAIL (not sent) to=%s subject=%s\n%s", email.to, email.subject, email.body
+        )
 
 
 @dataclass

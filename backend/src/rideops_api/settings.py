@@ -17,6 +17,9 @@ class LensSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     lens_enabled: bool = False
+    # Require sign-in for the existing RideOps routes. Off until the dashboard has a login
+    # screen (Phase 12), so enabling Lens does not lock the current dashboard out.
+    lens_protect_rideops: bool = False
     # Process role (ADR-6): `all` runs API + one worker + scheduler in one process (free tier).
     lens_role: Literal["all", "api", "worker", "scheduler"] = "all"
     # Metadata database. Empty means "use the RideOps POSTGRES_* database" (schema `app`).
@@ -39,7 +42,9 @@ class LensSettings(BaseSettings):
     def metadata_conninfo(self) -> str:
         if self.database_url is not None:
             # Accept SQLAlchemy-style URLs (postgresql+psycopg://) as documented in §23.
-            return self.database_url.get_secret_value().replace("postgresql+psycopg://", "postgresql://", 1)
+            return self.database_url.get_secret_value().replace(
+                "postgresql+psycopg://", "postgresql://", 1
+            )
         return PostgresSettings().conninfo()
 
 

@@ -17,6 +17,10 @@ dependencies = [
     "psycopg[binary]==3.3.9",
     "psycopg-pool==3.3.3",
     "pydantic-settings==2.15.0",
+    "pydantic[email]",
+    "alembic==1.20.1",
+    "SQLAlchemy==2.1.9",
+    "argon2-cffi==25.1.0",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +35,9 @@ rideops-api = "rideops_api.main:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+rideops_api = ["migrations/script.py.mako", "auth/*.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

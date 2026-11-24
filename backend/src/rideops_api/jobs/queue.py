@@ -40,7 +40,9 @@ def enqueue(
     return row["id"] if row else None
 
 
-def claim(conn: psycopg.Connection, worker_id: str, job_types: list[str] | None = None) -> dict | None:
+def claim(
+    conn: psycopg.Connection, worker_id: str, job_types: list[str] | None = None
+) -> dict | None:
     """Atomically take the most urgent due job. Concurrent workers never get the same job."""
     return conn.execute(
         """UPDATE app.jobs

@@ -21,8 +21,10 @@ def retention(ctx: JobContext) -> None:
         "sessions": "DELETE FROM app.sessions WHERE expires_at < now() - interval '1 day'",
         "user_tokens": "DELETE FROM app.user_tokens WHERE expires_at < now() - interval '7 days'",
         "login_attempts": "DELETE FROM app.login_attempts WHERE created_at < now() - interval '30 days'",
-        "invitations": "DELETE FROM app.invitations WHERE accepted_at IS NULL AND expires_at < now() - interval '30 days'",
-        "jobs": "DELETE FROM app.jobs WHERE status IN ('done','failed','cancelled') AND finished_at < now() - interval '7 days'",
+        "invitations": "DELETE FROM app.invitations "
+        "WHERE accepted_at IS NULL AND expires_at < now() - interval '30 days'",
+        "jobs": "DELETE FROM app.jobs "
+        "WHERE status IN ('done', 'failed', 'cancelled') AND finished_at < now() - interval '7 days'",
         "audit_log": "DELETE FROM app.audit_log WHERE created_at < now() - interval '1 year'",
         "workspaces": "DELETE FROM app.workspaces WHERE deleted_at < now() - interval '30 days'",
     }

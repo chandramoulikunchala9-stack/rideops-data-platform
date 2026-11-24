@@ -36,7 +36,9 @@ def require(action: str) -> Callable[..., WorkspaceContext]:
     if action not in rbac.PERMISSIONS:
         raise ValueError(f"Unknown action {action!r}")
 
-    def dependency(ws: UUID, request: Request, session: SessionDep, db: MetaDbDep) -> WorkspaceContext:
+    def dependency(
+        ws: UUID, request: Request, session: SessionDep, db: MetaDbDep
+    ) -> WorkspaceContext:
         with db.pool.connection() as conn:
             row = service.membership(conn, ws, session.user_id)
         if row is None:

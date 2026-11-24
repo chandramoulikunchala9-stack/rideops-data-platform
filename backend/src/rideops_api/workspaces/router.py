@@ -51,7 +51,9 @@ def list_workspaces(session: SessionDep, db: MetaDbDep) -> list[WorkspaceOut]:
 
 
 @router.post("/workspaces", response_model=WorkspaceOut, status_code=status.HTTP_201_CREATED)
-def create_workspace(body: WorkspaceIn, session: SessionDep, request: Request, db: MetaDbDep) -> WorkspaceOut:
+def create_workspace(
+    body: WorkspaceIn, session: SessionDep, request: Request, db: MetaDbDep
+) -> WorkspaceOut:
     with db.transaction() as conn:
         ws = service.create(conn, session.user_id, body.name.strip())
         audit.record(conn, "workspace.create", request=request, workspace_id=ws["id"],
@@ -65,7 +67,9 @@ def get_workspace(ctx: Viewer) -> WorkspaceOut:
 
 
 @router.patch("/workspaces/{ws}", response_model=WorkspaceOut)
-def update_workspace(body: WorkspacePatch, ctx: Admin, request: Request, db: MetaDbDep) -> WorkspaceOut:
+def update_workspace(
+    body: WorkspacePatch, ctx: Admin, request: Request, db: MetaDbDep
+) -> WorkspaceOut:
     settings = None
     if body.settings is not None:
         current = ctx.workspace["settings"]
@@ -93,7 +97,9 @@ def update_workspace(body: WorkspacePatch, ctx: Admin, request: Request, db: Met
 def delete_workspace(ctx: Owner, request: Request, db: MetaDbDep) -> Ok:
     """Soft delete; data is erased by the retention job (GDPR export/erase is v1.x)."""
     with db.transaction() as conn:
-        conn.execute("UPDATE app.workspaces SET deleted_at = now() WHERE id = %s", (ctx.workspace_id,))
+        conn.execute(
+            "UPDATE app.workspaces SET deleted_at = now() WHERE id = %s", (ctx.workspace_id,)
+        )
         audit.record(conn, "workspace.delete", request=request, workspace_id=ctx.workspace_id,
                      actor_user_id=ctx.user_id, target_type="workspace", target_id=ctx.workspace_id)  # fmt: skip
     return Ok()
@@ -111,7 +117,11 @@ def list_members(ctx: MembersView, db: MetaDbDep) -> list[MemberOut]:
     return [MemberOut(**r) for r in rows]
 
 
-@router.post("/workspaces/{ws}/invitations", response_model=InvitationOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/workspaces/{ws}/invitations",
+    response_model=InvitationOut,
+    status_code=status.HTTP_201_CREATED,
+)
 def invite(body: InvitationIn, ctx: MembersManage, request: Request, db: MetaDbDep,
            settings: LensSettingsDep) -> InvitationOut:  # fmt: skip
     if body.role == "owner" and not ctx.can("workspace.transfer"):
@@ -142,7 +152,9 @@ def invite(body: InvitationIn, ctx: MembersManage, request: Request, db: MetaDbD
 
 
 @router.post("/invitations/{token}/accept", response_model=WorkspaceOut)
-def accept_invitation(token: str, session: SessionDep, request: Request, db: MetaDbDep) -> WorkspaceOut:
+def accept_invitation(
+    token: str, session: SessionDep, request: Request, db: MetaDbDep
+) -> WorkspaceOut:
     with db.transaction() as conn:
         inv = conn.execute(
             """SELECT i.* FROM app.invitations i JOIN app.workspaces w ON w.id = i.workspace_id
@@ -153,7 +165,9 @@ def accept_invitation(token: str, session: SessionDep, request: Request, db: Met
         ).fetchone()
         # Same error for unknown and for someone else's invitation: no enumeration.
         if inv is None or inv["email"].lower() != session.email.lower():
-            raise ApiError(404, "NOT_FOUND", "This invitation is invalid, expired, or for another account.")
+            raise ApiError(
+                404, "NOT_FOUND", "This invitation is invalid, expired, or for another account."
+            )
         conn.execute(
             """INSERT INTO app.memberships (workspace_id, user_id, role) VALUES (%s, %s, %s)
                ON CONFLICT (workspace_id, user_id) DO NOTHING""",
@@ -183,11 +197,15 @@ def _guard_owner_change(conn, ctx: WorkspaceContext, current: str, new: str | No
     if touches_owner and not ctx.can("workspace.transfer"):
         raise ApiError(403, "FORBIDDEN", "Only an owner can change owners.")
     if current == "owner" and new != "owner" and service.owner_count(conn, ctx.workspace_id) <= 1:
-        raise ApiError(409, "LAST_OWNER", "A workspace needs at least one owner. Transfer ownership first.")
+        raise ApiError(
+            409, "LAST_OWNER", "A workspace needs at least one owner. Transfer ownership first."
+        )
 
 
 @router.patch("/workspaces/{ws}/members/{user_id}", response_model=Ok)
-def update_member(user_id: UUID, body: MemberPatch, ctx: MembersManage, request: Request, db: MetaDbDep) -> Ok:
+def update_member(
+    user_id: UUID, body: MemberPatch, ctx: MembersManage, request: Request, db: MetaDbDep
+) -> Ok:
     with db.transaction() as conn:
         current = _target_role(conn, ctx, user_id)
         _guard_owner_change(conn, ctx, current, body.role)
@@ -200,7 +218,9 @@ def update_member(user_id: UUID, body: MemberPatch, ctx: MembersManage, request:
 
 
 @router.delete("/workspaces/{ws}/members/{user_id}", response_model=Ok)
-def remove_member(user_id: UUID, ws: UUID, session: SessionDep, request: Request, db: MetaDbDep) -> Ok:
+def remove_member(
+    user_id: UUID, ws: UUID, session: SessionDep, request: Request, db: MetaDbDep
+) -> Ok:
     """Admins remove members; any member may remove themselves (leave)."""
     with db.pool.connection() as conn:
         me = service.membership(conn, ws, session.user_id)
@@ -208,14 +228,20 @@ def remove_member(user_id: UUID, ws: UUID, session: SessionDep, request: Request
         raise ApiError(404, "NOT_FOUND", "Workspace not found.")
     ctx = WorkspaceContext(session=session, workspace=me, role=me["role"])
     if user_id != session.user_id and not ctx.can("members.manage"):
-        raise ApiError(403, "FORBIDDEN", "Your role can't do this.", {"required": "admin", "role": ctx.role})
+        raise ApiError(
+            403, "FORBIDDEN", "Your role can't do this.", {"required": "admin", "role": ctx.role}
+        )
     with db.transaction() as conn:
         current = _target_role(conn, ctx, user_id)
         if user_id != session.user_id:
             _guard_owner_change(conn, ctx, current, None)
         elif current == "owner" and service.owner_count(conn, ws) <= 1:
-            raise ApiError(409, "LAST_OWNER", "A workspace needs at least one owner. Transfer ownership first.")
-        conn.execute("DELETE FROM app.memberships WHERE workspace_id = %s AND user_id = %s", (ws, user_id))
+            raise ApiError(
+                409, "LAST_OWNER", "A workspace needs at least one owner. Transfer ownership first."
+            )
+        conn.execute(
+            "DELETE FROM app.memberships WHERE workspace_id = %s AND user_id = %s", (ws, user_id)
+        )
         audit.record(conn, "member.remove" if user_id != session.user_id else "member.leave",
                      request=request, workspace_id=ws, actor_user_id=session.user_id,
                      target_type="user", target_id=user_id, metadata={"role": current})  # fmt: skip

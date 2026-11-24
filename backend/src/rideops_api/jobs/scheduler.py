@@ -28,7 +28,9 @@ class TickResult:
 
 def tick(db: Database) -> TickResult:
     with db.transaction() as conn:
-        got = conn.execute("SELECT pg_try_advisory_xact_lock(%s) AS ok", (LEADER_LOCK_ID,)).fetchone()["ok"]
+        got = conn.execute(
+            "SELECT pg_try_advisory_xact_lock(%s) AS ok", (LEADER_LOCK_ID,)
+        ).fetchone()["ok"]
         if not got:
             return TickResult(leader=False)
         result = TickResult(leader=True, reaped=queue.reap_stale(conn))
@@ -44,7 +46,9 @@ def tick(db: Database) -> TickResult:
                 logger.warning("Schedule for unknown job type %s skipped", row["job_type"])
                 continue
             key = f"{row['job_type']}:{row['connection_id']}:{row['bucket']}"
-            if queue.enqueue(conn, row["job_type"], connection_id=row["connection_id"], idempotency_key=key):
+            if queue.enqueue(
+                conn, row["job_type"], connection_id=row["connection_id"], idempotency_key=key
+            ):
                 result.enqueued += 1
             conn.execute(
                 """UPDATE app.schedules

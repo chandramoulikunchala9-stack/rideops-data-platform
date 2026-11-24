@@ -24,6 +24,11 @@ Last updated: 2026-11-19 · State: **all phases implemented; cloud deployments p
 | 9 | Deployment | ✅ Local Docker deployment verified (12/12) | Hosted: prepared, not deployed |
 | 10 | Interview preparation guide | ✅ Done | `docs/interview-guide.md` |
 | – | Folder restructure into `pipelines/` + `backend/` packages | ✅ Done | 107 files moved with history; all suites re-run |
+| 11 | **Lens** foundations: Alembic + `app` schema, auth, workspaces, RBAC, audit, CSRF, job queue + scheduler | ✅ Backend done (`dev` branch) | 37 Lens tests (auth e2e, tenancy 404 on every workspace route, RBAC, **4 concurrent workers claim 200 jobs exactly once**, scheduler leader lock, migrations up/down); existing API tests still green; uvicorn smoke run with `LENS_ROLE=all`. Postgres RLS (FR-04 defence in depth) is deferred to Phase 12, which adds the first tenant data tables (connections). |
+| 12 | Lens: connections + PostgreSQL adapter + fleet UI | ⏳ Not started | |
+| 13 | Lens: analytics (schema explorer, profiling, query console) | ⏳ Not started | |
+| 14 | Lens: alerts + MySQL / SQL Server / SQLite / MongoDB adapters | ⏳ Not started | |
+| 15 | Lens: hardening + hosted deploy | ⏳ Not started | |
 
 ## 2. Repository structure (after the restructure, 2026-11-19)
 

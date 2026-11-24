@@ -45,8 +45,12 @@ def needs_rehash(password_hash: str) -> bool:
 
 @lru_cache
 def _common_passwords() -> frozenset[str]:
-    lines = (Path(__file__).parent / "common_passwords.txt").read_text(encoding="utf-8").splitlines()
-    return frozenset(line.strip().lower() for line in lines if line.strip() and not line.startswith("#"))
+    lines = (
+        (Path(__file__).parent / "common_passwords.txt").read_text(encoding="utf-8").splitlines()
+    )
+    return frozenset(
+        line.strip().lower() for line in lines if line.strip() and not line.startswith("#")
+    )
 
 
 def policy_problems(password: str, *, email: str | None = None) -> list[str]:

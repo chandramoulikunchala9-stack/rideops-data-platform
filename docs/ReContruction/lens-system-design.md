@@ -7,7 +7,7 @@
 | Product | RideOps Data Platform → **Lens** module (connect any database by URL, see its status and analytics) |
 | Repo | `rideops-data-platform` (monorepo: `pipelines/`, `backend/`, `frontend/`, `infra/`, `databricks/`) |
 | Doc version | 1.0 (2026-11-23) |
-| Companion doc | `docs/lens-wireframes.md` (all frontend screens) |
+| Companion doc | `docs/ReContruction/lens-wireframes.md` (all frontend screens) |
 | Status | Design: ready for implementation |
 
 ---
@@ -428,8 +428,8 @@ frontend/src/
   components/ (StatusBadge, MetricCard, Sparkline, UptimeBar, DataTable, CodeEditor, EmptyState, ...)
 agent/                       # v2: connector agent (Python, Dockerfile)
 docs/
-  lens-system-design.md      # this file
-  lens-wireframes.md
+  ReContruction/lens-system-design.md   # this file
+  ReContruction/lens-wireframes.md
   adr/ADR-001..008.md
 monitoring/runbooks/
   lens-target-down.md  lens-worker-backlog.md  lens-key-rotation.md  lens-ssrf-block.md
@@ -1659,7 +1659,7 @@ Caching: catalog and stats served from the metadata DB (snapshots). Status overv
 - **Shared components:** `StatusBadge` (icon + text + colour), `HealthScore` (ring + breakdown popover), `MetricCard`, `Sparkline`, `UptimeBar`, `TimeRangePicker`, `DataTable` (virtualised, sortable, card mode < 640 px), `StageChecklist` (diagnostics), `SecretInput` (never prefilled), `CodeBlock` (copy grant script), `EmptyState`, `ErrorState`, `Skeleton`, `ConfirmDangerDialog` (type-to-confirm), `EnvBanner` (prod warning), `CapabilityGate` ("not available" placeholder).
 - **State rules:** passwords are never stored in React Query cache or localStorage. The secret field is cleared after submit. Workspace id comes from the URL.
 - **Accessibility:** focus rings, `aria-live` for test progress and status changes, table semantics, and status always shown as icon + text.
-- Full screen designs are in **`docs/lens-wireframes.md`**.
+- Full screen designs are in **`docs/ReContruction/lens-wireframes.md`**.
 
 ---
 
@@ -1735,7 +1735,7 @@ Check each provider's current free-tier limits before launch; they change. Self-
 3. Seed a **"RideOps demo"** connection (`is_demo=true`, environment `demo`) for each new workspace, using a dedicated read-only role on the RideOps DB (`RIDEOPS_DEMO_URL`).
 4. Existing alerts/incidents tables are migrated into or linked with `app.alert_*`. The existing incident drill becomes a Lens e2e test.
 5. Frontend: the current pages move under a "RideOps (demo)" section. The new home is the Fleet overview, with the RideOps dashboard reachable from the demo connection's Dashboards tab.
-6. Update `STATUS.md` (new milestones Phase 11–14), the skills matrix (security, multi-DB adapters, job queue) and the interview guide (system design talking points from this doc).
+6. Update `PROJECT_STATUS.md` (new milestones Phase 11–14), the skills matrix (security, multi-DB adapters, job queue) and the interview guide (system design talking points from this doc).
 
 ---
 
@@ -1779,5 +1779,5 @@ Check each provider's current free-tier limits before launch; they change. Self-
 - [ ] Audit events emitted
 - [ ] Errors use catalog codes; UI shows hint
 - [ ] Empty/loading/error/mobile states implemented (see wireframes)
-- [ ] Docs + runbook updated; `STATUS.md` row with evidence
+- [ ] Docs + runbook updated; `PROJECT_STATUS.md` row with evidence
 - [ ] CI green on GitHub

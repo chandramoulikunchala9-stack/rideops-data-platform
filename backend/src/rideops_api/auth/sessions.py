@@ -25,7 +25,9 @@ class Session:
     email_verified: bool
 
 
-def create(conn: psycopg.Connection, user_id: Any, *, request=None, absolute_days: int = 7) -> tuple[str, str]:
+def create(
+    conn: psycopg.Connection, user_id: Any, *, request=None, absolute_days: int = 7
+) -> tuple[str, str]:
     """Return (raw session id for the cookie, csrf token)."""
     raw, csrf = new_secret(32), new_secret(32)
     conn.execute(

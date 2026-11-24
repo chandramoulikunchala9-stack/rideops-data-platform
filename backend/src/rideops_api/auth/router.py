@@ -5,19 +5,19 @@ from fastapi import APIRouter, Request, Response, status
 from rideops_api import audit
 from rideops_api.auth import passwords, sessions
 from rideops_api.auth.deps import LensSettingsDep, MetaDbDep, SessionDep
-from rideops_api.auth.tokens import digest
 from rideops_api.auth.schemas import (
     Accepted,
     ForgotIn,
     LoginIn,
-    MeOut,
     MembershipOut,
+    MeOut,
     Ok,
     ResetIn,
     SignupIn,
     TokenIn,
     UserOut,
 )
+from rideops_api.auth.tokens import digest
 from rideops_api.errors import ApiError
 from rideops_api.notifications.email import Email
 from rideops_api.settings import LensSettings
@@ -40,7 +40,9 @@ def _clear_cookies(response: Response) -> None:
         response.delete_cookie(name, path="/")
 
 
-def _send(request: Request, to: str, subject: str, path: str, token: str, settings: LensSettings) -> None:
+def _send(
+    request: Request, to: str, subject: str, path: str, token: str, settings: LensSettings
+) -> None:
     link = f"{settings.public_app_url.rstrip('/')}{path}?token={token}"
     request.app.state.email_sender.send(Email(to=to, subject=subject, body=f"{subject}:\n{link}\n"))
 
@@ -75,17 +77,24 @@ def signup(body: SignupIn, request: Request, response: Response, db: MetaDbDep,
             raise ApiError(409, "EMAIL_TAKEN", "An account with this email already exists.")
         user = conn.execute(
             """INSERT INTO app.users (email, display_name, password_hash, last_login_at)
-               VALUES (%s, %s, %s, now()) RETURNING id""",
+               VALUES (%s, %s, %s, now())
+               ON CONFLICT (email) DO NOTHING RETURNING id""",
             (body.email, body.display_name.strip(), password_hash),
         ).fetchone()
-        ws = workspaces.create(conn, user["id"], body.display_name.strip() + workspaces.PERSONAL_SUFFIX)
+        if user is None:  # a concurrent sign-up with the same email won the race
+            raise ApiError(409, "EMAIL_TAKEN", "An account with this email already exists.")
+        ws = workspaces.create(
+            conn, user["id"], body.display_name.strip() + workspaces.PERSONAL_SUFFIX
+        )
         token = sessions.issue_user_token(conn, user["id"], "verify_email")
         raw, csrf = sessions.create(conn, user["id"], request=request,
                                     absolute_days=settings.session_absolute_days)  # fmt: skip
         audit.record(conn, "user.signup", request=request, workspace_id=ws["id"],
                      actor_user_id=user["id"], target_type="user", target_id=user["id"])  # fmt: skip
         me = _me(conn, user["id"], csrf)
-    _send(request, body.email, "Verify your RideOps Lens email", "/app/verify-email", token, settings)
+    _send(
+        request, body.email, "Verify your RideOps Lens email", "/app/verify-email", token, settings
+    )
     _set_cookies(response, raw, csrf, settings)
     return me
 
@@ -143,7 +152,11 @@ def login(body: LoginIn, request: Request, response: Response, db: MetaDbDep,
     if not ok:  # generic message: never reveal whether the email exists (§18.2)
         raise ApiError(401, "LOGIN_FAILED", "Email or password is incorrect.")
 
-    new_hash = passwords.hash_password(body.password) if passwords.needs_rehash(user["password_hash"]) else None
+    new_hash = (
+        passwords.hash_password(body.password)
+        if passwords.needs_rehash(user["password_hash"])
+        else None
+    )
     with db.transaction() as conn:
         # Session rotation: a fresh id on every login; an old cookie is simply replaced.
         old = request.cookies.get(sessions.COOKIE_NAME)
@@ -169,7 +182,9 @@ def logout(session: SessionDep, request: Request, response: Response, db: MetaDb
 
 
 @router.post("/password/forgot", response_model=Accepted, status_code=status.HTTP_202_ACCEPTED)
-def forgot_password(body: ForgotIn, request: Request, db: MetaDbDep, settings: LensSettingsDep) -> Accepted:
+def forgot_password(
+    body: ForgotIn, request: Request, db: MetaDbDep, settings: LensSettingsDep
+) -> Accepted:
     """Always 202, whether or not the email exists (no account enumeration)."""
     with db.transaction() as conn:
         user = conn.execute(
@@ -177,9 +192,18 @@ def forgot_password(body: ForgotIn, request: Request, db: MetaDbDep, settings: L
         ).fetchone()
         token = sessions.issue_user_token(conn, user["id"], "password_reset") if user else None
         if user:
-            audit.record(conn, "user.password_reset_requested", request=request, actor_user_id=user["id"])
+            audit.record(
+                conn, "user.password_reset_requested", request=request, actor_user_id=user["id"]
+            )
     if token:
-        _send(request, body.email, "Reset your RideOps Lens password", "/app/reset-password", token, settings)
+        _send(
+            request,
+            body.email,
+            "Reset your RideOps Lens password",
+            "/app/reset-password",
+            token,
+            settings,
+        )
     return Accepted()
 
 
@@ -191,7 +215,9 @@ def reset_password(body: ResetIn, request: Request, response: Response, db: Meta
                 WHERE t.token_hash = %s""",
             (digest(body.token),),
         ).fetchone()
-    problems = passwords.policy_problems(body.password, email=email_row["email"] if email_row else None)
+    problems = passwords.policy_problems(
+        body.password, email=email_row["email"] if email_row else None
+    )
     if problems:
         raise ApiError(422, "PASSWORD_WEAK", problems[0], {"problems": problems})
     password_hash = passwords.hash_password(body.password)

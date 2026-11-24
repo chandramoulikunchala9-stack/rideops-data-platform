@@ -29,7 +29,9 @@ class JobContext:
 REGISTRY: dict[str, JobSpec] = {}
 
 
-def job(job_type: str, *, timeout_s: int, max_attempts: int, priority: int) -> Callable[[JobHandler], JobHandler]:
+def job(
+    job_type: str, *, timeout_s: int, max_attempts: int, priority: int
+) -> Callable[[JobHandler], JobHandler]:
     """Register a handler. Handlers must bound their own work by `timeout_s` (e.g. with a
     statement_timeout on target connections): Python threads cannot be killed safely."""
 
