@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 LEADER_LOCK_ID = 42
 
 # Periodic system jobs: (job type, bucket size in seconds).
-SYSTEM_JOBS: list[tuple[str, int]] = [("retention", 3600)]
+SYSTEM_JOBS: list[tuple[str, int]] = [("retention", 3600), ("dashboards_due", 900)]
 
 
 @dataclass

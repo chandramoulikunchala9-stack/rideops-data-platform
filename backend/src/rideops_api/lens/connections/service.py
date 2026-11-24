@@ -226,15 +226,84 @@ def insert_connection(conn: psycopg.Connection, *, workspace_id: Any, draft: Dra
     return row
 
 
+# Recurring work per connection besides health checks (§10.5 job table).
+CATALOG_SCHEDULES = {"schema_sync": 86_400, "stats_refresh": 3_600}
+
+
 def set_schedule(conn: psycopg.Connection, connection_id: Any, interval_s: int) -> None:
-    conn.execute(
-        """INSERT INTO app.schedules (connection_id, job_type, interval_s, next_run_at)
-           VALUES (%s, 'health_check', %s, now() + make_interval(secs => %s))
-           ON CONFLICT (connection_id, job_type) DO UPDATE
-             SET interval_s = EXCLUDED.interval_s,
-                 next_run_at = LEAST(app.schedules.next_run_at, EXCLUDED.next_run_at)""",
-        (connection_id, interval_s, interval_s),
-    )
+    """Health check every `interval_s`, plus the daily schema sync and hourly stats refresh."""
+    for job_type, every in {"health_check": interval_s, **CATALOG_SCHEDULES}.items():
+        conn.execute(
+            """INSERT INTO app.schedules (connection_id, job_type, interval_s, next_run_at)
+               VALUES (%s, %s, %s, now() + make_interval(secs => %s))
+               ON CONFLICT (connection_id, job_type) DO UPDATE
+                 SET interval_s = EXCLUDED.interval_s,
+                     next_run_at = LEAST(app.schedules.next_run_at, EXCLUDED.next_run_at)""",
+            (connection_id, job_type, every, every),
+        )
+
+
+def enqueue_initial_jobs(conn: psycopg.Connection, connection_id: Any, workspace_id: Any) -> None:
+    """First health check and catalog sync right after a connection is saved (§14.1)."""
+    from rideops_api.jobs import queue  # local: the queue imports the job registry
+
+    for job_type in ("health_check", "schema_sync"):
+        queue.enqueue(conn, job_type, connection_id=connection_id, workspace_id=workspace_id,
+                      idempotency_key=f"{job_type}:{connection_id}:initial")  # fmt: skip
+
+
+class TargetUnavailable(Exception):
+    """A stored connection can't be opened right now (paused, deleted, no secret, blocked)."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code, self.message = code, message
+
+
+def load_target(db: Any, connection_id: Any, settings: LensSettings):
+    """Stored connection → (row, adapter) ready to use. Applies the same checks as a health check:
+    not paused/deleted, secret decryptable, Network Guard (except the trusted demo), TLS policy."""
+    from rideops_api.lens.security.crypto import DecryptError, KeyRingError
+
+    with db.pool.connection() as conn:
+        row = conn.execute(
+            """SELECT c.*, w.settings AS ws_settings FROM app.connections c
+                 JOIN app.workspaces w ON w.id = c.workspace_id
+                WHERE c.id = %s AND c.deleted_at IS NULL AND w.deleted_at IS NULL""",
+            (connection_id,),
+        ).fetchone()
+        if row is None:
+            raise TargetUnavailable("NOT_FOUND", "Connection not found.")
+        if row["is_paused"]:
+            raise TargetUnavailable("CONNECTION_PAUSED", "Resume the connection first.")
+        try:
+            secret = load_secret(conn, keyring_for(settings), row["workspace_id"], row["id"])
+        except (KeyRingError, DecryptError) as exc:
+            raise TargetUnavailable("SECRET_UNAVAILABLE", str(exc)) from exc
+    if secret is None:
+        raise TargetUnavailable("SECRET_UNAVAILABLE", "This connection has no stored credentials.")
+    try:
+        adapter_cls = get_adapter_class(row["engine"])
+    except AdapterUnavailable as exc:
+        raise TargetUnavailable(exc.code, exc.message) from exc
+    if row["tls_mode"] == "disable" and not row["ws_settings"].get(
+        "allow_insecure_connections", False
+    ):
+        raise TargetUnavailable(
+            "CONN_TLS_REQUIRED", "Insecure connections are disabled for this workspace."
+        )
+    pinned = None
+    if not row["is_demo"]:
+        try:
+            pinned = netguard.check(
+                row["host"], row["port"], **_policy_kwargs(row["ws_settings"], settings)
+            ).pinned_ip
+        except netguard.NetworkPolicyError as err:
+            raise TargetUnavailable(err.code, err.message) from err
+    cfg = ConnectionConfig(connection_id=str(row["id"]), engine=row["engine"], host=row["host"], port=row["port"],
+                           database=row["database"], username=row["username"], options=row["options"] or {},
+                           tls_mode=row["tls_mode"], pinned_ip=pinned, timeout_s=settings.health_timeout_s)  # fmt: skip
+    return row, adapter_cls(cfg, secret)
 
 
 def seed_demo_connection(conn: psycopg.Connection, workspace_id: Any, settings: LensSettings,
@@ -268,10 +337,7 @@ def seed_demo_connection(conn: psycopg.Connection, workspace_id: Any, settings: 
         keyring=keyring_for(settings),
         is_demo=True,
     )
-    from rideops_api.jobs import queue  # local: the queue imports the job registry
-
-    queue.enqueue(conn, "health_check", connection_id=row["id"], workspace_id=workspace_id,
-                  idempotency_key=f"health_check:{row['id']}:initial")  # fmt: skip
+    enqueue_initial_jobs(conn, row["id"], workspace_id)
     return row
 
 

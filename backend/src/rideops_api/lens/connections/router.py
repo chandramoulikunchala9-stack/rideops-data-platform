@@ -203,8 +203,7 @@ def create_connection(body: s.ConnectionCreate, ctx: Editor, request: Request, d
                 "UPDATE app.connection_tests SET connection_id = %s WHERE id = %s",
                 (row["id"], body.test_id),
             )
-            queue.enqueue(conn, "health_check", connection_id=row["id"], workspace_id=ctx.workspace_id,
-                          idempotency_key=f"health_check:{row['id']}:initial")  # fmt: skip
+            service.enqueue_initial_jobs(conn, row["id"], ctx.workspace_id)
             audit.record(conn, "connection.create", request=request, workspace_id=ctx.workspace_id,
                          actor_user_id=ctx.user_id, target_type="connection", target_id=row["id"],
                          metadata={"engine": draft.engine, "display_url": draft.display_url,

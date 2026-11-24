@@ -149,14 +149,16 @@ def test_scheduler_enqueues_due_schedules_once(meta_db, lens_conninfo):
         paused,
     )
     first = scheduler.tick(meta_db)
-    # one due schedule + the hourly retention job; the paused connection's schedule is skipped (FR-19)
-    assert first.leader and first.enqueued == 2
+    # one due schedule + the hourly retention and 15-min dashboard jobs; the paused
+    # connection's schedule is skipped (FR-19)
+    assert first.leader and first.enqueued == 3
     second = scheduler.tick(meta_db)
     assert second.enqueued == 0  # schedule advanced; retention bucket already queued
     jobs = sql(
         lens_conninfo, "SELECT job_type, count(*) AS n FROM app.jobs GROUP BY job_type ORDER BY 1"
     )
-    assert jobs == [{"job_type": "noop", "n": 1}, {"job_type": "retention", "n": 1}]
+    assert jobs == [{"job_type": "dashboards_due", "n": 1}, {"job_type": "noop", "n": 1},
+                    {"job_type": "retention", "n": 1}]  # fmt: skip
     nxt = sql(lens_conninfo, "SELECT next_run_at > now() AS future FROM app.schedules WHERE connection_id = %s",
               due)[0]  # fmt: skip
     assert nxt["future"]
@@ -190,7 +192,8 @@ def test_internal_tick_endpoint(client, lens_conninfo):
     r = client.post("/internal/tick", headers={"X-Internal-Token": "tick-secret"})
     assert r.status_code == 200
     body = r.json()
-    assert body["leader"] and body["enqueued"] == 1 and body["jobs_run"] == 1
+    # the hourly retention job and the 15-minute dashboard refresh, both run in the same tick
+    assert body["leader"] and body["enqueued"] == 2 and body["jobs_run"] == 2
 
 
 def test_health_and_readiness(client, lens_conninfo):
