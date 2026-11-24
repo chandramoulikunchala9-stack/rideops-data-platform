@@ -62,7 +62,10 @@ dataset stays local.
 
 1. Cloudflare → Workers & Pages → **Create → Pages → Connect to Git** → the repo.
 2. Build settings: root directory `frontend`, build command `npm ci && npm run build`, output `dist`.
-3. Environment variable: `VITE_API_BASE_URL=https://<service>.onrender.com/api/v1` (baked in at build time).
+3. Environment variables: `API_ORIGIN=https://<service>.onrender.com` and leave `VITE_API_BASE_URL`
+   empty. `frontend/functions/api/[[path]].js` (a Pages Function) proxies `/api/*` to Render, so the app
+   calls its own origin; this is required for Lens sign-in (see the Lens section below). Without Lens,
+   `VITE_API_BASE_URL=https://<service>.onrender.com/api/v1` (baked in at build time) also works.
 4. `frontend/public/_redirects` sends client-side routes such as `/pipelines/x` to `index.html`.
 
 ### Step 4: verify
@@ -73,6 +76,51 @@ python scripts/verify_deployment.py --api https://<service>.onrender.com --web h
 
 All checks must pass, and the dashboard must load data, before the deployment counts as done. Record the
 result in `PROJECT_STATUS.md`.
+
+## Lens (multi-database monitoring) — hosted setup
+
+Lens runs inside the same API service. **Status: prepared and verified locally (18/18 checks with
+`--lens`), not deployed** — it needs your Render, Neon and Cloudflare accounts.
+
+1. **Metadata database (Neon).** Use the same Neon database (schema `app`) or a separate one via
+   `DATABASE_URL`. Migrations run automatically at start-up when `LENS_ENABLED=true`
+   (`python -m rideops_api migrate` by hand).
+2. **Demo connection.** Create a read-only role for the RideOps data only — never the `app` schema:
+   ```sql
+   CREATE ROLE rideops_demo_ro LOGIN PASSWORD '<strong password>' CONNECTION LIMIT 5;
+   GRANT CONNECT ON DATABASE <db> TO rideops_demo_ro;
+   GRANT USAGE ON SCHEMA raw, core, analytics, ops TO rideops_demo_ro;
+   GRANT SELECT ON ALL TABLES IN SCHEMA raw, core, analytics, ops TO rideops_demo_ro;
+   ALTER ROLE rideops_demo_ro SET default_transaction_read_only = on;
+   ```
+   and set `RIDEOPS_DEMO_URL=postgresql://rideops_demo_ro:<password>@<host>/<db>?sslmode=require`.
+3. **Render.** The blueprint (`render.yaml`) already lists the Lens variables. Fill the secret ones:
+   `LENS_MASTER_KEYS` in the form `1:<key>` (generate it with
+   `python -c "import os,base64;print('1:'+base64.b64encode(os.urandom(32)).decode())"` and keep a copy in
+   your password manager — losing it means re-entering every connection password),
+   `INTERNAL_TOKEN` (random), `PUBLIC_APP_URL` (your Pages URL), `DATABASE_URL` if separate.
+4. **Cloudflare Pages.** Leave `VITE_API_BASE_URL` **empty** and set `API_ORIGIN` to the Render URL.
+   `frontend/functions/api/[[path]].js` proxies `/api/*` to Render so the dashboard and API share one
+   origin — required because Lens's session cookie is `SameSite=Lax` and browsers don't send it from
+   `*.pages.dev` to `*.onrender.com`.
+5. **Keep checks running.** Free Render instances sleep. Add repository secrets `LENS_API_URL` and
+   `LENS_INTERNAL_TOKEN`; the `lens-tick` workflow then calls `POST /internal/tick` every 10 minutes.
+6. **Verify.**
+   ```bash
+   python scripts/verify_deployment.py --api https://<service>.onrender.com --web https://<project>.pages.dev --lens
+   ```
+7. **Monitoring.** Scrape `GET /metrics` with `Authorization: Bearer $INTERNAL_TOKEN`. Runbooks:
+   `monitoring/runbooks/lens-*.md`.
+
+**Email** (verification, password reset, invitations, alert emails): `EMAIL_BACKEND=resend` with
+`RESEND_API_KEY` (Resend's free tier), or `EMAIL_BACKEND=smtp` with
+`SMTP_URL=smtps://user:password@host:465` (or `smtp://…:587`, STARTTLS is enforced). Set `EMAIL_FROM` to a
+sender address your provider has verified. If delivery fails, the request still succeeds and the error is
+logged; users can ask for another link.
+
+Known free-tier limits: no persistent disk (SQLite uploads are lost on restart; set `UPLOADS_DIR`
+to a mounted disk or disable uploads), no static egress IPs (firewalled databases can't allowlist
+Lens).
 
 ## Environment variables
 
@@ -86,6 +134,14 @@ result in `PROJECT_STATUS.md`.
 | `ALERT_WEBHOOK_URL` | alerts | Optional Slack/Teams incoming webhook (secret) |
 | `VITE_API_BASE_URL` | frontend build | Absolute API URL when the frontend is hosted separately |
 | `RIDEOPS_DATA_DIR`, `RIDEOPS_SCALE`, `RIDEOPS_SEED` | CLIs | Data generation and loading |
+| `LENS_ENABLED` | API | `true` turns on Lens (runs migrations at start-up) |
+| `DATABASE_URL` | API | Lens metadata DB; empty = the `POSTGRES_*` database |
+| `LENS_MASTER_KEYS` | API | `1:<base64 32 bytes>` (secret; add `2:…` and run `rotate-keys` to rotate) |
+| `INTERNAL_TOKEN` | API, `lens-tick` | Protects `/internal/tick` and `/metrics` (secret) |
+| `PUBLIC_APP_URL` | API | Base URL put in emailed links |
+| `RIDEOPS_DEMO_URL` | API | Read-only demo connection added to new workspaces (secret) |
+| `EMAIL_BACKEND`, `EMAIL_FROM`, `SMTP_URL`, `RESEND_API_KEY` | API | Email delivery (see Lens section) |
+| `API_ORIGIN` | Cloudflare Pages | Render URL the `/api/*` proxy forwards to |
 
 ## Health checks
 

@@ -19,3 +19,6 @@ max-line-length = 120
 # PySpark column expressions read best as one chained line; the formatter still runs everywhere.
 "pipelines/src/rideops/spark/*" = ["E501"]
 "pipelines/tests/spark/*" = ["E501"]
+# Lens database adapters embed fixed catalog SQL per engine; splitting those strings mid-query makes
+# them harder to review against each engine's documentation.
+"backend/src/rideops_api/lens/adapters/*" = ["E501"]

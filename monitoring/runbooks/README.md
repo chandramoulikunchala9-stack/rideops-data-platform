@@ -13,6 +13,11 @@ how to verify, and how to prevent a repeat. Commands assume the repository root 
 | [duplicate-data.md](duplicate-data.md) | `bookings_duplicate_deliveries`, `*_key_unique` | Re-sent files |
 | [delayed-ingestion.md](delayed-ingestion.md) | `stale_ingestion`, `ingestion_freshness` | Source late |
 | [streaming-checkpoint-failure.md](streaming-checkpoint-failure.md) | `StreamingQueryException` | Incompatible checkpoint |
+| [lens-target-down.md](lens-target-down.md) | Lens "Database down" alert | A connected database is unreachable |
+| [lens-worker-backlog.md](lens-worker-backlog.md) | `lens_job_oldest_queued_seconds` > 300 | Free instance asleep, worker crashed |
+| [lens-key-rotation.md](lens-key-rotation.md) | scheduled / key exposure | Rotate `LENS_MASTER_KEYS` |
+| [lens-ssrf-block.md](lens-ssrf-block.md) | `CONN_BLOCKED_NETWORK`, `network.blocked` | Private address or metadata probe |
+| [lens-metadata-db-full.md](lens-metadata-db-full.md) | storage warning on the metadata DB | Retention not running |
 
 **Severity guide:**
 - **SEV1**: customer-facing data is wrong or unavailable.

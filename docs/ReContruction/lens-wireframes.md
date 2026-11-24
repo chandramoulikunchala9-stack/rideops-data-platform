@@ -1,6 +1,6 @@
 # RideOps Lens — Frontend Wireframes & UX Flows
 
-Companion to `docs/lens-system-design.md`. Low-fidelity ASCII wireframes: layout, content, states and interactions. Visual styling comes from the existing `tokens.css` / `app.css`.
+Companion to `docs/ReContruction/lens-system-design.md`. Low-fidelity ASCII wireframes: layout, content, states and interactions. Visual styling comes from the existing `tokens.css` / `app.css`.
 
 **Legend**
 

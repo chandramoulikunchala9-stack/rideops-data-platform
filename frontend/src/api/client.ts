@@ -17,13 +17,27 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: "GET" | "POST", path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+type Method = "GET" | "POST" | "PATCH" | "DELETE";
+
+/** Lens sessions use a cookie plus a CSRF token echoed in a header (double submit). */
+function csrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.split("; ").find((c) => c.startsWith("lens_csrf="));
+  return match ? decodeURIComponent(match.slice("lens_csrf=".length)) : null;
+}
+
+async function request<T>(method: Method, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   let response: Response;
+  const headers: Record<string, string> = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const csrf = method === "GET" ? null : csrfToken();
+  if (csrf) headers["X-CSRF-Token"] = csrf;
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       method,
       signal,
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: Object.keys(headers).length ? headers : undefined,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (error) {
@@ -43,9 +57,28 @@ async function request<T>(method: "GET" | "POST", path: string, body?: unknown, 
   return payload as T;
 }
 
+/** Upload a file as the raw request body (SQLite uploads). */
+export async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/octet-stream", "X-Filename": file.name };
+  const csrf = csrfToken();
+  if (csrf) headers["X-CSRF-Token"] = csrf;
+  const response = await fetch(`${BASE_URL}${path}`, { method: "POST", credentials: "include", headers, body: file });
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const err = (payload as { error?: { code?: string; message?: string } } | null)?.error;
+    throw new ApiError(response.status, err?.code ?? "http_error", err?.message ?? `Upload failed (${response.status})`);
+  }
+  return payload as T;
+}
+
+/** Absolute URL for links the browser opens directly (downloads), using the same API base. */
+export const apiUrl = (path: string) => `${BASE_URL}${path}`;
+
 export const api = {
   get: <T>(path: string, signal?: AbortSignal) => request<T>("GET", path, undefined, signal),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+  patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
+  delete: <T>(path: string) => request<T>("DELETE", path),
 };
 
 /** Build "?a=1&b=2", dropping empty values. */
