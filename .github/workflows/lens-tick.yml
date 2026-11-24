@@ -1,0 +1,26 @@
+# Wakes the free Render instance and runs due Lens checks (design §27): POST /internal/tick every
+# 10 minutes. Configure repository secrets LENS_API_URL (e.g. https://rideops-api.onrender.com) and
+# LENS_INTERNAL_TOKEN (= INTERNAL_TOKEN on Render). Without them the job does nothing.
+name: lens-tick
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /internal/tick
+        env:
+          LENS_API_URL: ${{ secrets.LENS_API_URL }}
+          LENS_INTERNAL_TOKEN: ${{ secrets.LENS_INTERNAL_TOKEN }}
+        run: |
+          if [ -z "$LENS_API_URL" ] || [ -z "$LENS_INTERNAL_TOKEN" ]; then
+            echo "Lens tick secrets not configured; skipping."
+            exit 0
+          fi
+          curl -fsS --retry 3 --retry-delay 20 --max-time 120 -X POST \
+            -H "X-Internal-Token: $LENS_INTERNAL_TOKEN" "$LENS_API_URL/internal/tick"

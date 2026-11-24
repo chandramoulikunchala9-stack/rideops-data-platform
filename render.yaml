@@ -29,3 +29,24 @@ services:
         value: "false"           # public demo: no job execution from the internet
       - key: MONTHLY_BUDGET_USD
         value: "1200"
+      # --- Lens (docs/ReContruction/lens-system-design.md §23, §27) ---
+      - key: LENS_ENABLED
+        value: "true"
+      - key: LENS_ROLE
+        value: all                 # one free instance runs API + worker + scheduler
+      - key: DATABASE_URL
+        sync: false                # Neon metadata DB (schema `app`); empty = POSTGRES_* above
+      - key: LENS_MASTER_KEYS
+        sync: false                # "1:<base64 32 bytes>" - generate locally, never commit
+      - key: INTERNAL_TOKEN
+        sync: false                # protects /internal/tick and /metrics (GitHub Actions cron uses it)
+      - key: RIDEOPS_DEMO_URL
+        sync: false                # read-only role on the RideOps data (never the `app` schema)
+      - key: PUBLIC_APP_URL
+        sync: false                # e.g. https://rideops.pages.dev
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: EMAIL_BACKEND
+        value: console             # until an email provider is wired: links are logged, not sent
+      - key: UPLOADS_DIR
+        value: /tmp/lens-uploads   # free instances have no persistent disk: SQLite uploads are lost on restart
