@@ -103,8 +103,28 @@ def _mysql_up() -> bool:
         return False
 
 
+def _seed_mysql_shop() -> None:
+    """Create the `shop` tables this test reads, so it works against a fresh container (CI)."""
+    import pymysql
+
+    c = pymysql.connect(host="127.0.0.1", port=3307, user="root", password="RootPass-123",
+                        autocommit=True)  # fmt: skip
+    with c.cursor() as cur:
+        cur.execute("CREATE DATABASE IF NOT EXISTS shop")
+        cur.execute("DROP TABLE IF EXISTS shop.orders, shop.customers")
+        cur.execute("CREATE TABLE shop.customers (id INT PRIMARY KEY, email VARCHAR(120))")
+        cur.execute("CREATE TABLE shop.orders (id INT PRIMARY KEY, customer_id INT, status VARCHAR(20), "
+                    "FOREIGN KEY (customer_id) REFERENCES shop.customers(id))")  # fmt: skip
+        cur.execute("INSERT INTO shop.customers VALUES (1, 'a@example.com'), (2, 'b@example.com')")
+        cur.execute(
+            "INSERT INTO shop.orders VALUES (1, 1, 'paid'), (2, 1, 'paid'), (3, 2, 'refunded')"
+        )
+    c.close()
+
+
 @pytest.mark.skipif(not _mysql_up(), reason="MySQL test container not running on 127.0.0.1:3307")
 def test_mysql_connection_end_to_end(client, outbox, meta_db):
+    _seed_mysql_shop()
     ws = owner_ws(client, outbox)
     client.patch(
         f"/api/v1/workspaces/{ws}",
