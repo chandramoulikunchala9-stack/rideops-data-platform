@@ -32,7 +32,14 @@ component, practise the demo in Part 3, and work through the questions in Part 4
 > I also wrote the Databricks version, with an Asset Bundle, Lakeflow jobs with a quality gate, a
 > declarative pipeline, Auto Loader and Unity Catalog permissions, plus Terraform for S3 and IAM and
 > GitHub Actions CI. Those cloud parts are validated locally but not yet deployed to a real account, and
-> I'm explicit about that in the repo."
+> I'm explicit about that in the repo.
+>
+> On top of that I built **RideOps Lens**, a multi-tenant SaaS layer: people sign up, create a workspace,
+> paste a connection URL for PostgreSQL, MySQL, SQL Server, MongoDB or a SQLite file, and get health
+> monitoring, a schema explorer, profiling, a read-only query console, dashboards and alerts. Because it
+> handles other people's credentials, it has Argon2id passwords, server-side sessions with CSRF,
+> role-based access, Postgres Row-Level Security, encrypted secrets with key rotation, and SSRF protection
+> that pins the resolved IP. The background work runs on a Postgres job queue with `SKIP LOCKED`."
 
 ### 1.2 Ten-minute technical walkthrough (structure)
 
@@ -46,6 +53,7 @@ component, practise the demo in Part 3, and work through the questions in Part 4
 | 7–8 | Operations | Run tracker, 31 checks, 6 alert rules (dedup + auto-resolve), incident drill, runbooks |
 | 8–9 | API + UI | Pool, uniform errors, real whitelisted retry; dashboard with validated palette, table views, URL filters |
 | 9–10 | Cloud + CI + honesty | Databricks bundle, Terraform, CI; what is verified vs pending; the bugs found and how |
+| (+3) | Lens | Add a connection by URL (staged test), status + score, schema → profile → query console (DELETE refused), an alert rule firing; then security: RLS, envelope encryption, Network Guard |
 
 ### 1.3 Numbers worth remembering
 
@@ -59,7 +67,8 @@ component, practise the demo in Part 3, and work through the questions in Part 4
 | Analytics queries | 45 named queries in 9 SQL scripts |
 | Index speed-ups (measured) | 48× (composite index), 16× (join indexes), 128× (sargable range) |
 | Generator speed-up after profiling | 98 s → 26 s (orjson, faster IDs, `isoformat`) |
-| Tests | 90 pipelines + 27 API + 15 Spark + 21 frontend |
+| Tests | 90 pipelines + 195 API (incl. Lens) + 15 Spark + 43 frontend |
+| Lens | 98 API operations, 5 engines, adapter contract 25/25, SSRF corpus 100 % blocked, axe-core 0 violations on 14 pages |
 | Dashboard bundle after code splitting | 874 kB → 267 kB initial |
 | Full lakehouse run on an 8 GB laptop | about 1 h 50 m (streaming 92 micro-batches was the bulk) |
 
@@ -71,7 +80,7 @@ component, practise the demo in Part 3, and work through the questions in Part 4
 "It's a monorepo with one folder per deployable part. `pipelines/` is the Python data platform
 package; `backend/` is the FastAPI service, which uses `pipelines` as a library; `frontend/` is the
 React app; `databricks/` is the bundle; `infra/terraform/` is AWS; and `monitoring/` holds runbooks
-and incidents."
+and incidents. Lens lives inside `backend/` and `frontend/`, with its own `app` schema and migrations."
 
 ### 2.2 Synthetic data (`pipelines/src/rideops/generators/`)
 - **Why synthetic?** No real customer data, but realistic patterns: rush hours in IST, a weekend uplift,
@@ -171,6 +180,21 @@ and incidents."
   Spark on Java 17, the frontend build, and Terraform validate. Path filters, concurrency
   cancellation, and least-privilege `GITHUB_TOKEN`.
 
+### 2.11 RideOps Lens (`backend/src/rideops_api/{auth,workspaces,jobs,lens}/`, `frontend/src/lens/`)
+- **Why it exists:** turns a one-company dashboard into a product anyone can point at their own database.
+- **Tenancy:** every route is scoped by workspace and role; Postgres RLS is the second wall, so a missed
+  `WHERE workspace_id` still returns nothing. Other workspaces' resources return 404.
+- **Secrets:** AES-256-GCM envelope encryption, key ring with versions, AAD binds the ciphertext to its
+  workspace and connection, `rotate-keys` re-wraps without downtime.
+- **SSRF:** a connection URL is attacker-controlled input. The Network Guard resolves once, refuses private
+  and metadata ranges, then connects to the pinned IP so DNS rebinding can't switch targets.
+- **Read-only, twice:** sqlglot AST check plus read-only sessions with timeouts and caps.
+- **Jobs:** Postgres queue (`FOR UPDATE SKIP LOCKED`, idempotency keys, backoff, heartbeats, a reaper) and a
+  scheduler elected by an advisory lock; one image runs as API, worker, scheduler or all three.
+- **Engines:** one adapter contract, verified by the same 5 tests against every engine.
+- **Alerts:** rule types for status, metrics, freshness, row drops, schema changes and privileges; de-duplication,
+  two-check auto-resolve, maintenance windows, incidents, HMAC-signed webhooks.
+
 ---
 
 ## Part 3 — Live demo script (8 minutes)
@@ -187,6 +211,9 @@ and incidents."
    how CUR data would arrive labelled.
 8. **Code:** `pipelines/sql/transform/20_core_facts.sql` (MERGE) and `spark/gold.py` (CDF). Then
    `ops.reconcile_lakehouse_daily()` → 0/540.
+9. **Lens** (with `LENS_ENABLED=true`): sign up → the RideOps demo connection turns healthy → schema →
+   profile a table → run a query, then try `DELETE` and show it refused → add a connection to
+   `169.254.169.254` and show `CONN_BLOCKED_NETWORK`.
 
 ---
 
@@ -322,6 +349,8 @@ runs, add authentication to the API, use CUR data for real costs, and add data c
   validate`, moto, local Docker deployment) but not yet run in real cloud accounts. The repo's status
   file labels exactly that."
 - "Spark ran on an 8 GB laptop, so it's slow, but it ran the full dataset end to end and reconciled."
+- "Lens is tested end to end locally and in CI, including real MySQL and MongoDB containers, but the hosted
+  deployment is prepared, not performed."
 
 This framing is a strength: it shows you know the difference between *written*, *tested* and *deployed*.
 
@@ -340,3 +369,8 @@ This framing is a strength: it shows you know the difference between *written*, 
 | Quarantine | a table holding rejected rows plus the reason |
 | ExternalId | protects an IAM role from the confused-deputy problem |
 | OIDC | short-lived cloud credentials for CI without stored keys |
+| RLS | Row-Level Security: Postgres filters rows by a policy, here the current workspace |
+| Envelope encryption | encrypt data with a per-item key, then encrypt that key with a master key |
+| SSRF | server-side request forgery: tricking a server into connecting somewhere internal |
+| CSRF | cross-site request forgery; blocked by echoing a cookie value in a header |
+| SKIP LOCKED | lets many workers claim different queue rows without blocking each other |

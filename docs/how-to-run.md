@@ -1,7 +1,8 @@
 # How to run RideOps (backend and frontend)
 
 This guide starts the whole app on your machine: the PostgreSQL database, the FastAPI backend, the
-landing page and the dashboard. Commands are for **Windows PowerShell**; where macOS or Linux
+landing page and the dashboard, and optionally **RideOps Lens** (sign-in, connect your own databases;
+see [Lens](#lens)). Commands are for **Windows PowerShell**; where macOS or Linux
 differs, the alternative is given in a comment.
 
 Run every command from the **repository root** (the folder with `docker-compose.yml`) unless the
@@ -154,6 +155,7 @@ Invoke-RestMethod http://localhost:8000/api/v1/health    # macOS/Linux: curl htt
 | Backend API (needs Postgres running) | `pytest backend` |
 | Frontend | `cd frontend; npm run lint; npm run typecheck; npm test; npm run build` |
 | Python lint | `ruff check pipelines backend scripts` |
+| Lens only | `pytest backend/tests/lens` (the engine contract tests run for each of MySQL `:3307`, MongoDB `:27018` and SQL Server `:1434` that is reachable; see `.github/workflows/python.yml` for the containers) |
 
 ## 6. Troubleshooting
 
@@ -168,6 +170,94 @@ Invoke-RestMethod http://localhost:8000/api/v1/health    # macOS/Linux: curl htt
 | Vitest says "failed to find the current suite" in Git Bash on Windows | Run `npm test` from PowerShell. Git Bash passes the drive letter in lower case, which loads Vitest twice. |
 | `/app/some-page` shows 404 in production | The host needs the SPA rule: nginx's `location /app/` (in `frontend/nginx.conf`) or Cloudflare's `frontend/public/_redirects`. |
 
+## Lens
+
+Lens adds accounts, workspaces and monitoring of any database you connect. It is off until you enable it.
+
+### 1. Configure `.env`
+
+PostgreSQL connections work with the packages from step 2. To connect MySQL, SQL Server or MongoDB too,
+install the extra drivers (the Docker image already has them):
+
+```powershell
+pip install -e "./backend[engines]"
+```
+
+Generate the master key:
+
+```powershell
+python -c "import os,base64;print('1:'+base64.b64encode(os.urandom(32)).decode())"
+```
+
+Add (or change) these lines in `.env`, pasting the printed key:
+
+```ini
+LENS_ENABLED=true
+LENS_MASTER_KEYS=1:<printed key>         # encrypts saved connection passwords; keep a copy
+SESSION_COOKIE_SECURE=false              # plain http on localhost
+PUBLIC_APP_URL=http://localhost:5173     # Option B: http://localhost:8080
+ALLOW_PRIVATE_NETWORKS=true              # lets you connect databases on localhost / your LAN
+EMAIL_BACKEND=console                    # verification and reset links are printed in the API log
+```
+
+### 2. Optional: the RideOps demo connection
+
+Every new workspace can get a read-only "RideOps demo" connection to the warehouse you loaded in step 3.
+Create a read-only role once (`docker exec -it rideops-postgres psql -U rideops -d rideops`):
+
+```sql
+CREATE ROLE rideops_demo_ro LOGIN PASSWORD 'demo-ro-local-only' CONNECTION LIMIT 5;
+GRANT CONNECT ON DATABASE rideops TO rideops_demo_ro;
+GRANT USAGE ON SCHEMA raw, core, analytics, ops TO rideops_demo_ro;
+GRANT SELECT ON ALL TABLES IN SCHEMA raw, core, analytics, ops TO rideops_demo_ro;
+ALTER ROLE rideops_demo_ro SET default_transaction_read_only = on;
+```
+
+and add to `.env` (use host `postgres` instead of `localhost` for Option B):
+
+```ini
+RIDEOPS_DEMO_URL=postgresql://rideops_demo_ro:demo-ro-local-only@localhost:5432/rideops?sslmode=disable
+```
+
+### 3. Start and sign up
+
+Option A: create the Lens tables once (schema `app`; re-run after pulling new migrations), then restart the backend:
+
+```powershell
+python -m rideops_api migrate
+uvicorn rideops_api.main:app --reload
+```
+
+Option B: run the compose command again; the API container applies the migrations itself at start-up.
+Either way the API starts the Lens worker and scheduler in the same process (`LENS_ROLE=all`). Then:
+
+1. Open http://localhost:5173/app/signup (Option B: http://localhost:8080/app/signup) and create an account.
+2. Copy the verification link from the API log (`Verify your RideOps Lens email`) into the browser.
+3. You land on the **fleet overview** at `/app/lens`. Click **Add connection**, paste a database URL such as
+   `postgresql://user@localhost:5432/mydb` (or `mysql://…`, `sqlserver://…`, `mongodb://…`, or upload a
+   SQLite file), enter the password and run the test. Each stage shows what passed or failed.
+4. Save. The first health check runs within a minute; open the connection for status, schema, profiling,
+   insights, the query console, dashboards and alerts.
+
+| Command | What |
+|---|---|
+| `python -m rideops_api migrate` | apply the Lens migrations by hand |
+| `python -m rideops_api serve --role api` | API without the background threads |
+| `python -m rideops_api worker` / `scheduler` | run the worker or scheduler as separate processes |
+| `python -m rideops_api rotate-keys` | re-encrypt saved secrets after adding a new `2:<key>` to `LENS_MASTER_KEYS` |
+| `python scripts/verify_deployment.py --api http://localhost:8000 --lens` | 9 extra Lens checks (sign-up, CSRF, demo health, SQL guard, SSRF block) |
+
+Lens troubleshooting:
+
+| Problem | Fix |
+|---|---|
+| `/readyz` returns 503 with an error under `keys` | `LENS_MASTER_KEYS` is empty or not `1:<base64 of 32 bytes>` |
+| `/readyz` shows `migrations: at …, expected …` or API errors mention `app.` tables | Run `python -m rideops_api migrate` |
+| Sign-in succeeds but you are sent back to the login page | The browser dropped the session cookie: set `SESSION_COOKIE_SECURE=false` for plain http |
+| Connection test stops at `NETWORK_POLICY` (`CONN_BLOCKED_NETWORK`) | The host is private or loopback. Set `ALLOW_PRIVATE_NETWORKS=true` locally, or add the host to the workspace's egress allowlist |
+| Test stops at `TLS` with `CONN_TLS_REQUIRED` | The URL asks for `sslmode=disable`; a workspace owner must allow insecure connections in workspace settings |
+| No verification email | Expected with `EMAIL_BACKEND=console`: the link is in the API log |
+
 ## Ports at a glance
 
 | Port | What |
@@ -176,7 +266,7 @@ Invoke-RestMethod http://localhost:8000/api/v1/health    # macOS/Linux: curl htt
 | 8000 | FastAPI backend, developer mode |
 | 5173 | Vite dev server: landing page and dashboard |
 | 8001 | FastAPI backend in Docker |
-| 8080 | nginx in Docker: landing page and dashboard |
+| 8080 | nginx in Docker: landing page and dashboard (Lens at `/app/lens`) |
 
 More detail: [local development](local-development.md) (Spark, incident drill), [deployment](deployment.md)
 (hosted setup) and [troubleshooting](troubleshooting.md).

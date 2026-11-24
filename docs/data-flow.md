@@ -71,3 +71,34 @@ flowchart TD
 | App events | 355,970 | 321 funnel rows (day × platform) |
 | Pipeline runs (simulated history) | 938 | + real local runs |
 | Cloud cost line items (simulated) | 2,240 | 2,207 kept |
+
+## Lens: how data moves for a connected database
+
+Lens does not copy users' data. It stores **metadata about** their databases in its own `app` schema and reads
+the databases themselves only on demand, through read-only sessions.
+
+```mermaid
+flowchart TD
+    U["User pastes a URL"] -->|"parse: engine, host, port, db, options"| T["Staged test<br/>DNS → NETWORK_POLICY → TCP → TLS → AUTH<br/>→ DB_SELECT → PRIVILEGES → CAPABILITIES"]
+    T -->|"save (password encrypted, AES-256-GCM)"| C[("app.connections<br/>app.connection_secrets")]
+    C --> S["Scheduler"] -->|"health_check · schema_sync · stats_refresh"| Q[("app.jobs")]
+    Q --> W["Worker → Network Guard → adapter"]
+    W -->|"read-only session"| DB[("User database")]
+    W -->|"status snapshot"| SS[("app.status_snapshots")] -->|"hourly / daily roll-ups"| RU[("app.metric_rollups")]
+    W -->|"tables, columns, indexes, PII flags"| CAT[("app.catalog_*  + schema changes")]
+    W -->|"evaluate rules"| AL[("app.alert_events · app.incidents")] --> N["in-app · email · Slack · webhook"]
+    UQ["Query console / profile / preview"] -->|"guard (read-only) → adapter, row + byte caps"| DB
+    UQ -->|"results kept briefly for CSV export"| QR[("app.query_runs")]
+```
+
+| Data | Kept | Notes |
+|---|---|---|
+| Raw status snapshots | 7 days | `RETENTION_RAW_DAYS`; uptime and charts then come from roll-ups |
+| Hourly / daily roll-ups | 90 / 365 days | `RETENTION_HOURLY_DAYS`, `RETENTION_DAILY_DAYS` |
+| Catalog, schema changes, profiles | while the connection exists | metadata only; profiles use samples |
+| Query results | short-lived, for export | capped rows and bytes; PII masked unless revealed (audited) |
+| Connection secrets | until deleted or rotated | destroyed immediately when a connection is deleted |
+
+The RideOps warehouse appears in Lens only as the **demo connection**: the same read-only path as any
+other database, with the `app` schema and role-password catalogs blocked.
+
