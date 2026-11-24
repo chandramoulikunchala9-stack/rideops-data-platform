@@ -69,7 +69,7 @@ export function ConnectionPage() {
                 <h1 className="title-row">{c.name} <StateBadge state={c.current_state} />
                   {c.health_score != null && <span className="score">Score {c.health_score}</span>}</h1>
                 <p>
-                  {c.server_version ?? ENGINE_LABEL[c.engine]} · <span className="mono">{c.display_url}</span> ·{" "}
+                  {c.server_version ?? ENGINE_LABEL[c.engine]} · <span className="mono break-anywhere">{c.display_url}</span> ·{" "}
                   <span className="env-chip" data-env={c.environment}>{ENV_LABEL[c.environment]}</span>
                 </p>
                 <p className="muted">Checked {timeAgo(c.last_checked_at)} · every {c.check_interval_s / 60} min

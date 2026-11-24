@@ -2,6 +2,8 @@
    per the brand (inherits --radius from the dashboard). Every state colour is paired with text. */
 
 .muted { color: var(--text-muted); }
+.break-anywhere { overflow-wrap: anywhere; }
+.segmented.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
 .hint { margin: 4px 0 0; font-size: 13px; color: var(--text-muted); }
 .form-error {
   margin: 0;

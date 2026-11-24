@@ -99,7 +99,7 @@ export function QueryPage() {
             </Card>
           )}
         </div>
-        <aside className="stack">
+        <aside className="stack" aria-label="Saved queries">
           <Card title="Save query">
             <div className="input-row">
               <input aria-label="Saved query name" placeholder="Name" value={saveName} onChange={(e) => setSaveName(e.target.value)} />

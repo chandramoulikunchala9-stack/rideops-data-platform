@@ -9,14 +9,14 @@ import type { Me, Workspace } from "../types";
 
 function AuthShell({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
   return (
-    <div className="auth-shell">
+    <main className="auth-shell" id="main">
       <div className="auth-card card">
         <p className="auth-brand">RideOps Lens</p>
         <h1>{title}</h1>
         {subtitle && <p className="subtitle">{subtitle}</p>}
         {children}
       </div>
-    </div>
+    </main>
   );
 }
 
