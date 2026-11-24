@@ -5,4 +5,8 @@ from rideops_api.lens.alerts import engine as alerts  # noqa: F401 - alert_eval,
 from rideops_api.lens.catalog import service as catalog  # noqa: F401 - schema_sync, stats_refresh
 from rideops_api.lens.profiling import service as profiling  # noqa: F401 - profile_table
 from rideops_api.lens.queries import service as queries  # noqa: F401 - dashboards_due
-from rideops_api.lens.status import health  # noqa: F401 - health_check
+from rideops_api.lens.security import rotation  # noqa: F401 - kek_rewrap
+from rideops_api.lens.status import (
+    health,  # noqa: F401 - health_check
+    rollups,  # noqa: F401 - rollup
+)

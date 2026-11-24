@@ -41,6 +41,10 @@ def main(argv: list[str] | None = None) -> int:
     serve.add_argument("--role", choices=["all", "api"])
     sub.add_parser("worker")
     sub.add_parser("scheduler")
+    sub.add_parser(
+        "rotate-keys", help="re-wrap every stored secret with the active LENS_MASTER_KEYS version"
+    )
+    sub.add_parser("rollup", help="recompute hourly/daily metric roll-ups now")
     args = parser.parse_args(argv)
     configure_logging(get_settings().log_level)
     log = logging.getLogger("rideops_api")
@@ -66,6 +70,34 @@ def main(argv: list[str] | None = None) -> int:
         from rideops_api.jobs import scheduler
 
         _run_loop(lambda db, stop, s: scheduler.run_forever(db, stop, s.scheduler_interval_s))
+    elif args.command in ("rotate-keys", "rollup"):
+        from rideops_api.db import Database
+        from rideops_api.settings import get_lens_settings
+
+        settings = get_lens_settings()
+        db = Database(conninfo=settings.metadata_conninfo())
+        db.open()
+        try:
+            if args.command == "rollup":
+                from rideops_api.lens.status import rollups
+
+                log.info("Roll-ups: %s", rollups.rollup(db, settings))
+            else:
+                from rideops_api.lens.security import rotation
+
+                total: dict[str, int] = {}
+                while True:
+                    done = rotation.rewrap_all(db, settings)
+                    total = {k: total.get(k, 0) + v for k, v in done.items()}
+                    if not any(done.values()):
+                        break
+                log.info(
+                    "Re-wrapped %s; %d secrets still on old key versions",
+                    total,
+                    rotation.remaining(db, settings),
+                )
+        finally:
+            db.close()
     return 0
 
 

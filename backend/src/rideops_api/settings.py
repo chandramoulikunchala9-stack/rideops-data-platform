@@ -51,6 +51,12 @@ class LensSettings(BaseSettings):
     upload_max_bytes: int = 200 * 1024 * 1024
 
     rate_limit_per_minute: int = 600  # §13.9 "everything else", per user session (or IP)
+    # Retention (§12, F-PL-2) and free-plan quotas (§20)
+    retention_raw_days: int = 7
+    retention_hourly_days: int = 90
+    retention_daily_days: int = 365
+    free_plan_max_connections: int = 10  # live, non-demo connections per workspace
+    free_plan_min_interval_s: int = 300
 
     worker_poll_interval_s: float = 1.0
     scheduler_interval_s: float = 15.0

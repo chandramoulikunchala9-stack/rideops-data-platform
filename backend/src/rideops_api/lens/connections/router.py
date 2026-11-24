@@ -21,6 +21,7 @@ from rideops_api.lens.adapters.registry import (
 from rideops_api.lens.connections import schemas as s
 from rideops_api.lens.connections import service, url_parser
 from rideops_api.lens.security.crypto import DecryptError, KeyRingError
+from rideops_api.lens.status import rollups
 from rideops_api.lens.status.health import uptime
 from rideops_api.workspaces.deps import WorkspaceContext, require
 
@@ -86,6 +87,23 @@ def _test_out(
                      stages=[s.StageOut(**st.as_dict()) for st in result.stages],
                      capabilities=sorted(result.capabilities), privilege_findings=result.privilege_findings,
                      grant_script=script)  # fmt: skip
+
+
+def check_quota(
+    conn, ctx: WorkspaceContext, settings, *, new_connection: bool, interval_s: int | None
+) -> None:
+    """Free-plan quotas (§20): live, non-demo connections per workspace and the minimum interval."""
+    if ctx.workspace.get("plan", "free") != "free":
+        return
+    if interval_s is not None and interval_s < settings.free_plan_min_interval_s:
+        raise ApiError(403, "QUOTA_EXCEEDED", f"The free plan checks every {settings.free_plan_min_interval_s // 60} "
+                       "minutes at most often.", {"min_interval_s": settings.free_plan_min_interval_s})  # fmt: skip
+    if new_connection:
+        n = conn.execute("SELECT count(*) AS n FROM app.connections WHERE workspace_id = %s "
+                         "AND deleted_at IS NULL AND NOT is_demo", (ctx.workspace_id,)).fetchone()["n"]  # fmt: skip
+        if n >= settings.free_plan_max_connections:
+            raise ApiError(403, "QUOTA_EXCEEDED", f"The free plan allows {settings.free_plan_max_connections} "
+                           "connections per workspace.", {"limit": settings.free_plan_max_connections})  # fmt: skip
 
 
 def _check_test_rate(conn, ws) -> None:
@@ -182,6 +200,7 @@ def create_connection(body: s.ConnectionCreate, ctx: Editor, request: Request, d
         draft = service.resolve_draft(body.draft.model_dump(exclude={"secret"}),
                                       body.draft.secret.model_dump(exclude_none=True))  # fmt: skip
         with db.tenant_transaction(ctx.workspace_id) as conn:
+            check_quota(conn, ctx, settings, new_connection=True, interval_s=body.check_interval_s)
             test = _verified_test(conn, ctx, body.test_id, draft, settings, connection_id=None,
                                   force_reason=body.force_reason, request=request)  # fmt: skip
             taken = conn.execute(
@@ -245,12 +264,16 @@ def get_connection(connection_id: UUID, ctx: Viewer, db: MetaDbDep) -> s.Connect
 
 @router.patch("/workspaces/{ws}/connections/{connection_id}", response_model=s.ConnectionOut)
 def update_connection(connection_id: UUID, body: s.ConnectionPatch, ctx: Editor, request: Request,
-                      db: MetaDbDep) -> s.ConnectionOut:  # fmt: skip
+                      db: MetaDbDep, settings: LensSettingsDep) -> s.ConnectionOut:  # fmt: skip
     """Name, environment, tags, colour, interval. Host/port/database/TLS/user changes go through
     rotate-secret, which re-tests first (FR-18)."""
     changes = body.model_dump(exclude_unset=True)
     with db.tenant_transaction(ctx.workspace_id) as conn:
         row = _get(conn, ctx.workspace_id, connection_id)
+        if "check_interval_s" in changes:
+            check_quota(
+                conn, ctx, settings, new_connection=False, interval_s=changes["check_interval_s"]
+            )
         if row["is_demo"] and ("environment" in changes):
             raise ApiError(
                 422, "validation_error", "The demo connection's environment can't change."
@@ -511,6 +534,7 @@ def status_history(
     connection_id: UUID,
     ctx: Viewer,
     db: MetaDbDep,
+    settings: LensSettingsDep,
     from_: Annotated[datetime | None, Query(alias="from")] = None,
     to: datetime | None = None,
     grain: Literal["raw", "hour", "day"] = "raw",
@@ -530,17 +554,10 @@ def status_history(
                     ORDER BY taken_at LIMIT 5000""",
                 (connection_id, from_, to),
             ).fetchall()
-        else:
-            rows = conn.execute(
-                """SELECT date_trunc(%s, taken_at) AS at, avg(latency_ms) AS latency_ms,
-                          avg(health_score) AS health_score,
-                          count(*) FILTER (WHERE state IN ('healthy', 'degraded')) AS up_checks,
-                          count(*) FILTER (WHERE state <> 'paused') AS total_checks
-                     FROM app.status_snapshots
-                    WHERE connection_id = %s AND taken_at >= %s AND taken_at < %s
-                    GROUP BY 1 ORDER BY 1""",
-                (grain, connection_id, from_, to),
-            ).fetchall()
+        else:  # raw rows for recent buckets, hourly roll-ups for older ones
+            rows = rollups.checks_by_bucket(
+                conn, connection_id, grain, from_, to, settings.retention_raw_days
+            )
     return [s.HistoryPoint(**r) for r in rows]
 
 
@@ -552,20 +569,15 @@ WINDOWS = {
 
 
 @router.get("/workspaces/{ws}/connections/{connection_id}/uptime", response_model=s.UptimeOut)
-def uptime_bars(connection_id: UUID, ctx: Viewer, db: MetaDbDep,
+def uptime_bars(connection_id: UUID, ctx: Viewer, db: MetaDbDep, settings: LensSettingsDep,
                 window: Literal["24h", "7d", "30d"] = "24h") -> s.UptimeOut:  # fmt: skip
     span, grain = WINDOWS[window]
+    end = datetime.now(timezone.utc)
     with db.tenant_transaction(ctx.workspace_id) as conn:
         _get(conn, ctx.workspace_id, connection_id)
-        rows = conn.execute(
-            """SELECT date_trunc(%s, taken_at) AS start,
-                      count(*) FILTER (WHERE state IN ('healthy', 'degraded')) AS up,
-                      count(*) FILTER (WHERE state <> 'paused') AS total
-                 FROM app.status_snapshots
-                WHERE connection_id = %s AND taken_at > now() - %s
-                GROUP BY 1 ORDER BY 1""",
-            (grain, connection_id, span),
-        ).fetchall()
+        rows = [{"start": r["at"], "up": r["up_checks"], "total": r["total_checks"]}
+                for r in rollups.checks_by_bucket(conn, connection_id, grain, end - span, end,
+                                                  settings.retention_raw_days)]  # fmt: skip
     up, total = sum(r["up"] for r in rows), sum(r["total"] for r in rows)
     bars = [{"start": r["start"], "checks": r["total"],
              "uptime_pct": round(100.0 * r["up"] / r["total"], 2) if r["total"] else None} for r in rows]  # fmt: skip

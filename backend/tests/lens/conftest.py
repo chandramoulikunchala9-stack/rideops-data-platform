@@ -64,7 +64,8 @@ def outbox() -> MemoryEmailSender:
 def lens_settings() -> LensSettings:
     return LensSettings(lens_enabled=True, lens_role="api", session_cookie_secure=True,
                         email_backend="memory", internal_token="tick-secret",
-                        public_app_url="https://lens.test", lens_master_keys=TEST_KEYS)  # fmt: skip
+                        public_app_url="https://lens.test", lens_master_keys=TEST_KEYS,
+                        free_plan_min_interval_s=60)  # fmt: skip
 
 
 @pytest.fixture(scope="session")
