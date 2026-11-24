@@ -248,3 +248,10 @@ def test_deltas_from_cumulative_counters():
         and "tx.rollbacks_per_s" not in out
     )
     assert "deadlocks.delta" not in scoring.with_deltas(cur, None, None)
+
+
+def test_short_server_version():
+    from rideops_api.lens.adapters.postgres import short_version
+
+    assert short_version("16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)") == "PostgreSQL 16.15"
+    assert short_version("17.5") == "PostgreSQL 17.5"

@@ -32,6 +32,7 @@ SESSION_OPTIONS = (
 LONG_QUERY_MINUTES = 5
 QUERY_TEXT_MAX = 300
 
+_VERSION = re.compile(r"\d+(?:\.\d+)*")
 _STRING_LITERAL = re.compile(r"'(?:[^']|'')*'")
 _NUMBER_LITERAL = re.compile(r"\b\d+(?:\.\d+)?\b")
 
@@ -42,6 +43,12 @@ def mask_query(text: str | None) -> str | None:
         return None
     masked = _NUMBER_LITERAL.sub("?", _STRING_LITERAL.sub("'…'", text))
     return masked[:QUERY_TEXT_MAX] + ("…" if len(masked) > QUERY_TEXT_MAX else "")
+
+
+def short_version(raw: str) -> str:
+    """'16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)' → 'PostgreSQL 16.15'."""
+    match = _VERSION.match(raw or "")
+    return f"PostgreSQL {match.group(0) if match else raw}"
 
 
 def classify(exc: Exception) -> AdapterError:
@@ -191,7 +198,7 @@ class PostgresAdapter(DatabaseAdapter):
                 row = conn.execute("SELECT current_database() AS db, version() AS version, "
                                    "current_setting('server_version') AS short").fetchone()  # fmt: skip
                 stages.append(StageResult("DB_SELECT", True, sw.ms, f"Database {row['db']}"))
-                version = f"PostgreSQL {row['short']}"
+                version = short_version(row["short"])
 
                 sw = Stopwatch()
                 findings = self._privilege_findings(conn)
@@ -370,7 +377,7 @@ class PostgresAdapter(DatabaseAdapter):
             "in_recovery": base["in_recovery"],
         }  # fmt: skip
         return StatusSnapshot(taken_at=now(), reachable=True, latency_ms=latency_ms,
-                              server_version=f"PostgreSQL {base['version']}", uptime_s=base["uptime_s"],
+                              server_version=short_version(base["version"]), uptime_s=base["uptime_s"],
                               db_size_bytes=base["size"], metrics=metrics, details=details,
                               unavailable=unavailable)  # fmt: skip
 

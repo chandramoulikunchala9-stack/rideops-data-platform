@@ -410,7 +410,9 @@ def test_demo_connection_seeded_on_signup(meta_db, outbox, lens_settings, lens_c
         assert PG.password.get_secret_value() not in str(conns)
         Worker(meta_db, settings=settings).drain(50)
         st = c.get(f"/api/v1/workspaces/{ws}/connections/{conns[0]['id']}/status").json()
-        assert st["latest"] is None or st["latest"]["reachable"]
+        # Seeding queues a first check, so the demo never sits at "unknown / never checked".
+        assert st["latest"] is not None and st["latest"]["reachable"]
+        assert st["connection"]["current_state"] in ("healthy", "degraded")
         # A second workspace gets its own demo; re-seeding is idempotent.
         ws2 = c.post("/api/v1/workspaces", json={"name": "Second"}).json()["id"]
         assert len(c.get(f"/api/v1/workspaces/{ws2}/connections").json()) == 1

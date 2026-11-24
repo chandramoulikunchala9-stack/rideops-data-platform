@@ -253,7 +253,7 @@ def seed_demo_connection(conn: psycopg.Connection, workspace_id: Any, settings: 
     from rideops_api.lens.adapters.base import Capability  # local: avoid widening module imports
 
     caps = sorted(get_adapter_class(draft.engine).capabilities - {Capability.SLOW_QUERIES})
-    return insert_connection(
+    row = insert_connection(
         conn,
         workspace_id=workspace_id,
         draft=draft,
@@ -268,6 +268,11 @@ def seed_demo_connection(conn: psycopg.Connection, workspace_id: Any, settings: 
         keyring=keyring_for(settings),
         is_demo=True,
     )
+    from rideops_api.jobs import queue  # local: the queue imports the job registry
+
+    queue.enqueue(conn, "health_check", connection_id=row["id"], workspace_id=workspace_id,
+                  idempotency_key=f"health_check:{row['id']}:initial")  # fmt: skip
+    return row
 
 
 def seed_demo_safely(

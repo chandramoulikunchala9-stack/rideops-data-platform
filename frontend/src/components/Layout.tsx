@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 
 import type { Health } from "../api/types";
 import { useApi } from "../api/useApi";
+import { useLens } from "../lens/LensContext";
 import { Icon, type IconName } from "./Icon";
 
 interface NavItem {
@@ -52,6 +53,7 @@ function readTheme(): Theme {
 export function Layout() {
   const [theme, setTheme] = useState<Theme>(readTheme);
   const health = useApi<Health>("/health");
+  const lens = useLens();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -89,6 +91,21 @@ export function Layout() {
               ))}
             </div>
           ))}
+          {lens.status !== "disabled" && lens.status !== "loading" && (
+            <div className="nav-group">
+              <p className="nav-group-label">Lens</p>
+              <NavLink to="/lens" end>
+                <Icon name="sources" />
+                Databases
+              </NavLink>
+              {lens.status === "signed_in" && lens.can("editor") && (
+                <NavLink to="/lens/connections/new">
+                  <Icon name="layers" />
+                  Add connection
+                </NavLink>
+              )}
+            </div>
+          )}
           <div className="nav-group">
             <NavLink to="/settings">
               <Icon name="settings" />
@@ -97,6 +114,28 @@ export function Layout() {
           </div>
         </nav>
         <div className="sidebar-footer">
+          {lens.status === "signed_in" && lens.me && (
+            <div className="account">
+              <span className="account-name">{lens.me.user.display_name}</span>
+              {lens.me.memberships.length > 1 ? (
+                <div className="field">
+                  <label htmlFor="workspace">Workspace</label>
+                  <select id="workspace" value={lens.workspace?.workspace_id ?? ""}
+                          onChange={(e) => lens.setWorkspace(e.target.value)}>
+                    {lens.me.memberships.map((m) => (
+                      <option key={m.workspace_id} value={m.workspace_id}>{m.name} ({m.role})</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <span className="api-meta">{lens.workspace?.name} · {lens.workspace?.role}</span>
+              )}
+              <button type="button" className="btn small" onClick={() => void lens.signOut()}>Log out</button>
+            </div>
+          )}
+          {lens.status === "signed_out" && (
+            <NavLink className="btn small" to="/login">Log in to Lens</NavLink>
+          )}
           <div className="api-status" role="status" data-state={apiState}>
             <span className="api-dot" aria-hidden="true" />
             <span>
