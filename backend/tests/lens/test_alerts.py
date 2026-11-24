@@ -17,7 +17,7 @@ from rideops_api.lens.status.health import check_connection
 from rideops_api.notifications.email import make_sender
 from rideops_api.settings import LensSettings
 from tests.lens.conftest import TEST_KEYS, sql
-from tests.lens.test_connections import SECRET, create, owner_ws
+from tests.lens.test_connections import SECRET, create, owner_ws, ws_settings
 
 SETTINGS = LensSettings(lens_master_keys=TEST_KEYS, email_backend="memory")
 
@@ -77,8 +77,8 @@ def check(meta_db, cid, times=1):
 @pytest.fixture
 def setup(client, outbox, meta_db, hook):
     ws = owner_ws(client, outbox)
-    r = client.patch(f"/api/v1/workspaces/{ws}", json={"settings": {"egress_allowlist": ["localhost", "127.0.0.1"],
-                                                                     "allowed_ports": [hook.port]}})  # fmt: skip
+    settings = ws_settings(egress_allowlist=["localhost", "127.0.0.1"], allowed_ports=[hook.port])
+    r = client.patch(f"/api/v1/workspaces/{ws}", json={"settings": settings})
     assert r.status_code == 200
     cid = create(client, ws, name="Orders DB")["id"]
     drain(meta_db)

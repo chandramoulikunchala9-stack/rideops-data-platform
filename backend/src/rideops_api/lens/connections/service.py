@@ -344,8 +344,12 @@ def target_config(
     if row["engine"] == "sqlite":
         options["path"] = upload_path(settings, row["workspace_id"], row["database"])
     else:
-        if row["tls_mode"] == "disable" and not workspace_settings.get(
-            "allow_insecure_connections", False
+        # The demo URL is set by the operator (it may be a local Postgres without TLS), so the
+        # workspace opt-in for insecure connections applies only to user-added connections.
+        if (
+            row["tls_mode"] == "disable"
+            and not row["is_demo"]
+            and not workspace_settings.get("allow_insecure_connections", False)
         ):
             raise TargetUnavailable(
                 "CONN_TLS_REQUIRED", "Insecure connections are disabled for this workspace."

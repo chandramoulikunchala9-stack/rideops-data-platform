@@ -26,7 +26,7 @@ from rideops_api.lens.adapters.base import ConnectionConfig, Engine, Secret
 from rideops_api.lens.adapters.registry import ADAPTERS
 from rideops_api.lens.profiling.service import profile_column
 from rideops_api.lens.queries import service as queries
-from tests.lens.conftest import TEST_DB
+from tests.lens.conftest import PG_SSLMODE, TEST_DB
 
 N = 2000
 
@@ -135,7 +135,7 @@ def _engines(tmp_dir) -> dict:
                 TEST_DB,
                 pg.user,
                 {},
-                "require",
+                PG_SSLMODE,
                 "127.0.0.1",
             ),
             secret=Secret(password=pg.password.get_secret_value()),

@@ -26,6 +26,19 @@ TEST_KEYS = (
 )
 
 
+def _server_sslmode() -> str:
+    """TLS mode for target connections to the test server: `require` when it has TLS on, else
+    `disable` (CI's postgres service container has no certificate). Lens itself defaults to require."""
+    try:
+        with psycopg.connect(PostgresSettings().conninfo(), connect_timeout=3) as conn:
+            return "require" if conn.execute("SHOW ssl").fetchone()[0] == "on" else "disable"
+    except (psycopg.OperationalError, ValueError):
+        return "require"
+
+
+PG_SSLMODE = _server_sslmode()
+
+
 def pytest_collection_modifyitems(items):
     for item in items:
         if "tests/lens" in item.nodeid.replace("\\", "/"):

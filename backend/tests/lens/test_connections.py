@@ -10,16 +10,23 @@ from fastapi.testclient import TestClient
 from rideops.config import PostgresSettings
 from rideops_api.jobs.worker import Worker
 from rideops_api.main import create_app
-from tests.lens.conftest import TEST_DB, TEST_KEYS, signup, sql, unique_email
+from tests.lens.conftest import PG_SSLMODE, TEST_DB, TEST_KEYS, signup, sql, unique_email
 
 PG = PostgresSettings()
-TARGET_URL = f"postgresql://{PG.user}@localhost:{PG.port}/{TEST_DB}?sslmode=require"
+TARGET_URL = f"postgresql://{PG.user}@localhost:{PG.port}/{TEST_DB}?sslmode={PG_SSLMODE}"
 SECRET = {"password": PG.password.get_secret_value()}
 
 
 def _token(outbox, to: str) -> str:
     mail = next(m for m in reversed(outbox.outbox) if m.to == to)
     return re.search(r"token=([\w-]+)", mail.body).group(1)
+
+
+def ws_settings(**settings) -> dict:
+    """Workspace settings for tests; a test server without TLS (CI) needs the owner's opt-in."""
+    if PG_SSLMODE == "disable":
+        settings.setdefault("allow_insecure_connections", True)
+    return settings
 
 
 def owner_ws(client, outbox, *, allow_localhost: bool = True) -> str:
@@ -31,10 +38,10 @@ def owner_ws(client, outbox, *, allow_localhost: bool = True) -> str:
         == 200
     )
     ws = me["current_workspace_id"]
-    if allow_localhost:  # the workspace egress allowlist is how an owner permits a private host
-        r = client.patch(
-            f"/api/v1/workspaces/{ws}", json={"settings": {"egress_allowlist": ["localhost"]}}
-        )
+    # The workspace egress allowlist is how an owner permits a private host.
+    settings = ws_settings(egress_allowlist=["localhost"] if allow_localhost else [])
+    if settings != {"egress_allowlist": []}:
+        r = client.patch(f"/api/v1/workspaces/{ws}", json={"settings": settings})
         assert r.status_code == 200, r.text
     return ws
 
@@ -119,12 +126,14 @@ def test_staged_test_failures(client, outbox):
     }
     nodb = test_draft(client, ws, url=TARGET_URL.replace(TEST_DB, "no_such_db"))
     assert nodb["stages"][-1]["code"] == "CONN_DB_NOT_FOUND"
+    port = test_draft(client, ws, url=TARGET_URL.replace(f":{PG.port}/", ":2222/"))
+    assert port["stages"][-1]["code"] == "CONN_PORT_NOT_ALLOWED"
+    strict = {"egress_allowlist": ["localhost"], "allow_insecure_connections": False}
+    assert client.patch(f"/api/v1/workspaces/{ws}", json={"settings": strict}).status_code == 200
     insecure = test_draft(client, ws, tls_mode="disable")
     assert (
         insecure["stages"][-1]["code"] == "CONN_TLS_REQUIRED"
     )  # FR-14: insecure needs owner opt-in
-    port = test_draft(client, ws, url=TARGET_URL.replace(f":{PG.port}/", ":2222/"))
-    assert port["stages"][-1]["code"] == "CONN_PORT_NOT_ALLOWED"
     from rideops_api.lens.adapters import registry
 
     saved = registry.ADAPTERS.pop("mysql")  # simulate a server installed without the MySQL extra
@@ -403,7 +412,7 @@ def test_row_level_security_blocks_cross_tenant_reads(client, new_client, outbox
 
 
 def test_demo_connection_seeded_on_signup(meta_db, outbox, lens_settings, lens_conninfo):
-    demo_url = f"postgresql://{PG.user}:{PG.password.get_secret_value()}@localhost:{PG.port}/{TEST_DB}?sslmode=require"
+    demo_url = f"postgresql://{PG.user}:{PG.password.get_secret_value()}@localhost:{PG.port}/{TEST_DB}?sslmode={PG_SSLMODE}"
     settings = lens_settings.model_copy(
         update={"rideops_demo_url": __import__("pydantic").SecretStr(demo_url)}
     )

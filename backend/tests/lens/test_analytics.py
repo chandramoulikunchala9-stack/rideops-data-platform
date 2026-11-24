@@ -12,7 +12,7 @@ from rideops_api.lens.catalog import detect
 from rideops_api.lens.catalog.service import diff
 from rideops_api.lens.queries import sqlguard
 from rideops_api.settings import LensSettings
-from tests.lens.conftest import TEST_DB, TEST_KEYS, sql
+from tests.lens.conftest import PG_SSLMODE, TEST_DB, TEST_KEYS, sql
 from tests.lens.test_connections import create, owner_ws
 
 PG = PostgresSettings()
@@ -150,7 +150,7 @@ def test_sql_guard_corpus_is_fully_enforced():
 def test_database_layer_rejects_writes_even_without_the_guard(lens_conninfo, shop):
     """Layer 2 (§18.5): the adapter's session is read-only, so a write that slipped past the guard fails."""
     cfg = ConnectionConfig(
-        None, Engine.POSTGRES, "localhost", PG.port, TEST_DB, PG.user, {}, "require", "127.0.0.1"
+        None, Engine.POSTGRES, "localhost", PG.port, TEST_DB, PG.user, {}, PG_SSLMODE, "127.0.0.1"
     )
     adapter = PostgresAdapter(cfg, Secret(password=PG.password.get_secret_value()))
     with adapter.connect() as t:
@@ -194,7 +194,8 @@ def test_insights(client, ready):
     assert ("FK_WITHOUT_INDEX", "shop.orders(customer_id)") in codes
     assert ("TABLE_STALE", "shop.events_log") in codes  # newest row 30 days old
     assert ("OVER_PRIVILEGED_ROLE", "") in codes  # the test role is a superuser
-    assert ("TLS_WEAK", "") in codes  # prod + tls require
+    if PG_SSLMODE == "require":
+        assert ("TLS_WEAK", "") in codes  # prod + tls require
     first = client.get(f"{base(ws, cid)}/insights").json()[0]
     assert client.post(f"/api/v1/workspaces/{ws}/insights/{first['id']}/dismiss").status_code == 200
     assert first["id"] not in {i["id"] for i in client.get(f"{base(ws, cid)}/insights").json()}
@@ -391,7 +392,7 @@ def test_demo_connection_never_exposes_lens_metadata(meta_db, outbox, lens_setti
     from rideops_api.main import create_app
     from tests.lens.conftest import signup
 
-    demo_url = f"postgresql://{PG.user}:{PG.password.get_secret_value()}@localhost:{PG.port}/{TEST_DB}?sslmode=require"
+    demo_url = f"postgresql://{PG.user}:{PG.password.get_secret_value()}@localhost:{PG.port}/{TEST_DB}?sslmode={PG_SSLMODE}"
     settings = lens_settings.model_copy(update={"rideops_demo_url": SecretStr(demo_url)})
     app = create_app(db=meta_db, meta_db=meta_db, lens_settings=settings, email_sender=outbox)
     with TestClient(app, base_url="https://testserver") as c:
