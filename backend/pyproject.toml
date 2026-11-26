@@ -28,9 +28,9 @@ dependencies = [
 [project.optional-dependencies]
 # Database drivers for Lens adapters (§7.1). PostgreSQL (psycopg) and SQLite (stdlib) are built in.
 mysql = ["PyMySQL==1.1.2"]
-mssql = ["pymssql==2.3.13"]
+mssql = ["pymssql==2.4.6"]
 mongo = ["pymongo==4.18.3"]
-engines = ["PyMySQL==1.1.2", "pymssql==2.3.13", "pymongo==4.18.3"]  # newest PyMongo for Python 3.10
+engines = ["PyMySQL==1.1.2", "pymssql==2.4.6", "pymongo==4.18.3"]  # newest PyMongo for Python 3.10
 dev = [
     "pytest==9.2.0",
     "ruff==0.17.5",
