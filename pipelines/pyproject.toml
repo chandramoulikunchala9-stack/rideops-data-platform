@@ -25,12 +25,12 @@ spark = [
 ]
 # AWS S3 storage backend and Cost and Usage Report loader.
 aws = [
-    "boto3==1.44.6",
+    "boto3==1.44.9",
 ]
 dev = [
     "pytest==9.2.0",
     "ruff==0.17.5",
-    "boto3==1.44.6",
+    "boto3==1.44.9",
     "moto[s3]==5.2.5",
 ]
 
