@@ -1,7 +1,10 @@
 // Formatting helpers: one place decides how numbers, money, dates and durations look.
 
-const compact = new Intl.NumberFormat("en-IN", { notation: "compact", maximumFractionDigits: 1 });
-const integer = new Intl.NumberFormat("en-IN");
+// Lens is used anywhere, so counts group in thousands (120,331). Rupee amounts on the demo
+// warehouse reports keep Indian grouping (₹1.2L), which is how that data is read.
+const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+const compactInr = new Intl.NumberFormat("en-IN", { notation: "compact", maximumFractionDigits: 1 });
+const integer = new Intl.NumberFormat("en-US");
 
 export const formatInt = (n: number | null | undefined) => (n == null ? "–" : integer.format(n));
 
@@ -12,7 +15,7 @@ export const formatInr = (n: number | null | undefined, digits = 0) =>
     ? "–"
     : new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: digits }).format(n);
 
-export const formatInrCompact = (n: number | null | undefined) => (n == null ? "–" : `₹${compact.format(n)}`);
+export const formatInrCompact = (n: number | null | undefined) => (n == null ? "–" : `₹${compactInr.format(n)}`);
 
 export const formatUsd = (n: number | null | undefined, digits = 2) =>
   n == null

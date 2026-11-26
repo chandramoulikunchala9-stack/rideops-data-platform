@@ -14,7 +14,7 @@ export function RequireLens({ children }: { children: ReactNode }) {
     return (
       <div className="state">
         <h1>Lens is not enabled</h1>
-        <p>This server runs the RideOps dashboard only. Set <code>LENS_ENABLED=true</code> on the API to connect your own databases.</p>
+        <p>This server runs the demo warehouse reports only. Set <code>LENS_ENABLED=true</code> on the API to connect your own databases.</p>
       </div>
     );
   }

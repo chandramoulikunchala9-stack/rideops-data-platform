@@ -4,11 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { query } from "../../api/client";
 import { useApi } from "../../api/useApi";
 import { AsyncView } from "../../components/AsyncView";
+import { Icon } from "../../components/Icon";
 import { Card, KpiCard } from "../../components/Card";
 import { useLens } from "../LensContext";
 import { Sparkline } from "../components/Sparkline";
 import { StateBadge } from "../components/StateBadge";
-import { ENGINE_LABEL, ENV_LABEL, STATE_META, STATE_ORDER, timeAgo } from "../status";
+import { ENGINE_LABEL, ENV_LABEL, STATE_META, STATE_ORDER, formatSince, timeAgo } from "../status";
 import type { Connection, ConnState, FleetOverview } from "../types";
 
 const POLL_MS = 30_000;
@@ -35,10 +36,18 @@ function Onboarding({ connections }: { connections: Connection[] }) {
   });
   const demo = connections.find((c) => c.is_demo);
   const own = connections.some((c) => !c.is_demo);
+  // The demo step only exists when this server has a demo warehouse; it is done once opened.
+  const demoSeen = (() => {
+    try {
+      return localStorage.getItem("lens-demo-explored") === "1";
+    } catch {
+      return false;
+    }
+  })();
   const steps = [
     { done: true, label: "Create account" },
     { done: Boolean(me?.user.email_verified), label: "Verify your email (needed before adding connections)" },
-    { done: Boolean(demo), label: "Explore the RideOps demo database", to: demo ? `/lens/connections/${demo.id}` : undefined },
+    ...(demo ? [{ done: demoSeen, label: "Explore the demo warehouse", to: `/lens/connections/${demo.id}` }] : []),
     { done: own, label: "Connect your own database", to: can("editor") ? "/lens/connections/new" : undefined },
   ];
   const complete = steps.filter((s) => s.done).length;
@@ -52,13 +61,14 @@ function Onboarding({ connections }: { connections: Connection[] }) {
       <ul className="checklist">
         {steps.map((s) => (
           <li key={s.label} data-done={s.done}>
-            <span aria-hidden="true">{s.done ? "✔" : "○"}</span> {s.label}
+            <span className="checklist-mark" aria-hidden="true">{s.done ? <Icon name="check" size={14} /> : null}</span>
+            <span className="sr-only">{s.done ? "Done: " : "To do: "}</span>{s.label}
             {!s.done && s.to && <> · <Link to={s.to}>Start</Link></>}
             {s.done && s.to && <> · <Link to={s.to}>Open</Link></>}
           </li>
         ))}
       </ul>
-      <p className="notice">Tip: use a <strong>read-only</strong> database user. The wizard shows the exact SQL to create one.</p>
+      <p className="notice"><span>Tip: use a <strong>read-only</strong> database user. The wizard shows the exact SQL to create one.</span></p>
     </Card>
   );
 }
@@ -97,7 +107,7 @@ export function FleetPage() {
       </header>
       <div className="stack">
         <div className="grid four">
-          <KpiCard label="Healthy" value={counts.healthy ?? 0} tone="good" />
+          <KpiCard label="Healthy" value={counts.healthy ?? 0} tone={counts.healthy ? "good" : undefined} />
           <KpiCard label="Degraded" value={counts.degraded ?? 0} tone={counts.degraded ? "warning" : undefined} />
           <KpiCard label="Down or failing" value={down} tone={down ? "critical" : undefined} />
           <KpiCard label="Paused / unknown" value={(counts.paused ?? 0) + (counts.unknown ?? 0)} />
@@ -135,7 +145,7 @@ export function FleetPage() {
                 <table className="clickable">
                   <thead>
                     <tr>
-                      <th scope="col">Status</th><th scope="col">Name</th><th scope="col">Engine</th>
+                      <th scope="col">Status</th><th scope="col">In state for</th><th scope="col">Name</th><th scope="col">Engine</th>
                       <th scope="col">Env</th><th scope="col" className="num">Score</th>
                       <th scope="col">Latency</th><th scope="col">Last check</th>
                     </tr>
@@ -144,6 +154,7 @@ export function FleetPage() {
                     {rows.map((c) => (
                       <tr key={c.id} onClick={() => navigate(`/lens/connections/${c.id}`)}>
                         <td><StateBadge state={c.current_state as ConnState} /></td>
+                        <td className="nowrap" title={c.last_state_change_at ?? undefined}>{formatSince(c.last_state_change_at) ?? "–"}</td>
                         <td>
                           <Link to={`/lens/connections/${c.id}`} onClick={(e) => e.stopPropagation()}>{c.name}</Link>
                           {c.tags.length > 0 && <div className="tags">{c.tags.map((t) => <span key={t} className="tag">{t}</span>)}</div>}
@@ -154,7 +165,7 @@ export function FleetPage() {
                         <td>
                           <span className="latency-cell">
                             <Sparkline values={c.sparkline} label={`${c.name} latency trend`} />
-                            <span className="mono">{c.sparkline.at(-1) != null ? `${c.sparkline.at(-1)} ms` : "–"}</span>
+                            <span className="num">{c.sparkline.at(-1) != null ? `${c.sparkline.at(-1)} ms` : "–"}</span>
                           </span>
                         </td>
                         <td title={c.last_checked_at ?? undefined}>{c.is_paused ? "paused" : timeAgo(c.last_checked_at)}</td>

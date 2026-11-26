@@ -7,6 +7,7 @@ import { AsyncView } from "../../components/AsyncView";
 import { Card, KpiCard } from "../../components/Card";
 import { formatCompact, formatDateTime, formatInt } from "../../lib/format";
 import { useLens } from "../LensContext";
+import { DataCell } from "../components/DataCell";
 import { ConnectionTabs } from "../components/ConnectionTabs";
 import { AutoChart } from "../components/MiniCharts";
 import { formatBytes, timeAgo } from "../status";
@@ -17,6 +18,8 @@ type Tab = "overview" | "columns" | "profile" | "preview" | "changes";
 function fmt(value: unknown): string {
   if (value === null || value === undefined) return "–";
   if (typeof value === "number") return Number.isInteger(value) ? formatInt(value) : value.toFixed(3);
+  // ISO timestamps read as dates, not as a string that wraps mid-token.
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) return formatDateTime(value);
   return String(value);
 }
 
@@ -35,7 +38,7 @@ function Preview({ base }: { base: string }) {
             <div className="table-wrap">
               <table className="data-grid">
                 <thead><tr>{d.columns.map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>
-                <tbody>{d.rows.map((r, i) => <tr key={i}>{r.map((v, j) => <td key={j} className="mono">{v === null ? <span className="muted">null</span> : typeof v === "object" ? JSON.stringify(v) : String(v)}</td>)}</tr>)}</tbody>
+                <tbody>{d.rows.map((r, i) => <tr key={i}>{r.map((v, j) => <DataCell key={j} value={v} />)}</tr>)}</tbody>
               </table>
             </div>
           </>
@@ -86,10 +89,10 @@ function Profile({ base }: { base: string }) {
                     <dl className="kv compact">
                       <dt>Null</dt><dd>{p.null_pct ?? "–"}%</dd>
                       <dt>Distinct (sample)</dt><dd>{formatCompact(p.distinct_est)}</dd>
-                      {p.min !== undefined && <><dt>Min</dt><dd className="mono">{fmt(p.min)}</dd></>}
-                      {p.max !== undefined && <><dt>Max</dt><dd className="mono">{fmt(p.max)}</dd></>}
+                      {p.min !== undefined && <><dt>Min</dt><dd className="num-fact">{fmt(p.min)}</dd></>}
+                      {p.max !== undefined && <><dt>Max</dt><dd className="num-fact">{fmt(p.max)}</dd></>}
                       {p.mean !== undefined && <><dt>Mean</dt><dd className="mono">{fmt(p.mean)}</dd></>}
-                      {p.length && <><dt>Length</dt><dd className="mono">{p.length.min}–{p.length.max}</dd></>}
+                      {p.length && <><dt>Length</dt><dd className="num-fact">{p.length.min}–{p.length.max}</dd></>}
                     </dl>
                     {chart && <AutoChart spec={chart} />}
                   </section>
@@ -110,6 +113,7 @@ export function TablePage() {
   const base = `/workspaces/${ws}/connections/${id}/tables/${encodeURIComponent(schema)}/${encodeURIComponent(table)}`;
   const detail = useApi<TableDetail>(ws ? base : null);
   const [tab, setTab] = useState<Tab>("overview");
+  const tabs: Tab[] = ["overview", "columns", "profile", ...(can("editor") ? (["preview"] as Tab[]) : []), "changes"];
   const [count, setCount] = useState<string | null>(null);
 
   async function exactCount() {
@@ -134,12 +138,25 @@ export function TablePage() {
                 <p>{d.table.kind}{d.table.comment ? ` · ${d.table.comment}` : ""}</p>
               </div>
             </header>
-            <div className="segmented tabs" role="tablist" aria-label="Table sections">
-              {(["overview", "columns", "profile", ...(can("editor") ? ["preview"] : []), "changes"] as Tab[]).map((t) => (
-                <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
+            <div className="segmented tabs" role="tablist" aria-label="Table sections"
+                 onKeyDown={(e) => {
+                   // Arrow keys move between tabs; Home/End jump to the ends (WAI-ARIA tabs pattern).
+                   const i = tabs.indexOf(tab);
+                   const next = e.key === "ArrowRight" ? tabs[(i + 1) % tabs.length]
+                     : e.key === "ArrowLeft" ? tabs[(i - 1 + tabs.length) % tabs.length]
+                     : e.key === "Home" ? tabs[0] : e.key === "End" ? tabs[tabs.length - 1] : undefined;
+                   if (!next) return;
+                   e.preventDefault();
+                   setTab(next);
+                   document.getElementById(`table-tab-${next}`)?.focus();
+                 }}>
+              {tabs.map((t) => (
+                <button key={t} id={`table-tab-${t}`} type="button" role="tab" aria-selected={tab === t}
+                        aria-controls="table-panel" tabIndex={tab === t ? 0 : -1} onClick={() => setTab(t)}>
                   {t[0]!.toUpperCase() + t.slice(1)}</button>
               ))}
             </div>
+            <div id="table-panel" role="tabpanel" aria-labelledby={`table-tab-${tab}`}>
             {tab === "overview" && (
               <div className="stack">
                 <div className="grid kpis">
@@ -190,6 +207,7 @@ export function TablePage() {
                 )}
               </Card>
             )}
+            </div>
           </>
         )}
       </AsyncView>

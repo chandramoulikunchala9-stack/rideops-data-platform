@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { Layout } from "./components/Layout";
-import { LensProvider } from "./lens/LensContext";
+import { LensProvider, useLens } from "./lens/LensContext";
 import { RequireLens } from "./lens/components/RequireLens";
 import {
   AcceptInvitePage,
@@ -51,6 +51,15 @@ const loading = (
   </div>
 );
 
+// The app opens on Lens. Where Lens is switched off on the server, only the demo warehouse's
+// reports exist, so the app opens on their overview instead.
+function Home() {
+  const { status } = useLens();
+  const { search } = useLocation(); // old links carry report filters (?start_date=…)
+  if (status === "loading") return loading;
+  return <Navigate to={{ pathname: status === "disabled" ? "/overview" : "/lens", search }} replace />;
+}
+
 export function AppRoutes() {
   return (
     <LensProvider>
@@ -80,7 +89,8 @@ export function AppRoutes() {
         <Route path="lens/channels" element={<RequireLens><ChannelsPage /></RequireLens>} />
         <Route path="lens/notifications" element={<RequireLens><NotificationsPage /></RequireLens>} />
         <Route path="lens/dashboards/:dashboardId" element={<RequireLens><DashboardPage /></RequireLens>} />
-        <Route index element={<OverviewPage />} />
+        <Route index element={<Home />} />
+        <Route path="overview" element={<OverviewPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="pipelines" element={<PipelinesPage />} />
@@ -94,7 +104,7 @@ export function AppRoutes() {
           element={
             <div className="state">
               <h1>Page not found</h1>
-              <Link to="/">Back to the overview</Link>
+              <Link to="/">Back to Lens</Link>
             </div>
           }
         />

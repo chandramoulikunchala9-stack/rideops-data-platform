@@ -4,10 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError, uploadFile } from "../../api/client";
 import { useApi } from "../../api/useApi";
 import { Card } from "../../components/Card";
+import { Icon } from "../../components/Icon";
 import { useLens } from "../LensContext";
+import { engineLabel } from "../status";
 import type { Connection, EngineInfo, ParsedUrl, TestResult } from "../types";
 
-// Add connection wizard (wireframes §6): 1 Engine → 2 Details → 3 Security & network → 4 Test & save.
+// Add connection wizard: 1 Engine → 2 Details → 3 Security & network → 4 Test & save.
 // The password stays in component state only; it is sent to the API for the test and the save,
 // never shown again, and never put back into a URL.
 
@@ -40,6 +42,19 @@ const STAGE_LABEL: Record<string, string> = {
   DB_SELECT: "Database", PRIVILEGES: "Privileges", CAPABILITIES: "Capabilities",
 };
 const ALL_STAGES = Object.keys(STAGE_LABEL);
+// What each stage checks, shown before the test runs so nothing about it is a surprise.
+const STAGE_PREVIEW: Record<string, string> = {
+  DNS: "resolve the host name", NETWORK_POLICY: "confirm the address is allowed", TCP: "open a connection to the port",
+  TLS: "negotiate encryption and check the certificate", AUTH: "sign in as your user", DB_SELECT: "open the database",
+  PRIVILEGES: "check the role cannot write", CAPABILITIES: "list what this engine can report",
+};
+const STAGE_ICON = { good: "check", warning: "warning", critical: "x" } as const;
+
+/** Why an engine tile cannot be picked: v1 engines need their driver installed on the server. */
+function engineUnavailable(e: EngineInfo): string | null {
+  if (e.available) return null;
+  return e.release === "v1" ? "Driver not installed on this server" : "Planned";
+}
 
 function Stepper({ step }: { step: Step }) {
   return (
@@ -49,7 +64,7 @@ function Stepper({ step }: { step: Step }) {
         const state = n < step ? "done" : n === step ? "current" : "todo";
         return (
           <li key={label} data-state={state} aria-current={state === "current" ? "step" : undefined}>
-            <span className="step-n">{state === "done" ? "✔" : n}</span> {label}
+            <span className="step-n">{state === "done" ? <Icon name="check" size={13} label="Done" /> : n}</span> {label}
           </li>
         );
       })}
@@ -79,7 +94,7 @@ export function StageList({ result }: { result: TestResult }) {
         const tone = s.ok ? (s.warning ? "warning" : "good") : s.warning ? "warning" : "critical";
         return (
           <li key={s.stage} data-tone={tone}>
-            <span className="stage-icon" aria-hidden="true">{tone === "good" ? "✔" : tone === "warning" ? "⚠" : "✗"}</span>
+            <span className="stage-icon" aria-hidden="true"><Icon name={STAGE_ICON[tone]} size={15} /></span>
             <span className="stage-name">{STAGE_LABEL[s.stage] ?? s.stage}</span>
             <span className="stage-msg">{s.code && !s.ok ? <code>{s.code}</code> : null} {s.message}</span>
             <span className="stage-ms mono">{s.ms} ms</span>
@@ -87,7 +102,7 @@ export function StageList({ result }: { result: TestResult }) {
         );
       })}
       {ALL_STAGES.filter((s) => !seen.has(s)).map((s) => (
-        <li key={s} data-tone="skipped"><span className="stage-icon" aria-hidden="true">◌</span>
+        <li key={s} data-tone="skipped"><span className="stage-icon" aria-hidden="true"><Icon name="clock" size={15} /></span>
           <span className="stage-name">{STAGE_LABEL[s]}</span><span className="stage-msg muted">not run</span><span /></li>
       ))}
     </ul>
@@ -107,9 +122,17 @@ export function AddConnectionPage() {
   const [busy, setBusy] = useState(false);
   const [test, setTest] = useState<TestResult | null>(null);
   const [forceReason, setForceReason] = useState("");
+  const [tlsTouched, setTlsTouched] = useState(false);
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => {
-    setForm((f) => ({ ...f, [key]: value }));
+    setForm((f) => {
+      const next = { ...f, [key]: value };
+      // Production defaults to full certificate verification unless TLS was chosen by hand.
+      if (key === "environment" && !tlsTouched && f.engine !== "sqlite") {
+        next.tls_mode = value === "prod" ? "verify-full" : "require";
+      }
+      return next;
+    });
     if (key !== "name" && key !== "environment" && key !== "tags" && key !== "check_interval_s") setTest(null);
   };
 
@@ -118,6 +141,16 @@ export function AddConnectionPage() {
     setError(null);
     try {
       const parsed = await api.post<ParsedUrl>(`/workspaces/${ws}/connections/parse-url`, { url });
+      const info = engines.data?.engines.find((e) => e.engine === parsed.engine);
+      const missing = info ? engineUnavailable(info) : null;
+      if (info && missing) {
+        setError(info.release === "v1"
+          ? `${info.label}: the driver is not installed on this server. Ask the server admin to install the engines extra.`
+          : `${info.label} is not supported yet.`);
+        return;
+      }
+      // A URL that names sslmode chose TLS on purpose; keep it when the environment changes.
+      setTlsTouched(/[?&](sslmode|ssl|tls|encrypt)=/i.test(url));
       // The URL may contain the password: take it into the secret field, then forget the URL.
       const password = (() => {
         try {
@@ -174,7 +207,15 @@ export function AddConnectionPage() {
   }
 
   if (!can("editor")) {
-    return <div className="state">Your role ({workspace?.role}) can view connections but not add them.</div>;
+    return (
+      <>
+        <header className="page-header"><div><h1>Add connection</h1></div></header>
+        <div className="state">
+          <p>Your role ({workspace?.role}) can view connections but not add them. Ask a workspace admin for the editor role.</p>
+          <Link to="/lens">Back to Databases</Link>
+        </div>
+      </>
+    );
   }
   const insecureAllowed = settings.data?.settings?.allow_insecure_connections ?? false;
   const isFile = form.engine === "sqlite";
@@ -222,19 +263,22 @@ export function AddConnectionPage() {
           </form>
           <p className="divider-text">or choose an engine</p>
           <div className="engine-grid">
-            {(engines.data?.engines ?? []).map((e) => (
-              <button key={e.engine} type="button" className="engine-tile" disabled={!e.available}
-                      onClick={() => { setForm({ ...EMPTY, engine: e.engine, port: String(e.default_port ?? "") }); setStep(2); }}>
-                <strong>{e.label}</strong>
-                <span className="muted">{e.available ? "Available" : "Coming soon"}</span>
-              </button>
-            ))}
+            {(engines.data?.engines ?? []).map((e) => {
+              const missing = engineUnavailable(e);
+              return (
+                <button key={e.engine} type="button" className="engine-tile" disabled={Boolean(missing)}
+                        onClick={() => { setTlsTouched(false); setForm({ ...EMPTY, engine: e.engine, port: String(e.default_port ?? "") }); setStep(2); }}>
+                  <strong>{e.label}</strong>
+                  <span className="engine-note">{missing ?? (e.engine === "sqlite" ? "Upload a file" : "Connect by host or URL")}</span>
+                </button>
+              );
+            })}
           </div>
         </Card>
       )}
 
       {step === 2 && (
-        <Card title="Connection details" subtitle={`Engine: ${form.engine}`}>
+        <Card title="Connection details" subtitle={engineLabel(form.engine)}>
           {isFile ? (
             <form className="form-grid" onSubmit={(e) => { e.preventDefault(); setStep(4); }}>
               <div className="field span-2">
@@ -307,9 +351,13 @@ export function AddConnectionPage() {
               ].map(([mode = "", label]) => (
                 <label key={mode} className="radio-row">
                   <input type="radio" name="tls" checked={form.tls_mode === mode} disabled={mode === "disable" && !insecureAllowed}
-                         onChange={() => set("tls_mode", mode)} /> {label}
+                         onChange={() => { setTlsTouched(true); set("tls_mode", mode); }} /> {label}
                 </label>
               ))}
+              <p className="hint">
+                Not sure? Managed databases (RDS, Cloud SQL, Neon, Supabase, Atlas) work with <strong>Verify full</strong>.
+                Choose <strong>Require</strong> only for a server with a self-signed certificate: it still encrypts, but cannot prove it is talking to your server.
+              </p>
             </fieldset>
             <div className="field">
               <label htmlFor="ca">CA certificate (optional, PEM)</label>
@@ -336,8 +384,22 @@ export function AddConnectionPage() {
       {step === 4 && (
         <Card title="Test & save" subtitle={isFile ? `${form.name} · uploaded SQLite file` : `${form.name} · ${form.host}${form.port ? `:${form.port}` : ""}${form.database ? `/${form.database}` : ""}`}>
           <div className="stack">
+            {!test && (
+              <div className="test-preview">
+                <p>The test is read-only: Lens signs in, reads the catalog and writes nothing. It checks, in order:</p>
+                {isFile ? (
+                  <p className="hint">Open the uploaded file read-only, read its tables and views, and list what SQLite can report.</p>
+                ) : (
+                  <ol className="stage-preview">
+                    {ALL_STAGES.map((st) => (
+                      <li key={st}><span className="stage-name">{STAGE_LABEL[st]}</span> <span className="muted">{STAGE_PREVIEW[st]}</span></li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            )}
             <div><button type="button" className="btn primary" onClick={runTest} disabled={busy}>
-              {busy && !test ? "Testing…" : test ? "Re-run test" : "▶ Test connection"}</button></div>
+              {busy && !test ? "Testing…" : test ? "Re-run test" : "Test connection"}</button></div>
             {test && <StageList result={test} />}
             {test?.grant_script && (
               <details className="grant">

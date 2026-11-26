@@ -166,7 +166,7 @@ describe("Lens", () => {
     });
     renderAt("/lens/connections/c1");
     expect(await screen.findByRole("heading", { name: /shop-prod/ })).toBeInTheDocument();
-    expect(screen.getByText(/Production database: Lens has read-only access/)).toBeInTheDocument();
+    expect(screen.getByText(/Production database: Lens reads only, never writes/)).toBeInTheDocument();
     expect(screen.getByText("1 queries running > 5 min")).toBeInTheDocument();
     expect(screen.getByText("23 / 100")).toBeInTheDocument();
     expect(screen.getByText("5.0 GB")).toBeInTheDocument();

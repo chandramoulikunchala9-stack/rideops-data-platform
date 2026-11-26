@@ -3,9 +3,11 @@ import { useParams } from "react-router-dom";
 
 import { api, ApiError, apiUrl } from "../../api/client";
 import { useApi } from "../../api/useApi";
+import { Icon } from "../../components/Icon";
 import { Card } from "../../components/Card";
 import { formatInt } from "../../lib/format";
 import { useLens } from "../LensContext";
+import { DataCell } from "../components/DataCell";
 import { ConnectionTabs } from "../components/ConnectionTabs";
 import type { QueryResult, SavedQuery } from "../types";
 
@@ -73,10 +75,12 @@ export function QueryPage() {
                       onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); void run(); } }}
                       aria-describedby="sql-verdict" />
             <p id="sql-verdict" className={verdict && !verdict.ok ? "form-error" : "hint"} role="status">
-              {verdict ? (verdict.ok ? `✔ Read-only ${verdict.kind}${verdict.tables.length ? ` · reads ${verdict.tables.join(", ")}` : ""}` : `✗ ${verdict.code}: ${verdict.message}`) : "Ctrl/⌘ + Enter runs the query."}
+              {verdict ? (verdict.ok
+                ? <><Icon name="check" size={14} /> Read-only {verdict.kind}{verdict.tables.length ? ` · reads ${verdict.tables.join(", ")}` : ""}</>
+                : <><Icon name="x" size={14} /> {verdict.message} <code>{verdict.code}</code></>) : "Ctrl/⌘ + Enter runs the query."}
             </p>
             <div className="toolbar wrap">
-              <button className="btn primary" type="button" onClick={run} disabled={busy || verdict?.ok === false}>{busy ? "Running…" : "▶ Run"}</button>
+              <button className="btn primary" type="button" onClick={run} disabled={busy || verdict?.ok === false}>{busy ? "Running…" : "Run query"}</button>
               <button className="btn" type="button" onClick={explain} disabled={busy || !["select", "find", "aggregate"].includes(verdict?.kind ?? "")}>Explain</button>
               <label className="radio-row">Max rows
                 <select value={maxRows} onChange={(e) => setMaxRows(Number(e.target.value))}>
@@ -93,7 +97,7 @@ export function QueryPage() {
               <div className="table-wrap result-grid">
                 <table className="data-grid">
                   <thead><tr>{result.columns.map((c) => <th key={c.name} scope="col">{c.name}<span className="hint"> {c.type}</span></th>)}</tr></thead>
-                  <tbody>{result.rows.map((r, i) => <tr key={i}>{r.map((v, j) => <td key={j} className="mono">{v === null ? <span className="muted">null</span> : typeof v === "object" ? JSON.stringify(v) : String(v)}</td>)}</tr>)}</tbody>
+                  <tbody>{result.rows.map((r, i) => <tr key={i}>{r.map((v, j) => <DataCell key={j} value={v} />)}</tr>)}</tbody>
                 </table>
               </div>
             </Card>

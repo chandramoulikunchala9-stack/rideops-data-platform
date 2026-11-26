@@ -7,6 +7,8 @@ import { AsyncView } from "../../components/AsyncView";
 import { Card, KpiCard } from "../../components/Card";
 import { formatCompact, formatDateTime } from "../../lib/format";
 import { useLens } from "../LensContext";
+import { ConfirmButton } from "../components/ConfirmButton";
+import { DataCell } from "../components/DataCell";
 import { ConnectionTabs } from "../components/ConnectionTabs";
 import { BarList } from "../components/MiniCharts";
 import { formatBytes, timeAgo } from "../status";
@@ -26,7 +28,7 @@ function WidgetView({ w }: { w: Widget }) {
   return (
     <div className="table-wrap"><table className="data-grid">
       <thead><tr>{names.map((n) => <th key={n} scope="col">{n}</th>)}</tr></thead>
-      <tbody>{r.rows.slice(0, 50).map((row, i) => <tr key={i}>{row.map((v, j) => <td key={j} className="mono">{v === null ? "null" : String(v)}</td>)}</tr>)}</tbody>
+      <tbody>{r.rows.slice(0, 50).map((row, i) => <tr key={i}>{row.map((v, j) => <DataCell key={j} value={v} />)}</tr>)}</tbody>
     </table></div>
   );
 }
@@ -94,7 +96,8 @@ export function DashboardPage() {
           <div className="grid two">
             {(d.widgets ?? []).map((w) => (
               <Card key={w.id} title={w.title} subtitle={w.query_name ? `${w.query_name}${w.stale ? " · stale" : ""}` : undefined}
-                    actions={can("editor") && <button className="btn small" type="button" onClick={() => act(() => api.delete(`${base}/widgets/${w.id}`))}>Remove</button>}>
+                    actions={can("editor") && <ConfirmButton small label="Remove" confirmLabel={`Remove ${w.title}`}
+                                                      onConfirm={() => act(() => api.delete(`${base}/widgets/${w.id}`))} />}>
                 <WidgetView w={w} />
               </Card>
             ))}
@@ -168,7 +171,7 @@ export function AutoDashboardPage() {
                   <ul className="plain-list">
                     {d.freshness.map((f) => (
                       <li key={`${f.schema_name}.${f.table_name}`} data-stale={(f.lag_s ?? 0) > 7 * 86400}>
-                        <span className="mono">{f.schema_name}.{f.table_name}</span> · {timeAgo(f.freshness_max)}{(f.lag_s ?? 0) > 7 * 86400 && " ⚠ stale"}
+                        <span className="mono">{f.schema_name}.{f.table_name}</span> · {timeAgo(f.freshness_max)}{(f.lag_s ?? 0) > 7 * 86400 && <span className="badge" data-tone="warning">stale</span>}
                       </li>
                     ))}
                     {d.freshness.length === 0 && <li className="muted">No timestamp columns found yet.</li>}

@@ -45,7 +45,7 @@ describe("Lens alerts", () => {
     expect(await screen.findByText("Database down")).toBeInTheDocument();
     expect(screen.getByText(/unreachable for 2 checks/)).toBeInTheDocument();
     expect(await screen.findByLabelText("3 unread")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Ack" }));
+    await user.click(screen.getByRole("button", { name: "Acknowledge" }));
     await waitFor(() => expect(calls.some((c) => c.method === "POST" && c.path === `/workspaces/${WS}/alerts/7/ack`)).toBe(true));
   });
 

@@ -18,7 +18,7 @@ export function SourcesPage() {
       <header className="page-header">
         <div>
           <h1>Source apps</h1>
-          <p>Every application that sends data to RideOps: what arrived, what passed validation, and what was quarantined.</p>
+          <p>Every application that sends data to the demo warehouse: what arrived, what passed validation, and what was quarantined.</p>
         </div>
       </header>
 

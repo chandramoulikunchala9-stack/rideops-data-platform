@@ -11,7 +11,7 @@ function AuthShell({ title, subtitle, children }: { title: string; subtitle?: Re
   return (
     <main className="auth-shell" id="main">
       <div className="auth-card card">
-        <p className="auth-brand">RideOps Lens</p>
+        <p className="auth-brand">Lens</p>
         <h1>{title}</h1>
         {subtitle && <p className="subtitle">{subtitle}</p>}
         {children}
