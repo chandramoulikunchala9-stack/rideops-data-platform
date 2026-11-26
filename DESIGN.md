@@ -1,6 +1,6 @@
 ---
-name: RideOps
-description: Transport data platform dashboard where every figure carries its source, its checks and its freshness.
+name: Lens
+description: Database status and analytics app where every figure carries its connection, its engine and its freshness.
 colors:
   ink: "#232323"
   mint: "#a1ffcb"
@@ -348,17 +348,17 @@ components:
     height: "14px"
 ---
 
-# Design System: RideOps
+# Design System: Lens
 
 ## Overview
 
 **Creative North Star: "The Traced Report"**
 
-RideOps reads like a printed operations report that keeps its receipts. Each page is a column of bands under hairline rules (Sources, then Checks, then Results on the Overview), and every band names the table it was computed from in small mono type beside its heading. The figures are large, tabular and quiet; the lineage is small and always present. Density is that of a working tool: 14-15px text, 16px gutters, tables with 9px cell padding, nothing padded for show.
+Lens reads like a printed operations report that keeps its receipts. Each page is a column of bands under hairline rules (status first, then statistics, then the exact table), and every band names where it was read from (the connection, the engine, the catalog view or table) in small mono type beside its heading, with how fresh the reading is. The figures are large, tabular and quiet; the lineage is small and always present. Density is that of a working tool: 14-15px text, 16px gutters, tables with 9px cell padding, nothing padded for show.
 
-The world is shared with the landing page at `/` (`frontend/index.html`): a white ground, one warm near-black ink used for text, primary actions and the sidebar band, a single mint accent, Familjen Grotesk for everything with IBM Plex Mono for identifiers, small sharp corners and hairlines in place of shadows. The landing page draws on its own kit in `frontend/public/assets`; this document covers the dashboard at `/app` (`frontend/src`) only, and the two meet in fonts, ink, mint and corner language rather than in shared components.
+The world is shared with the landing page at `/` (`frontend/index.html`): a white ground, one warm near-black ink used for text, primary actions and the sidebar band, a single mint accent, Familjen Grotesk for everything with IBM Plex Mono for identifiers, small sharp corners and hairlines in place of shadows. The landing page draws on its own kit in `frontend/public/assets`; this document covers the app at `/app` (`frontend/src`) only. The Lens pages under `/app/lens` (`frontend/src/lens`) are the product; the ride-hailing report pages from the RideOps era (Overview, Business analytics, Source apps, Pipelines, Data quality, Monitoring, Cloud costs) remain in code as the demo warehouse's pages, and the components only they use are marked *demo pages* below, and the two meet in fonts, ink, mint and corner language rather than in shared components.
 
-Colour does jobs, never decoration. The five source applications each own one hue, the six cities each own one series slot, the four state tones tint fills and badges, and mint marks only where you are and what is healthy. Everything else is ink on white, or white on near-black in dark mode.
+Colour does jobs, never decoration. The four state tones carry connection health (Healthy, Degraded, Down and the other failure states) in badges, uptime bars and tinted tiles; a single series hue draws one measured metric (latency, size, rows); the six series slots identify entities only when several are compared on one chart; and mint marks only where you are and what is healthy. On the demo warehouse pages the five source applications and six cities keep their fixed hues. Everything else is ink on white, or white on near-black in dark mode.
 
 **Key Characteristics:**
 - Ink band sidebar (#232323 light, #141414 dark) with the active page filled mint.
@@ -366,7 +366,7 @@ Colour does jobs, never decoration. The five source applications each own one hu
 - Flat surfaces: 1px hairline borders, no shadows at rest; tints carry state.
 - Familjen Grotesk at two weights (400, 500), tabular figures for every number; IBM Plex Mono only for table, file and pipeline names.
 - Corners at 6-8px for containers and controls, 2-4px for data marks, full pills only for badges and meters.
-- Entity colour is fixed: a source or a city keeps its hue on every page and in both themes.
+- Entity colour is fixed: a compared entity (a connection, a table; on demo pages a source or a city) keeps its hue on every page and in both themes.
 - Light by default (like the landing page), with Dark and System one select away in the sidebar footer.
 
 ## Colors
@@ -378,8 +378,8 @@ One ink, one mint and a white ground carry the interface; a validated six-slot c
 - **Signal Mint** (`mint`): the single accent. It fills the active nav item, the healthy API dot, text selection, and the "Validated tables" meta line inside the source flow. In dark mode it becomes the primary action and focus colour (`--accent`, `--focus`, `--accent-text`), with **Pale Mint** (`mint-hover-dark`) on hover. Text on mint is always Workshop Ink.
 
 ### Secondary (categorical data)
-- **Series slots 1-6** (`series-1` blue, `series-2` orange, `series-3` green, `series-4` amber, `series-5` pink, `series-6` deep green), with `-dark` siblings re-tuned for the dark surface. Cities map to slots in a fixed order: Bengaluru 1, Mumbai 2, Hyderabad 3, Delhi 4, Chennai 5, Pune 6; an unknown city falls back to `status-neutral`.
-- **Source application hues** (`src-rider`, `src-driver`, `src-payments`, `src-billing`, `src-platform`): drawn from the same validated palette (rider = blue, driver = green, payments = amber, cloud billing = orange, platform ops = pink), each paired with its own icon. They appear as swatches, SVG flow bands and source dots.
+- **Series slots 1-6** (`series-1` blue, `series-2` orange, `series-3` green, `series-4` amber, `series-5` pink, `series-6` deep green), with `-dark` siblings re-tuned for the dark surface. Slot 1 (`series-1`) is the single-metric hue in Lens: the latency line, sparklines, size bars and profile histograms. Several compared entities take slots in a fixed order. On the demo pages, cities map to slots: Bengaluru 1, Mumbai 2, Hyderabad 3, Delhi 4, Chennai 5, Pune 6; an unknown city falls back to `status-neutral`.
+- **Source application hues** (*demo pages*; `src-rider`, `src-driver`, `src-payments`, `src-billing`, `src-platform`): drawn from the same validated palette (rider = blue, driver = green, payments = amber, cloud billing = orange, platform ops = pink), each paired with its own icon. They appear as swatches, SVG flow bands and source dots.
 
 ### Tertiary (state)
 - **Status fills** (`status-good`, `status-warning`, `status-serious`, `status-critical`, `status-neutral`): solid colour for marks only, such as the stacked check bar, the quarantine branch in the source flow, cost anomaly dots and the healthy dot on a layer chip.
@@ -395,11 +395,11 @@ One ink, one mint and a white ground carry the interface; a validated six-slot c
 - **Row Hover** (`row-hover`), **Rail Text** (`rail-text`) and **Rail Muted** (`rail-muted`): table hover and the sidebar's two text levels.
 
 ### Named Rules
-**The Jobs-Only Colour Rule.** A hue appears only when it identifies a source, a city or a state. Nothing is coloured to make a section look lively.
+**The Jobs-Only Colour Rule.** A hue appears only when it identifies a state, a measured metric or a compared entity (on demo pages, a source or a city). Nothing is coloured to make a section look lively.
 
-**The Mint Means Here-and-Healthy Rule.** Mint fills the active place (current nav item) and confirms health (API connected, validated tables). It is not a highlight colour for figures, cards or headings.
+**The Mint Means Here-and-Healthy Rule.** Mint fills the active place (current nav item, current tab, current step) and confirms health (API connected, a healthy connection, validated tables). It is not a highlight colour for figures, cards or headings.
 
-**The Fixed Entity Rule.** Colour follows the entity, never its rank: a city or source keeps the same slot when filters remove its neighbours, in every chart and both themes.
+**The Fixed Entity Rule.** Colour follows the entity, never its rank: a connection, table, city or source keeps the same slot when filters remove its neighbours, in every chart and both themes.
 
 **The Never-Alone Rule.** State colour always travels with an icon and a label (StatusBadge, or an icon-led count such as "check 12 pass"), and every chart with two or more series carries a legend and a table view. Three light-theme categorical slots sit under 3:1 against the surface, which is why the legend and table are mandatory, not optional.
 
@@ -430,7 +430,7 @@ One ink, one mint and a white ground carry the interface; a validated six-slot c
 
 **The Tabular Figures Rule.** Every number that can be compared (KPI values, facts, table numeric columns, tooltip values, bar list values) uses `font-variant-numeric: tabular-nums`, and numeric table columns align right.
 
-**The Mono Is an Identifier Rule.** IBM Plex Mono marks names that exist in the system: `ops.ingestion_log`, `monitoring/incidents/*.md`, a pipeline name. It is never used for labels, numbers or decoration.
+**The Mono Is an Identifier Rule.** IBM Plex Mono marks names that exist in the system: `public.orders`, `pg_stat_activity`, a host name, a connection URL with its secret masked, `monitoring/incidents/*.md`. It is never used for labels, numbers or decoration.
 
 ## Layout
 
@@ -490,7 +490,7 @@ The Chart / Table switch on every chart card. A 6px outlined group, options at 1
 - **Behaviour:** click a start, then an end, in either order, with the band following the pointer or keyboard focus. A footer gives the range and its day count with a slate hint ("Pick a start date" / "Now pick the end date"). Arrows move by day and week, Page Up/Down by month (with Shift, by year), Home/End to the week's ends; Escape or a choice returns focus to the field, a click outside or a Tab away just closes it. Dates outside `min`/`max` (the API's last day with data) cannot be focused or chosen.
 
 ### Navigation
-The ink band. Brand wordmark (21px/500) over a 12.5px "Transport data platform" line, then three labelled groups (Reports, Data, Operations) plus Settings, each item an 8px 10px row with a 10px icon gap at 500 weight. Rest: rail text with rail-muted icons. Hover: 8% white wash, text and icon go white, 160ms. Active: mint fill with ink text and icon. Focus rings switch to mint inside the rail. The footer carries an API status dot (mint ok, critical down, muted checking), the theme select and the "All business data is synthetic." note, above a 10% white hairline. Under 900px the band becomes a horizontal scroller with groups flattened and the footer hidden; a "Synthetic data" pill (12px rail muted, 1px dashed 30% white, full pill, 2px 8px) keeps the synthetic-data notice in the bar, the dark-rail twin of the Simulated badge.
+The ink band. Brand wordmark "Lens" (21px/500) over a 12.5px "Database status and analytics" line. Signed in, the nav is Lens-first: **Databases**, with the workspace's connections listed beneath it worst state first (13.5px rail-muted rows indented to the label, each led by an 8px state dot: mint healthy, warning amber, critical red, neutral grey; the state is also in the row's title and a screen-reader suffix), capped at six with an "All n databases" link; then Alerts (also active on notification channels), Incidents, Dashboards and Notifications (with a red unread count pill). The **Demo warehouse** group (the eight ride-hailing report pages, labelled with a dashed "synthetic data" tag) appears only while the demo connection or one of those pages is open; where Lens is switched off on the server it is the whole nav. Rest: rail text with rail-muted icons. Hover: 8% white wash, text and icon go white, 160ms. Active: mint fill with ink text and icon; an active connection row takes a 10% white wash instead. Focus rings switch to mint inside the rail. The footer carries the account (name, workspace, Log out), the API status dot and the theme select. Under 900px the band becomes two rows: brand with Log out, the API dot and the theme select on the first; the nav as one horizontal scroller on the second (connection rows hidden, the demo group set off by a hairline), and the active item scrolls into view.
 
 ### Cards / Containers
 - **Corner Style:** 8px.
@@ -502,7 +502,7 @@ The ink band. Brand wordmark (21px/500) over a 12.5px "Transport data platform" 
 ### KPI Card
 A stat tile: the number leads. Label (13px graphite), value (30px/500 tabular), optional hint (12.5px slate, often holding a StatusBadge). When the number itself is a state (failing checks, over budget, open incidents), `tone` tints the whole tile good, warning or critical and removes its border; otherwise it stays paper. Those three are the only tones: there is no mint or accent tile, because a figure is never highlighted for its own sake. KPI rows sit inside a report section, under the bands that explain their source.
 
-### Trust Strip
+### Trust Strip (demo pages)
 A report's provenance in one line, at the top of Business analytics before any figure. A mist band (8px corners, 12px 16px, no border) wraps a row of label-over-value pairs, 12px 28px gap: **Built from** (a 2px swatch and name for each feeding application, in its source hue), **Last file** (relative time), **Checks** (icon-led counts: check + "n pass" in good text, warning + "n warn" in warning text, x + "n fail" in critical text only when failures exist, otherwise ink) and **Quarantined** (rows). Labels are 12px slate, values 14px/500. Two section links (Source apps, Data quality) sit at the right end, pushed by an auto margin, and wrap under on narrow screens. It reads Sources, then Checks, before Results.
 
 ### Report Section
@@ -521,19 +521,19 @@ Recharts on a recessive frame: horizontal grid lines only in `grid`, no axis lin
 
 Every chart lives in a **chart card**: a card whose toolbar ends in the Chart / Table switch. The chart area has a fixed height (280px by default) for Recharts; an HTML chart passes `grow`, which turns that height into a minimum so rows that wrap on a phone push the card taller instead of clipping.
 
-### Checks by Type
+### Checks by Type (demo pages)
 The Data quality page's HTML chart card. One row per check type: the humanised name (14px), a 12px stacked check bar, and right-aligned counts at 13px, each an icon (check, warning, x at 13px) and "n pass / warn / fail" in its status text, with zero counts omitted. Rows are 10px apart in 130px / fluid / 200px columns; under 640px they stack and the counts align left. The Table view gives Pass, Warn, Fail and Total per type in right-aligned tabular columns.
 
-### Source Flow (signature)
+### Source Flow (signature) (demo pages)
 The Overview's opening drawing, built from `ops.ingestion_log`. Each source application is a 232px paper node (6px corners, firm hairline) with its colour dot, name at 15px/500 and a 13px slate meta line. A bezier band in the source's colour at 50% opacity runs to an ink "Validated tables" node, its width the square root of rows delivered (3-21px). Below the ink node sit two outflow nodes of the same 196px width and 6px corners. Rejected rows branch off as a 1.5px dashed critical line (3 4 dash, 70%) into a critical-tinted **Quarantine** node. Rows a source delivered twice (loaded minus current minus rejected, per entity) branch off as a 1.5px grey dotted line (slate, round-capped 1 4 dots, 80%) into a mist **Duplicates merged** node, "n rows delivered twice". A branch is drawn only for a source that has such rows. A single ink band continues to a paper "Reports & API" node. Text on the ink node is white with a mint meta line. The SVG needs about 640px; under 700px it is hidden and replaced by a list (14px, grid-ruled rows): swatch, name and rows delivered, with the quarantined count on a 12.5px slate line beneath, then a "Duplicates merged" total and a "Kept in validated tables" total (rows and percentage kept) at 500 weight.
 
-### City Map (signature)
+### City Map (signature) (demo pages)
 A schematic, not surveyed, map of the six cities on a 440 by 410 viewBox that scales to fill its card. Positions keep India's north, west, centre and south arrangement readable (Delhi top, Mumbai west, Pune below Mumbai rather than on top of it, Hyderabad centre, Bengaluru and Chennai south) without claiming geography. The ground is a 16-unit dot grid in axis grey at 60%. Each city is a circle in its series colour, 22% fill with a 2px stroke, radius growing with the square root of revenue (10-36 units), a 3-unit centre dot, and a label pair placed right, left or below: name at 18/500 ink, revenue and rides at 16 slate, in viewBox units so the labels scale with the drawing. Its `aria-label` carries every value.
 
-### Layer Map
+### Layer Map (demo pages)
 The Pipelines page's bronze to silver to gold to serving view: an ordered list of mist columns (8px corners, 14px padding) with a 16px/500 heading, a 13px slate description and an arrow icon between columns on wide screens. Inside, each pipeline is a 6px paper chip with a hairline: pipeline name in 12.5px/500 mono, a 12.5px slate meta line led by a 7px good dot when healthy. Failing chips take the critical tint, warning or serious chips the warning tint, both borderless. Hover firms the border and lifts the chip 1px, 150ms.
 
-### Source Tiles, Facts and Bars
+### Source Tiles, Facts and Bars (demo pages)
 - **Source tile:** a card with a 36px mist icon well holding the source's icon, a status badge, a 17px/500 name, 13.5px description and a two-up figures block (12px slate term, 19px/500 tabular value) above a grid rule.
 - **Facts list:** label over value pairs (12.5px slate over 20px/500), separated by grid rules, with an optional 12.5px fact note. The two-column variant (the Overview Delivery panel) and the compact variant both run two columns at a 14px 18px gap without rules; compact drops to one column under 640px.
 - **Stacked check bar:** a 12px bar of good, warning and critical segments with 3px gaps and 2px corners, width by count.
@@ -541,6 +541,23 @@ The Pipelines page's bronze to silver to gold to serving view: an ordered list o
 
 ### Incidents
 Each incident is a native `<details>`: a 6px hairline box, 12px 14px, that turns mist when open. The summary hides the browser's disclosure marker and leads with a 15px slate arrow icon from the shared set that rotates 90 degrees on open (160ms), then the incident id, its StatusBadge, a severity badge and the title. The body is a key-value list.
+
+### Status Band (Lens connection overview)
+The first thing on a connection: a band tinted by the connection's state (good, warning or critical tint, no border; neutral states stay paper with a hairline), 8px corners, 20px 22px padding. Left: the state as a 34px/400 word with its 26px icon in the state's text colour, then "For 3 d 2 h · checked 4s ago, every 1 min" in graphite, and the last error in plain words with its code in small mono after it. Right: the health score at 30px/500 tabular with "/ 100", and each deduction as a reason and its points, right-aligned. Full width below: the uptime figure ("99.6% uptime over 1,440 checks", or "Collecting: n checks so far" under 12 checks) with the 24h / 7d / 30d segmented control, and 22px uptime bars (2px corners, 2px gaps, status fills). Stacks to one column under 700px.
+
+Below the band, Lens pages use Report Sections whose lineage line names the engine views a figure was read from (`pg_stat_database`, `SHOW GLOBAL STATUS`, `serverStatus`) and "read 4s ago". A figure an engine cannot give reads "Not available for SQLite" (or the engine's own reason) in 14px slate, never a dash or a guess.
+
+### Inline Confirm
+Destructive actions (delete a connection, rule, channel or widget) confirm in place, not in a modal: the outlined danger button becomes a short consequence sentence, a solid critical "Delete <name>" button (focused) and Cancel; Escape steps back. Non-destructive hides (dismiss an insight) use the quiet variant: a default button whose confirm is the primary button.
+
+### Alert Rules as Sentences
+Rules are built from fields (what to watch, figure, operator, threshold with unit, checks in a row; table pickers from the catalog) and always read back as one sentence on a mist strip: "Alert when latency is above 2,000 ms for 3 checks in a row." The rules table shows the same sentence instead of the stored condition.
+
+### Insight Groups
+Insights group by kind inside native `<details>` boxes (8px corners, hairline): a chevron that rotates 90 degrees on open, the group's severity badge, a 16px/500 plural heading ("10 tables have stopped updating") and the insight code in 12px slate mono at the far end. The body states one shared fix once, then a table of affected objects (mono), the evidence in words, last seen and a quiet Dismiss. Critical and warning groups open by default. A count strip of severity badges leads the page.
+
+### Environment Chip
+An environment is not a state, so it carries no hue: Production is a solid ink chip with paper text (the one that matters), Staging a mist chip, Development an outlined chip, Demo the accent tint. 4px corners, 12px/500.
 
 ### States
 - **Loading:** shimmer skeleton lines (14px, 4px corners, mist to grid gradient over 1.2s), each shorter than the last, in a polite live region.
@@ -552,9 +569,9 @@ Each incident is a native `<details>`: a 6px hairline box, 12px 14px, that turns
 ## Do's and Don'ts
 
 ### Do:
-- **Do** open each section with its hairline head and name its source tables in the lineage line, in mono (`ops.data_quality_results`).
+- **Do** open each section with its hairline head and name where it was read from in the lineage line, in mono (`pg_stat_user_tables`, `ops.data_quality_results`), with its freshness.
 - **Do** give every chart a Chart / Table segmented switch and a legend once it has two series.
-- **Do** take city colours from the fixed series order and source colours from `--src-*`, so an entity never changes hue between pages.
+- **Do** draw a single measured metric in `series-1`, take compared entities from the fixed series order, and on demo pages take city and source colours from their fixed slots, so an entity never changes hue between pages.
 - **Do** tint the whole KPI tile (good, warning, critical) when the number is itself a state, and drop its border when you do.
 - **Do** pair every state colour with an icon and a label through StatusBadge, and mark simulated figures with the dashed Simulated badge.
 - **Do** keep containers at 8px, controls at 6px, data marks at 2-4px.
@@ -564,7 +581,7 @@ Each incident is a native `<details>`: a 6px hairline box, 12px 14px, that turns
 ### Don't:
 - **Don't** add drop shadows to cards, tiles, columns or the sidebar; only transient overlays (the chart tooltip, the date picker popover) float.
 - **Don't** use mint to highlight a figure, card or heading; it marks the active place and healthy confirmations only.
-- **Don't** colour an element that does not identify a source, a city or a state.
+- **Don't** colour an element that does not identify a state, a measured metric or a compared entity.
 - **Don't** use IBM Plex Mono for labels, numbers or decoration.
 - **Don't** set Familjen Grotesk above 500 weight.
 - **Don't** make a button, card or chip a pill; pills are for badges and meters.
