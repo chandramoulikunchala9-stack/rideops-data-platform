@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 # Runtime dependencies are pinned to exact versions so every machine (and CI) builds the same environment.
 dependencies = [
-    "faker==40.54.0",
+    "faker==40.63.0",
     "orjson==3.13.0",
     "pydantic-settings==2.15.0",
     "psycopg[binary]==3.3.9",
